@@ -66,7 +66,7 @@ Este programa analiza automáticamente tu página web y:
 
 1. **Primer paso: Obtener el programa**
    ```bash
-   git clone <URL-DEL-REPOSITORIO>
+   git clone https://github.com/CarlaFernandez12/accessibility.git
    cd <NOMBRE-DEL-DIRECTORIO>
    ```
    *(Tu supervisor te proporcionará los valores correctos para reemplazar lo que está entre < >)*
@@ -99,7 +99,7 @@ Este programa analiza automáticamente tu página web y:
 
 1. **Iniciar el programa**
    ```bash
-   python accessibility_enhancer.py
+   python main.py
    ```
 
 2. **Usar el programa**
