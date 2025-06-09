@@ -154,7 +154,7 @@ Este programa analiza automáticamente tu página web y:
 
 1. **Iniciar el programa**
    ```bash
-   python main.py
+   python main.py --url "https://ejemplo.com/"
    ```
 
 2. **Usar el programa**
