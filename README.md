@@ -221,68 +221,83 @@ results/
 
 ## 📂 Estructura del Proyecto
 
-El proyecto está organizado en una estructura modular de carpetas y archivos que facilita el mantenimiento y la escalabilidad. Aquí está el diagrama de la estructura:
+```
+accessibility-project/
+├── main.py                     # Punto de entrada de la aplicación
+├── requirements.txt            # Dependencias del proyecto
+├── README.md                   # Documentación principal
+│
+├── core/                       # Núcleo de la aplicación
+│   ├── analyzer.py            # Análisis de accesibilidad
+│   ├── html_generator.py      # Generación de HTML accesible
+│   ├── image_processing.py    # Procesamiento de imágenes
+│   ├── report.py             # Generación de informes
+│   └── webdriver_setup.py     # Configuración de Selenium
+│
+├── utils/                      # Utilidades y helpers
+│   ├── violation_utils.py     # Manejo de violaciones WCAG
+│   ├── io_utils.py           # Operaciones de entrada/salida
+│   └── html_utils.py         # Utilidades para HTML
+│
+├── config/                     # Configuraciones
+│   └── constants.py          # Constantes globales
+│
+└── templates/                  # Plantillas
+    └── comparison_template.html # Template para informes
+```
 
-graph TD
-    A["📁 Root Directory"] --> B["📄 main.py"]
-    A --> C["📄 requirements.txt"]
-    A --> D["📄 README.md"]
-    
-    A --> E["📁 core/"]
-    E --> E1["📄 analyzer.py"]
-    E --> E2["📄 html_generator.py"]
-    E --> E3["📄 image_processing.py"]
-    E --> E4["📄 report.py"]
-    E --> E5["📄 webdriver_setup.py"]
-    
-    A --> F["📁 utils/"]
-    F --> F1["📄 violation_utils.py"]
-    F --> F2["📄 io_utils.py"]
-    F --> F3["📄 html_utils.py"]
-    
-    A --> G["📁 config/"]
-    G --> G1["📄 constants.py"]
-    
-    A --> H["📁 templates/"]
-    H --> H1["📄 comparison_template.html"]
+### 📝 Descripción de Componentes
 
-### 📁 Estructura de Carpetas
+#### 📁 Directorio Raíz
+- `main.py`: Archivo principal que inicia el proceso de análisis y mejora de accesibilidad
+- `requirements.txt`: Lista de dependencias Python necesarias
+- `README.md`: Este archivo de documentación
 
-#### 🔷 Archivos Principales
-- `main.py`: Punto de entrada de la aplicación
-- `requirements.txt`: Dependencias del proyecto
-- `README.md`: Documentación principal
+#### 📁 Directorio `core/`
+El corazón de la aplicación, contiene los módulos principales:
+```python
+core/
+├── analyzer.py         # Analiza páginas web en busca de problemas de accesibilidad
+├── html_generator.py   # Genera versiones accesibles de páginas HTML
+├── image_processing.py # Procesa imágenes y genera descripciones alternativas
+├── report.py          # Crea informes detallados de accesibilidad
+└── webdriver_setup.py  # Configura y gestiona el navegador automatizado
+```
 
-#### 🔷 Directorio `core/`
-Contiene la funcionalidad principal del sistema:
-- `analyzer.py`: Implementa el análisis de accesibilidad
-- `html_generator.py`: Genera el HTML accesible
-- `image_processing.py`: Procesa y describe imágenes
-- `report.py`: Genera informes de accesibilidad
-- `webdriver_setup.py`: Configura Selenium WebDriver
+#### 📁 Directorio `utils/`
+Herramientas y utilidades de apoyo:
+```python
+utils/
+├── violation_utils.py  # Funciones para procesar violaciones de accesibilidad
+├── io_utils.py        # Funciones de lectura/escritura de archivos
+└── html_utils.py      # Funciones auxiliares para manipulación de HTML
+```
 
-#### 🔷 Directorio `utils/`
-Utilidades y funciones auxiliares:
-- `violation_utils.py`: Funciones para manejar violaciones de accesibilidad
-- `io_utils.py`: Utilidades de entrada/salida
-- `html_utils.py`: Funciones auxiliares para manipulación HTML
+#### 📁 Directorio `config/`
+Configuraciones del sistema:
+```python
+config/
+└── constants.py       # Define constantes, rutas y configuraciones globales
+```
 
-#### 🔷 Directorio `config/`
-Configuraciones y constantes:
-- `constants.py`: Define constantes y configuraciones globales
+#### 📁 Directorio `templates/`
+Plantillas para la generación de informes:
+```python
+templates/
+└── comparison_template.html  # Template para mostrar cambios antes/después
+```
 
-#### 🔷 Directorio `templates/`
-Plantillas para generación de informes:
-- `comparison_template.html`: Plantilla para informes comparativos
+### 🔄 Flujo de Trabajo
 
-### 📝 Flujo de Datos
-
-1. El usuario ejecuta `main.py`
-2. `analyzer.py` analiza la página web usando `webdriver_setup.py`
-3. `image_processing.py` procesa las imágenes encontradas
-4. `html_generator.py` crea la versión accesible
-5. `report.py` genera informes usando las plantillas
-6. Las utilidades en `utils/` dan soporte a todo el proceso
+1. `main.py` coordina todo el proceso
+2. Los módulos en `core/` realizan el trabajo principal:
+   - `analyzer.py` → Análisis inicial
+   - `image_processing.py` → Mejora de imágenes
+   - `html_generator.py` → Generación de HTML accesible
+   - `report.py` → Creación de informes
+3. Los módulos en `utils/` proporcionan funciones de apoyo
+4. `config/constants.py` mantiene la configuración centralizada
+5. Las plantillas en `templates/` se usan para generar los informes finales
 
 ---
 
