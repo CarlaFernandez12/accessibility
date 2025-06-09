@@ -17,6 +17,61 @@
 - [📊 ¿Cómo funciona por dentro?](#-cómo-funciona-por-dentro)
 - [📁 ¿Dónde se guardan los resultados?](#-dónde-se-guardan-los-resultados)
 - [🛠️ ¿Qué tecnología usa?](#️-qué-tecnología-usa)
+- [🏗️ Arquitectura del Sistema](#️-arquitectura-del-sistema)
+- [📂 Estructura del Proyecto](#-estructura-del-proyecto)
+
+## 🏗️ Arquitectura del Sistema
+
+El sistema está diseñado con una arquitectura modular que permite procesar y mejorar páginas web de manera eficiente. Aquí está el diagrama de la arquitectura:
+
+graph TD
+    A["🌐 Página Web Original"] --> B["🔍 Analizador de Accesibilidad"]
+    B --> C["📊 Detector de Problemas<br/>(axe-core)"]
+    B --> D["🖼️ Procesador de Imágenes"]
+    
+    D --> E["🤖 OpenAI API<br/>Generación de Descripciones"]
+    C --> F["🛠️ Motor de Correcciones"]
+    E --> F
+    
+    F --> G["📝 Generador de Informes"]
+    F --> H["💾 Página Web Mejorada"]
+    
+    G --> I["📊 Informes y Métricas"]
+    
+    J["🗄️ Base de Datos Local"] --> D
+    J --> F
+
+### Componentes Principales:
+
+1. **🔍 Analizador de Accesibilidad**
+   - Punto de entrada del sistema
+   - Coordina el proceso de análisis
+   - Gestiona las solicitudes web mediante Selenium
+
+2. **📊 Detector de Problemas**
+   - Utiliza axe-core para identificar problemas de accesibilidad
+   - Genera un informe detallado de issues
+   - Prioriza los problemas según su gravedad
+
+3. **🖼️ Procesador de Imágenes**
+   - Gestiona la extracción y análisis de imágenes
+   - Se conecta con OpenAI para generar descripciones
+   - Mantiene un caché local de descripciones previas
+
+4. **🛠️ Motor de Correcciones**
+   - Aplica las mejoras necesarias al código HTML
+   - Implementa las correcciones de accesibilidad
+   - Gestiona la integración de las descripciones de imágenes
+
+5. **📝 Generador de Informes**
+   - Crea informes detallados del proceso
+   - Genera comparativas antes/después
+   - Produce métricas de mejora
+
+6. **🗄️ Base de Datos Local**
+   - Almacena descripciones de imágenes
+   - Cachea resultados para optimizar el rendimiento
+   - Mantiene un historial de análisis
 
 ## 💡 ¿Para qué sirve?
 
@@ -163,6 +218,71 @@ results/
 - **🎯 axe-core**: Detector de problemas de accesibilidad
 - **🔍 BeautifulSoup4**: Herramienta para leer y modificar páginas web
 - **📝 Jinja2**: Creador de informes bonitos y claros
+
+## 📂 Estructura del Proyecto
+
+El proyecto está organizado en una estructura modular de carpetas y archivos que facilita el mantenimiento y la escalabilidad. Aquí está el diagrama de la estructura:
+
+graph TD
+    A["📁 Root Directory"] --> B["📄 main.py"]
+    A --> C["📄 requirements.txt"]
+    A --> D["📄 README.md"]
+    
+    A --> E["📁 core/"]
+    E --> E1["📄 analyzer.py"]
+    E --> E2["📄 html_generator.py"]
+    E --> E3["📄 image_processing.py"]
+    E --> E4["📄 report.py"]
+    E --> E5["📄 webdriver_setup.py"]
+    
+    A --> F["📁 utils/"]
+    F --> F1["📄 violation_utils.py"]
+    F --> F2["📄 io_utils.py"]
+    F --> F3["📄 html_utils.py"]
+    
+    A --> G["📁 config/"]
+    G --> G1["📄 constants.py"]
+    
+    A --> H["📁 templates/"]
+    H --> H1["📄 comparison_template.html"]
+
+### 📁 Estructura de Carpetas
+
+#### 🔷 Archivos Principales
+- `main.py`: Punto de entrada de la aplicación
+- `requirements.txt`: Dependencias del proyecto
+- `README.md`: Documentación principal
+
+#### 🔷 Directorio `core/`
+Contiene la funcionalidad principal del sistema:
+- `analyzer.py`: Implementa el análisis de accesibilidad
+- `html_generator.py`: Genera el HTML accesible
+- `image_processing.py`: Procesa y describe imágenes
+- `report.py`: Genera informes de accesibilidad
+- `webdriver_setup.py`: Configura Selenium WebDriver
+
+#### 🔷 Directorio `utils/`
+Utilidades y funciones auxiliares:
+- `violation_utils.py`: Funciones para manejar violaciones de accesibilidad
+- `io_utils.py`: Utilidades de entrada/salida
+- `html_utils.py`: Funciones auxiliares para manipulación HTML
+
+#### 🔷 Directorio `config/`
+Configuraciones y constantes:
+- `constants.py`: Define constantes y configuraciones globales
+
+#### 🔷 Directorio `templates/`
+Plantillas para generación de informes:
+- `comparison_template.html`: Plantilla para informes comparativos
+
+### 📝 Flujo de Datos
+
+1. El usuario ejecuta `main.py`
+2. `analyzer.py` analiza la página web usando `webdriver_setup.py`
+3. `image_processing.py` procesa las imágenes encontradas
+4. `html_generator.py` crea la versión accesible
+5. `report.py` genera informes usando las plantillas
+6. Las utilidades en `utils/` dan soporte a todo el proceso
 
 ---
 
