@@ -25,7 +25,7 @@ def generate_accessible_html_iteratively(original_html, axe_results, media_descr
             node_list_str = "\n".join(f"- {n}" for n in node_chunk)
 
             prompt = f"""
-            Eres un experto desarrollador web especializado en accesibilidad (WCAG). Tu tarea es reescribir el siguiente CÓDIGO HTML ACTUAL para corregir MÚLTIPLES INSTANCIAS DE UN MISMO TIPO de error de accesibilidad.
+            Eres un experto desarrollador web especializado en accesibilidad (WCAG 2.2 de nivel A). Tu tarea es reescribir el siguiente CÓDIGO HTML ACTUAL para corregir MÚLTIPLES INSTANCIAS DE UN MISMO TIPO de error de accesibilidad.
 
             Tipo de Error: '{description}' (ID: {violation_id}).
 

@@ -11,13 +11,8 @@ def generate_comparison_report(initial_results, final_results, report_path):
 
     initial_total = count_violations(initial_results)
     final_total = count_violations(final_results)
-    
-    impacts = ['minor', 'moderate', 'serious', 'critical']
-    initial_by_impact = {i: count_violations(initial_results, i) for i in impacts}
-    final_by_impact = {i: count_violations(final_results, i) for i in impacts}
-
     reduction = initial_total - final_total
-    improvement_percent = (reduction / initial_total * 100) if initial_total > 0 else 0
+    improvement_percent = (reduction / initial_total * 100) if initial_total>0 else 0
 
     template_str = get_html_template()
 
@@ -29,9 +24,7 @@ def generate_comparison_report(initial_results, final_results, report_path):
         final_total=final_total,
         reduction=reduction,
         improvement_percent=improvement_percent,
-        impacts=impacts,
-        initial_by_impact=initial_by_impact,
-        final_by_impact=final_by_impact
+
     )
 
     with open(report_path, 'w', encoding='utf-8') as f:
@@ -64,10 +57,7 @@ def get_html_template():
             .details th, .details td { padding: 12px 15px; border: 1px solid #dee2e6; text-align: left; }
             .details th { background-color: #e9ecef; font-weight: 600; }
             .details td:nth-child(n+2) { text-align: center; }
-            .impact-critical { color: #dc3545; font-weight: bold; }
-            .impact-serious { color: #fd7e14; font-weight: bold; }
-            .impact-moderate { color: #ffc107; }
-            .impact-minor { color: #17a2b8; }
+
         </style>
     </head>
     <body>
@@ -80,25 +70,7 @@ def get_html_template():
                 <div class="metric"><div class="value positive">+{{ reduction }}</div><div class="label">Errores Corregidos</div></div>
                 <div class="metric"><div class="value positive">{{ "%.2f"|format(improvement_percent) }}%</div><div class="label">Mejora Relativa</div></div>
             </div>
-            <h2>Desglose por Impacto</h2>
-            <div class="details">
-                <table>
-                    <thead><tr><th>Impacto</th><th>Antes</th><th>Después</th><th>Diferencia</th></tr></thead>
-                    <tbody>
-                    {% for impact in impacts %}
-                        <tr>
-                            <td class="impact-{{ impact }}">{{ impact|capitalize }}</td>
-                            <td>{{ initial_by_impact[impact] }}</td>
-                            <td>{{ final_by_impact[impact] }}</td>
-                            <td>
-                                {% set diff = final_by_impact[impact] - initial_by_impact[impact] %}
-                                <span class="{{ 'positive' if diff <= 0 else 'negative' }}">{{ diff }}</span>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            
         </div>
     </body>
     </html>

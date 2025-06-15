@@ -1,0 +1,710 @@
+{
+    "https://vithas.es/wp-content/uploads/flags/spain.png": {
+        "local_path": "media_cache\\06a5e3581a7677c1188e59d0842be2c58ce5f851180cc763d7c6ba7c8acfeb69.png",
+        "description": "Bandera de Espa\u00f1a, con tres franjas horizontales: roja en la parte superior, amarilla en el centro y roja en la parte inferior. La franja amarilla es el doble de ancha que cada franja roja."
+    },
+    "https://vithas.es/wp-content/uploads/flags/ingles.png": {
+        "local_path": "media_cache\\991fb286115e1eedc5baedadac40a7e65f6cce800f9c415aecb116b0a7ed9a20.png",
+        "description": "Lo siento, no puedo ayudarte a identificar personas en la imagen. Por favor, proporciona una descripci\u00f3n adicional o diferente de la imagen para poder ayudarte con el texto alternativo."
+    },
+    "https://vithas.es/wp-content/uploads/2021/07/logoVithas-1.svg": {
+        "local_path": "media_cache\\b67d9d95cea0f63ccee42c953afb4406e171ff77c96651790c5b6679f296644c.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://vithas.es/wp-content/uploads/2021/12/Vithas-edificio-9-840x588.jpg": {
+        "local_path": "media_cache\\1147d1e9a21e09e4cb205a962a4af782efa9af85ae6d6af2ed2db30115e7ac37.jpeg",
+        "description": "Fachada moderna de un hospital con amplio acceso principal y se\u00f1alizaci\u00f3n visible de \"Vithas Hospital\" en la parte superior. El edificio es de varios pisos con una combinaci\u00f3n de paredes claras y detalles en tonos marrones oscuros. Hay una rampa y escaleras en la entrada, bajo un cielo parcialmente nublado."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/1-Alergologia-500x336.jpg": {
+        "local_path": "media_cache\\98c9b386490932dd20bda6a0e57d82da5b1baad774bb8efa2b8d4fa7dee19c61.jpeg",
+        "description": "Persona recibiendo una prueba de alergia cut\u00e1nea en el brazo, con gotas aplicadas en una cuadr\u00edcula numerada y guantes azules de l\u00e1tex."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/4-anestesiologia-y-reanimacion-500x336.jpg": {
+        "local_path": "media_cache\\a4afdf6211c353ee049805151598b8e47b92f30da1a78e3c67b6a3fe0d030a57.jpeg",
+        "description": "Manos con guantes verdes sosteniendo suavemente la mano de otra persona."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/5-Angiologia-y-cirugia-vascular-500x336.jpg": {
+        "local_path": "media_cache\\6e91b14ff4e51d9662ba415c1941954b50af129380518e5962de8dcdf27cab5d.jpeg",
+        "description": "Persona con bata rosa sentada en la cama sosteniendo una taza de caf\u00e9."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/6-Aparato-digestivo-500x336.jpg": {
+        "local_path": "media_cache\\70c65c0d55f37483299ec0b1c43daf68685bdeb0959405ceaf145365fbbc3393.jpeg",
+        "description": "Persona con bata blanca y guantes azules sosteniendo un endoscopio en una cl\u00ednica m\u00e9dica."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/8-Cardiologia-500x336.jpg": {
+        "local_path": "media_cache\\ee0fbed447f229d021f529ea53a31b642dd642fae8fa981a61ac150b30718a8b.jpeg",
+        "description": "Hombre mayor en un parque, con camisa de manga larga, sostiene una botella mientras mira su reloj. Alrededor hay \u00e1rboles y edificios."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/9-Cirugia-cardiovascular-A_opt-500x336.jpg": {
+        "local_path": "media_cache\\4882d5d4225f8991e606a80b14b844067988e95d4db276540a46e658a36d2835.jpeg",
+        "description": "Instrumentos quir\u00fargicos dispuestos sobre una mesa cubierta con tela azul en un quir\u00f3fano, con figuras en batas y guantes de fondo desenfocado."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/10-Cirugia-general-y-del-aparato-digestivo-500x336.jpg": {
+        "local_path": "media_cache\\0d846ea6ffd8509822b9b19d5fbedd5feff680825332365ebd3e076d8b4dd923.jpeg",
+        "description": "Monitor de signos vitales mostrando frecuencias card\u00edaca y oxigenaci\u00f3n, mientras dos cirujanos realizan una operaci\u00f3n en segundo plano."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/12-Cirugia-Ortopedica-y-traumatologia-500x336.jpg": {
+        "local_path": "media_cache\\372ba3d1691ffca7fe48cae4c7f64f693521111dbfeabd537a28a88d5cfd5a01.jpeg",
+        "description": "Persona arrodillada sobre una esterilla de yoga en una habitaci\u00f3n, usando ropa c\u00f3moda."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/13-Cirugia-Pediatrica-500x336.jpg": {
+        "local_path": "media_cache\\afeb24e616138fdbdf456fd3264fe2f56503e9295b7cd289b01b3bfa2eb79b85.jpeg",
+        "description": "Persona vestida con bata blanca de m\u00e9dico sosteniendo un osito de peluche blanco."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/14-Cirugia-plastica-estetica-y-reparadora-500x336.jpg": {
+        "local_path": "media_cache\\af65b5952f7370ab9badab7f78121f0ffba0c676950b8edefe5042427cb27cc2.jpeg",
+        "description": "Mujer con cabello rojo rizado sonr\u00ede vistiendo su\u00e9ter amarillo junto al mar, con fondo de playa y vegetaci\u00f3n ligera."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/15-Cirugia-toracica-500x336.jpg": {
+        "local_path": "media_cache\\b4eacd6e4cb8579603acb291947fc6d7cf4dc40d424867c5003d11d894ebba7d.jpeg",
+        "description": "Cirujano lav\u00e1ndose los brazos con jab\u00f3n antibacteriano antes de una cirug\u00eda. Lleva mascarilla, gorro y uniforme quir\u00fargico azul."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/17-Endocrinologia-y-nutricion-500x336.jpg": {
+        "local_path": "media_cache\\1db9474b784d0f678185ec9681e50deb9efed43c415881483666d077dc9a58c0.jpeg",
+        "description": "Persona cortando frutas frescas como kiwis, fresas y naranjas, en una cocina con una licuadora en primer plano."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/20-Enfermeria-Obstetro-ginecologica-500x336.jpg": {
+        "local_path": "media_cache\\2d288889099dba1f41296aa5d898eeaa8a44c0ba90ea8007aa238be7105028dd.jpeg",
+        "description": "Primer plano de un vientre de mujer embarazada con una mano toc\u00e1ndolo suavemente."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/49-Obstetricia-y-ginecologia-500x336.jpg": {
+        "local_path": "media_cache\\9e5bc39f78ba259d5062f930a7e3442c7b16ffa7b2eaa52439555006fdf90a7d.jpeg",
+        "description": "Mujer joven de cabello casta\u00f1o claro, con camisa amarilla, sonr\u00ede con los brazos cruzados en una oficina luminosa. Al fondo, escritorio con computadora y estanter\u00edas."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/26-Hematologia-y-hemoterapia-500x336.jpg": {
+        "local_path": "media_cache\\9950475f9ab480eff0cfacdde417f9fe9f2776e10e26fba1c626d0cf9e6a398e.jpeg",
+        "description": "Persona con bata de laboratorio y guantes azules sostiene un portaobjetos de microscopio mientras toma notas en un cuaderno."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/30-Medicina-de-la-educacion-fisica-y-del-deporte-500x336.jpg": {
+        "local_path": "media_cache\\ac7499e2f3fc441c00d6a38c9beb0771ffe5ab7fa77be9b7e11d2b5fa644759d.jpeg",
+        "description": "Mujer haciendo estiramientos en el suelo de un gimnasio, usando ropa deportiva y aud\u00edfonos."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/62-Medicina-Fisica-y-Rehabilitacion-500x336.jpg": {
+        "local_path": "media_cache\\d256d9d3b18921d630acb6b2cbe54d412ae37f1582d5447927295e02f176cee3.jpeg",
+        "description": "Una persona usando un andador est\u00e1 en casa acompa\u00f1ada por una profesional de salud que sostiene una tableta. Ambas est\u00e1n sonriendo y parece que est\u00e1n revisando informaci\u00f3n en la pantalla."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/35-Medicina-General-500x336.jpg": {
+        "local_path": "media_cache\\1a17f2ab46077baf774dd5385c65870f65519d118c41176afb697daad3e36335.jpeg",
+        "description": "Mujer con bata blanca y estetoscopio sonriendo y mirando hacia un lado en un ambiente profesional."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/38-Medicina-Interna-500x336.jpg": {
+        "local_path": "media_cache\\a729411d7b9819dc04561233b5f679f7c8e829a25179d07fc77dd0014e8c3487.jpeg",
+        "description": "Profesional de la salud con mascarilla y gorro quir\u00fargico, mirando a la c\u00e1mara en un entorno cl\u00ednico."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/40-medicina-nucelar-500x336.jpg": {
+        "local_path": "media_cache\\c381ecb7e90f5bc746235212f0bbb4997bebdfd1ca61175c23583c346cd497ba.jpeg",
+        "description": "Persona acostada entrando en una m\u00e1quina de resonancia magn\u00e9tica en un entorno m\u00e9dico."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/43-Nefrologia-500x336.jpg": {
+        "local_path": "media_cache\\1e706c51d9ff1ca79102a8969aaed8d10aff6825636542ac32ac1f158ee1842a.jpeg",
+        "description": "Pareja de personas mayores caminando juntas en una playa, sonrientes y sujet\u00e1ndose del brazo. El mar y las rocas est\u00e1n de fondo."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/44-Neumologia-500x336.jpg": {
+        "local_path": "media_cache\\d453c1bdbbc69c634e42c12d957b123ba63d6f37820b85fcf19d41b8cfc8989d.jpeg",
+        "description": "Hombre con barba canosa y sudadera gris, de pie en un parque oto\u00f1al."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/45-neurocirugia-500x336.jpg": {
+        "local_path": "media_cache\\2bd6905106bba6e486788cc9d7b8e54842ab1d8dfb401274ea1ca165a0674c0c.jpeg",
+        "description": "Cirujana joven con mascarilla y gorro verde sonriendo en primer plano, mientras otros dos profesionales con uniforme azul trabajan en segundo plano en un quir\u00f3fano."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/46-Neurofisiologia-clinica-500x336.jpg": {
+        "local_path": "media_cache\\78a2b4896bb8a33d327177496beace84f080b7f1dbb372cd7d9dd896a7e61b7b.jpeg",
+        "description": "Manos colocando una venda con cables el\u00e9ctricos en la rodilla de una persona, posiblemente para terapia f\u00edsica o tratamiento m\u00e9dico."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/47-neurologia-1-500x336.jpg": {
+        "local_path": "media_cache\\52ade729804548006a0ba6cd6540754f1910a7c40636630192e32cb9ceacabfa.jpeg",
+        "description": "Un m\u00e9dico observa y apunta a im\u00e1genes de esc\u00e1neres cerebrales en dos monitores."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/50-Odontoestomatol-500x336.jpg": {
+        "local_path": "media_cache\\b44ca0a98a2613168388c8a8f0ded7ea21cbe658ef0383ff1d5a2b1e5ff8b801.jpeg",
+        "description": "Una persona sonr\u00ede ampliamente, mostrando dientes blancos y con el cabello rubio suelto."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/51-oftalmologia-500x336.jpg": {
+        "local_path": "media_cache\\7e000aee532806067393e7753850c6cf80fc147928cb7720969eb88a30543010.jpeg",
+        "description": "Primer plano de la esquina del ojo derecho de una persona mayor, mostrando arrugas y cejas grises."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/52-oncologia-medica-500x336.jpg": {
+        "local_path": "media_cache\\1169ce5bd9b445bba0781cfcb49eff0c8c63af93bdce6e426483029426beb901.jpeg",
+        "description": "Doctores en uniformes m\u00e9dicos revisan y discuten una radiograf\u00eda en un entorno cl\u00ednico. Una doctora de cabello canoso y corto enfoca su atenci\u00f3n en la imagen m\u00e9dica."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/54-Otorrinolaringologia-500x336.jpg": {
+        "local_path": "media_cache\\d902616b9bf13a8378b4ee5337b618d75226ef4a0199632d4d93b5511ac1cac7.jpeg",
+        "description": "Un ni\u00f1o sonriente est\u00e1 siendo examinado por un profesional de la salud que usa un otoscopio para revisar su o\u00eddo."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/55-Pediatria-500x336.jpg": {
+        "local_path": "media_cache\\adfdc5db7de1015bc8898707c2f2e4275d080e06dc4365cd7a393525b7f79776.jpeg",
+        "description": "Ni\u00f1a con cabello casta\u00f1o mirando hacia arriba y sonriendo, recostada sobre un coj\u00edn. Un adulto borroso descansa en un sof\u00e1 al fondo."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/58-Psiquiatria-500x336.jpg": {
+        "local_path": "media_cache\\811d7e09ebfc6cb102011886ed0092bdd6256bf22db44b586d3d408341d40675.jpeg",
+        "description": "Dos manos entrelazadas, una con dedos presionando ligeramente las u\u00f1as de la otra, sobre una pierna con pantal\u00f3n de mezclilla azul. Fondo desenfocado."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/59-Radiodiagnostico-500x336.jpg": {
+        "local_path": "media_cache\\454803bb17b45c0404521a1ad3b0794afef565a3a3dd9834c4bcef7a544b99dc.jpeg",
+        "description": "Profesional m\u00e9dica sonriendo al frente con brazos cruzados, mientras un paciente yace en una m\u00e1quina de resonancia magn\u00e9tica al fondo."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/65-Tratamiento-del-dolor-500x336.jpg": {
+        "local_path": "media_cache\\53239e922edde077b0bf55c6109da41aeebb89852c392dea2d9abbb9c3bd5bff.jpeg",
+        "description": "Mujer de cabello blanco y gafas grandes mira pensativamente por una ventana. Al fondo, se ven edificios y un cielo azul con nubes."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/66-Urologia-500x336.jpg": {
+        "local_path": "media_cache\\9a12b01bf30da8f434811d00af549e04ca526b30b246375caf7bf3e702b9d497.jpeg",
+        "description": "Hombre de pie con camisa blanca, brazos cruzados, frente a una ventana luminosa en un entorno de oficina."
+    },
+    "https://vithas.es/wp-content/uploads/2021/12/Vithas-edificio-9-325x200.jpg": {
+        "local_path": "media_cache\\03cde7f1f989c2728ff83b29de22acdc3005d1e6a11414e126b766def1b9842b.jpeg",
+        "description": "Edificio moderno de un hospital con letrero que dice \"Vithas Hospital\" en la entrada, con fachada de vidrio y estructuras de acero, bajo un cielo azul."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/vithas-logo-footer-1.svg": {
+        "local_path": "media_cache\\c6878f1c0b31cae4b0c5ae3dd1a8c3bfd4c93e4dc87013d9e02c8103e80ff5e1.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://vithas.es/wp-content/uploads/2022/09/Sello-JCI-e1662547360163.webp": {
+        "local_path": "media_cache\\577e2150ae2764c4fa29e51c9c5a0bd75188296778e986af037386ea248bfb08.webp",
+        "description": "Sello dorado con el texto \"Joint Commission International Quality Approval\", con dos l\u00edneas cruzadas en el centro."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/iso14001-logo.webp": {
+        "local_path": "media_cache\\0b003db5f97b7781fb0505ad945faf7ea257ad8ea16dff77b7d77818ce5172db.webp",
+        "description": "Logo circular con las letras \"DNV-GL\" en el centro, rodeado de l\u00edneas curvadas."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/iso9001-logo.webp": {
+        "local_path": "media_cache\\5640b809bb2850a2b4e4cbfda8cd802bd6a60c6e8d9f7a38a28587dece238682.webp",
+        "description": "Logo de certificaci\u00f3n de sistema de calidad DNV GL con texto \"ISO 9001\"."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/seedo-logo.webp": {
+        "local_path": "media_cache\\b53a846815f5a980952c11b9980212a515db403e3a42b271431aecb2658e7b19.webp",
+        "description": "Logo de Thoughtworks con un dise\u00f1o de cinco c\u00edrculos verdes en fila decreciente hacia la derecha."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/bsha-logo.webp": {
+        "local_path": "media_cache\\ed6197272d72e69d58a8e07bbb11a053e8f2ca9eed8eb243e5aded922bd4afbb.webp",
+        "description": "Logo con un dise\u00f1o circular azul y verde, con texto debajo que dice \"Fairbanks Native Association\"."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/easocom-logo-1.webp": {
+        "local_path": "media_cache\\3ec6fafc4e58bef1d068cee0122415f3ed982ad75be050870620d14585baeab8.webp",
+        "description": "Logotipo de EASCOM con un c\u00edrculo azul en el centro. Texto debajo: \"SQCD Collaborative System for Quality Management\"."
+    },
+    "https://vithas.es/wp-content/uploads/2021/07/googleplay.svg": {
+        "local_path": "media_cache\\00e258d7e9810d9d604df6b8133602642de93118569fde6a040c74cc82fe1fbc.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://vithas.es/wp-content/uploads/2021/07/appstore.svg": {
+        "local_path": "media_cache\\8cc9310f1a3b01f66155d80fb877bb3ddcb5163e7122f07dcf218de0d44f6a2b.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://cdn.cookielaw.org/logos/bc5bd603-50ee-47b0-9da6-981cc5abd85a/15480263-8dac-4281-a560-5f8bda005a47/8a63737b-c5bf-4c26-a9ec-0496a7dc564b/life.png": {
+        "local_path": "media_cache\\99354daf091168502b825b3693d1ff59bd321cc924e306044b8b9d41e3a7154f.png",
+        "description": "Logo de Vithas: Un coraz\u00f3n azul estilizado a la izquierda seguido del nombre \"Vithas\" en letras azules modernas."
+    },
+    "https://cdn.cookielaw.org/logos/static/powered_by_logo.svg": {
+        "local_path": "media_cache\\f189ed73a24fed02acd2ef563ad88371ab37faf662bf233b87862e4c1053cafc.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/plugins/cookie-law-info/lite/frontend/images/revisit.svg": {
+        "local_path": "media_cache\\8c00ef08caa221df92ba4e614aae15e88a5a85cdee24b872d2e37c60eba8d63d.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/plugins/cookie-law-info/lite/frontend/images/close.svg": {
+        "local_path": "media_cache\\c95252378e530e32c2a57a30ac032c69183e9838f6de9fe22861fbab37f74a66.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2023/12/servicio-aragones-de-salud.svg": {
+        "local_path": "media_cache\\87ad11f13b0209568833d4a6e11d07933c52602e33b42742c047ae9187353b10.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/02/hcuz_home.webp": {
+        "local_path": "media_cache\\9a1d086bcb784aa96e37b52cc2c05de5be20e133939728e899af2fe33cc7e87c.webp",
+        "description": "Fachada del Hospital Cl\u00ednico Universitario Lozano Blesa, edificio moderno con varias plantas, banderas en la entrada y el logo de \"salud\" visible en lo alto."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/02/mision.png": {
+        "local_path": "media_cache\\f223306c61c4f3fd3ecccc305b2ff3d2b39b83c77ce84cd6780b86715ef80d37.png",
+        "description": "Icono de una diana con una flecha en el centro, representando precisi\u00f3n o enfoque."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/02/vision.png": {
+        "local_path": "media_cache\\03312f5d9b8ad5701f92004712b38fe25f4863b0536d917bb09f8651afaef97a.png",
+        "description": "\u00cdcono de una persona con una bombilla por cabeza, simbolizando una idea o innovaci\u00f3n."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/02/valores.png": {
+        "local_path": "media_cache\\3aed78c92fc70b976da25c6037b1f2bbf2b0e2aba23e5f98f1b9f221b9c5aa97.png",
+        "description": "Una estrella de contorno blanco sobre un fondo negro."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/01/ubicacion.png": {
+        "local_path": "media_cache\\7ef4be950052181e0161b7dd6ee64025a84e4ac5be55d692cd8c5156e9a91b13.png",
+        "description": "Icono blanco de un marcador de ubicaci\u00f3n sobre un c\u00edrculo, con l\u00edneas curvas a los lados indicando se\u00f1al o radiodifusi\u00f3n, sobre un fondo negro."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/01/hospital.png": {
+        "local_path": "media_cache\\c3e5636ba75648578b2ccce5d02655da08373d9328ff147dff8b8dd3bdf0718b.png",
+        "description": "Icono de un hospital con un edificio estilizado y una cruz en la parte superior."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/01/faqs.png": {
+        "local_path": "media_cache\\a5259eee630be4784ae09953ad2d7fa515a9b2183921fd99e04e689a43ce49bf.png",
+        "description": "Icono de un bocadillo de di\u00e1logo con un signo de interrogaci\u00f3n en el centro."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/01/centro_salud.png": {
+        "local_path": "media_cache\\db5e75db9fa83ae533248baa186da70deaa276e63d9f757580f070937c5c1007.png",
+        "description": "Icono de hospital con una cruz en la parte superior sobre un edificio estilizado."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2024/01/doctor.png": {
+        "local_path": "media_cache\\bfa17c1ce27ae93900b3d4ce1206cdbbdce4571c122991c6ec39ab00428af313.png",
+        "description": "\u00cdcono de un m\u00e9dico con un estetoscopio alrededor del cuello."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/plugins/acf-openstreetmap-field/assets/css/images/marker-shadow.png": {
+        "local_path": "media_cache\\b24b5210567fe34272830c6f9c4fa6c1ffa89256b671bbaae1e8ef19f80c4502.png",
+        "description": "Lo siento, no puedo identificar ni describir el contenido de esta imagen."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/plugins/acf-openstreetmap-field/assets/css/images/marker-icon.png": {
+        "local_path": "media_cache\\4dedffe9d04182245a112112e20b9517c93bcf51dc4b331554d4fa570e64da0c.png",
+        "description": "Icono de marcador de ubicaci\u00f3n azul con un c\u00edrculo blanco en el centro."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/03/Servicio-Digestivo-1.jpeg": {
+        "local_path": "media_cache\\1f82e0722c367330e7f31b12c65527a860dd0cd6b0f070c4aa05f3a2afed4d18.jpeg",
+        "description": "Un grupo de seis personas posando juntas en una sala. Cuatro de ellas llevan batas o uniformes m\u00e9dicos de color verde y blanco, mientras que dos personas llevan ropa casual. El grupo est\u00e1 sentado y de pie alrededor de una peque\u00f1a mesa circular. Est\u00e1n en un ambiente interior frente a una pared clara."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/03/foto-presentacion-primera-mesa-2.jpeg": {
+        "local_path": "media_cache\\4a01cdc8d0547b94445c19577bbb5026aa330b06673a9fe561370b400ad52bd0.jpeg",
+        "description": "Un grupo de personas est\u00e1 sentado en c\u00edrculo en una sala de conferencias mientras un hombre de pie, vistiendo una bata blanca, habla. Detr\u00e1s de \u00e9l, una pantalla muestra un t\u00edtulo que dice: \"La voz del usuario: La Farmacia hospitalaria vista por su paciente externo\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/03/foto-1.jpeg": {
+        "local_path": "media_cache\\2bc714a9c51990d142d802e13b3c1dfe920e450d67a822ca1acd00edd9420256.jpeg",
+        "description": "Auditorio lleno de personas sentadas, algunas de pie en el fondo, frente a una pantalla grande. La pantalla muestra el texto: \"Jornada de puertas abiertas para futuros residentes de Atenci\u00f3n Especializada, 20 de marzo de 2025, Sector Sanitario Zaragoza III\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/03/Foto-grupo-planta.jpeg": {
+        "local_path": "media_cache\\d11a3b36e36802c6f196b0dd261db9ec7107e44210f14930d9afec1d798c4b09.jpeg",
+        "description": "Un grupo de personas uniformadas posan juntas en un pasillo, rodeadas de cajas con envoltorio azul. A la derecha, hay un cartel que dice \"Sonrisas\". Predominan uniformes de servicios de emergencia y seguridad."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/02/Podcast.jpeg": {
+        "local_path": "media_cache\\25592f24e81f5c15732f4424df0b39258fa16bf8fcd5a6e409704339e4ea6426.jpeg",
+        "description": "Ilustraci\u00f3n de un germen con aud\u00edfonos frente a un sol anaranjado. A su lado, una maleta con etiquetas. Arriba, hojas tropicales. Texto: \"Dr. Luvingstone - Contagioso, Supongo - Podcast\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/02/cirugia-en-directo.jpeg": {
+        "local_path": "media_cache\\4ebee66dd977fcae3203e4710419d26b8cffa30362d9b74c80c2f43dcee66999.jpeg",
+        "description": "Sala de conferencias oscura con personas sentadas. En el centro, una pantalla proyecta una escena m\u00e9dica con personal en quir\u00f3fano."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/02/Camino-a-la-maternidad.jpeg": {
+        "local_path": "media_cache\\0ed2b5e8f39afeb294adfd631541a8e5ac8247e0a94af2cc6f6deb413adb6c7e.jpeg",
+        "description": "Mesa redonda en una conferencia sobre fertilidad y gestaci\u00f3n temprana. Cinco personas est\u00e1n sentadas en un panel con micr\u00f3fonos frente a ellas. A la izquierda, un cartel con dise\u00f1o art\u00edstico muestra un feto y motivos relacionados con la maternidad. En la pantalla, se proyectan temas de discusi\u00f3n. La sala es amplia, con paredes de madera. El evento se lleva a cabo en Zaragoza el 6 de febrero de 2025."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/02/farmasonda-3.jpg": {
+        "local_path": "media_cache\\533b0bc39a51f0424569cd167cab45f3a32c129ad44c4588967b5ab1f4249ea0.jpeg",
+        "description": "Formulario en l\u00ednea de \"farmasonda\" para seleccionar un medicamento y su v\u00eda de administraci\u00f3n nutricional, con botones para \"GASTROSTOM\u00cdA/SNG\" y \"YEYUNOSTOM\u00cdA/SNY\", y un bot\u00f3n final para \"VER COMPATIBILIDAD\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/01/trasplantes-scaled.jpg": {
+        "local_path": "media_cache\\c7d929327361c668087c3de05e577f36178b2428f95324e75152e999a42d187d.jpeg",
+        "description": "Equipo m\u00e9dico en una sala de operaciones realizando una cirug\u00eda. Varios profesionales con batas y mascarillas est\u00e1n alrededor de una camilla, rodeados de equipo quir\u00fargico y monitores. Instrumentos quir\u00fargicos est\u00e1n organizados en una mesa cercana."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/01/FORMACION-ESPECIALISTAS-blanco.jpg": {
+        "local_path": "media_cache\\d83f6d791cb1b0e5cd04805dc8e799b526758f6c3330e6014c9995c56fb80623.jpeg",
+        "description": "Tabla de plazas ofertadas para la formaci\u00f3n sanitaria especializada en la convocatoria de 2025, Sector Sanitario Zaragoza III. Incluye especialidades en enfermer\u00eda, farmacia, f\u00edsica, psicolog\u00eda y medicina, junto con la cantidad de plazas disponibles para cada unidad. Total de plazas: 107."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/06/Nuevos-residentes-2025-scaled.jpeg": {
+        "local_path": "media_cache\\62d7096ae66c163f82f1b51a98c480a9f27486061e08f79b87fe042556be5a09.jpeg",
+        "description": "Sala de conferencias con audiencia sentada, observando a tres ponentes en una mesa. En la pantalla se lee: \"Bienvenida nuevos residentes, Sector Sanitario Zaragoza III, 6 de junio de 2025\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/05/Premio-Aragoneses-del-Ano-scaled.jpg": {
+        "local_path": "media_cache\\487b8162f27fee77458f9a4be91571aed6f321ca5e7b062e5d71f41c92e5a121.jpeg",
+        "description": "Trofeo en primer plano con inscripci\u00f3n \"Aragoneses del A\u00f1o 2025, Premio Ciencia y Tecnolog\u00eda, Hospital Cl\u00ednico Universitario Lozano Blesa\". Fondo borroso de escenario iluminado con la palabra \"Arag\u00f3n\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/05/FOTO-FAMILIA-scaled.jpg": {
+        "local_path": "media_cache\\0b5ce5c47ea02159eec4c1266bdc19426787fbb7338182f4c3657b2eea02ece3.jpeg",
+        "description": "Grupo numeroso de personas con batas y ropa profesional, de pie en escaleras frente a un edificio. La mayor\u00eda sonr\u00ede y un cartel en la pared promueve no fumar."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/05/Nino-hospitalizado-2.jpeg": {
+        "local_path": "media_cache\\d2a800e5cc3f2737265513c742863af50d6c311c839c94bdc2e35ecc3d83a14e.jpeg",
+        "description": "Cartel colorido que dice \"13 de mayo, D\u00eda del Ni\u00f1o Hospitalizado,\" decorado con huellas de manos de colores y rodeado de corazones rojos con mensajes de apoyo. Est\u00e1 colgado en un \u00e1rea p\u00fablica con letreros de \"Libre de humo\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/05/Dia-Mundial-de-la-Higiene-de-Manos.jpeg": {
+        "local_path": "media_cache\\4b8a5dd777d9ae44b5b79d8bf3c54677428e3d620a4bb2c891cf19544f23092e.jpeg",
+        "description": "Cartel en forma de mano azul claro con el texto \"Salvar vidas est\u00e1 en tus manos\". Incluye una imagen de manos siendo lavadas bajo un grifo. En segundo plano, personas con batas y mascarillas en un entorno cl\u00ednico. Campa\u00f1a sobre la higiene de manos para prevenir infecciones en atenci\u00f3n sanitaria."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/04/Equipo-Cirugia-Vascular.jpeg": {
+        "local_path": "media_cache\\26e618be7cadb8b7a187ed92661e46a74c35f4e704733fb16e6df4d0b42af5b3.jpeg",
+        "description": "Un grupo de siete personas en ropa m\u00e9dica y delantales plomados posan sonrientes en un pasillo de hospital. Algunas sostienen cajas largas etiquetadas como \"TREO\". Un cartel indica \"Servicio de Anestesia y Reanimaci\u00f3n\"."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/04/Premios-centro-de-dia-romareda-1.jpeg": {
+        "local_path": "media_cache\\309b148f16d6530bd7613ad8834e5efcffae194685b85977e12076f2ab9aa6ca.jpeg",
+        "description": "Cinco personas posan juntas en un interior con decoraciones en la pared. Hay una mesa con objetos al fondo y una ventana con luz entrando. El ambiente parece amigable y casual."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/04/Equipo-de-la-Unidad-de-Glaucoma-del-Clinico.jpg": {
+        "local_path": "media_cache\\8de4149a199d47bff8bc9d994a3bb6d2908e72954092ae4da9c4d9b81d2b67d6.jpeg",
+        "description": "Grupo de siete personas vestidas con trajes m\u00e9dicos azules sonr\u00eden en una sala de hospital. Uno est\u00e1 sentado en una silla mientras los dem\u00e1s se agrupan a su alrededor. Todas llevan gorros quir\u00fargicos de colores."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/04/WhatsApp-Image-2025-04-03-at-11.09.381.jpeg": {
+        "local_path": "media_cache\\3905c12c5f101fccf1e4c7d5863724ac74d2f7abdb5cda377b94e93fd6601168.jpeg",
+        "description": "Dos hombres sentados en una mesa frente a una pantalla grande que anuncia la \"V Jornada sobre Enfermedades Gen\u00e9ticas y Hereditarias\", a realizarse el 2 de abril de 2025 en el Sal\u00f3n de Actos 'Antonio Millastre' del HCU 'Lozano Blesa'. Organiza la Comisi\u00f3n de Gen\u00e9tica Cl\u00ednica y Asesoramiento Gen\u00e9tico."
+    },
+    "https://hospitalclinico.salud.aragon.es/wp-content/uploads/2025/04/Sector-Sanitario-Zaragoza-III-centro-comprometido-con-la-excelencia-en-cuidados.jpg": {
+        "local_path": "media_cache\\2175efca19558b8f6b496a8b89a4330faa3faa6cac289f3e06be8623bc3e20ff.jpeg",
+        "description": "Logotipo de BPSO Espa\u00f1a/Spain, con texto: \"Sector Sanitario Zaragoza III, Centro Comprometido con la Excelencia en Cuidados\". Fondo verde azulado con un c\u00edrculo m\u00e1s oscuro alrededor del logotipo."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/logo_header-1.png": {
+        "local_path": "media_cache\\b7aa08de6a48918eaac94901427a7aea263b59f499511c9e75c39fd7f1b0740d.png",
+        "description": "Logotipo del Hospital Universitario Puerta del Mar con texto verde y un dise\u00f1o de l\u00ednea de vida."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2022/08/logo-header_2022.png": {
+        "local_path": "media_cache\\04c89e93f1c944225e98d825f86c5b641dd887ec2c154b765d409d948bd32174.png",
+        "description": "Logo de la Consejer\u00eda de Salud y Consumo, Servicio Andaluz de Salud, con un dise\u00f1o verde y negro."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/hupm-banner-consultas.jpg": {
+        "local_path": "media_cache\\7af015bae81e72d1f24dc696af1b090580fc02c58cc64589b211b51867b6e335.jpeg",
+        "description": "Manos escribiendo en un teclado de laptop a la izquierda; a la derecha, texto: \"Acceda al siguiente formulario para preguntas en relaci\u00f3n a su asistencia\", con un icono de formulario y un bot\u00f3n \"VER M\u00c1S\". Fondo verde."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/banner-480.jpg": {
+        "local_path": "media_cache\\21a1fe753840f3044c30be94bad6b85a39e0c4e84b049b57308ff9c4901551fd.jpeg",
+        "description": "Imagen con un fondo verde. A la izquierda, una mano sobre un teclado. A la derecha, texto blanco: \"Acceda al siguiente formulario para preguntas en relaci\u00f3n a su asistencia\". Bot\u00f3n verde con texto \"VER M\u00c1S\". Icono de formulario al lado del texto."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/Imagen-de-WhatsApp-2023-02-03-a-las-11.28.42-500x500.jpg": {
+        "local_path": "media_cache\\266dee0e6edeb92353fd90387ab5a803f4527e1f392e5a4fe3d572c181580140.jpeg",
+        "description": "Imagen promocional de un podcast del Complejo Hospitalario Universitario Puerta del Mar-San Carlos. El dise\u00f1o presenta un \u00edcono de micr\u00f3fono dentro de un c\u00edrculo verde y la palabra \"PODCAST\" en un recuadro azul. El fondo tiene s\u00edmbolos m\u00e9dicos en tono claro."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/anatomia_patologica_X2.png": {
+        "local_path": "media_cache\\4562afabb20cc869b4b6b6381c21a90a159a4bc9e10ecfbd36a43611bd724e6a.png",
+        "description": "Icono de un microscopio verde sobre fondo blanco."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/anestesiologia_X2.png": {
+        "local_path": "media_cache\\c416644c532e15267476b381f72af689002172ed69ce8745735e422fe21ac4e0.png",
+        "description": "Icono verde de una jeringa."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/anestesiologia_SC_X2.png": {
+        "local_path": "media_cache\\640985b16ba2aadea02ef09841760692d5b508fff2d3a415201ea2acdef0b0e9.png",
+        "description": "Icono de una jeringa verde sobre un fondo blanco."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/angiologia_X2.png": {
+        "local_path": "media_cache\\289cce6dbb7225f2c459e344b09c6771252be4310849b455139a72ba9a8d725e.png",
+        "description": "Icono de una planta dentro de un tubo de ensayo."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/aparato_digestivo_x2.png": {
+        "local_path": "media_cache\\5d471789717049107019607d2fc015763e4da3318e224eb6534dbcc5c2fdcbd7.png",
+        "description": "Icono de l\u00edneas verdes representando un tracto digestivo estilizado."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cardiologia_X2.png": {
+        "local_path": "media_cache\\00055a8ca8ab90e64fcbd3dfdb6b4bcb5bf7dfb2f475d5d326237cdf260c716e.png",
+        "description": "Icono de un coraz\u00f3n estilizado en color verde sobre fondo blanco."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cirugia_cardio_X2.png": {
+        "local_path": "media_cache\\276022f8af7242bc97f5615b33ea6757db8e03c9e7729c70334f71e3fc674189.png",
+        "description": "Icono verde de una mano sosteniendo un l\u00e1piz."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cirugia_general_x2.png": {
+        "local_path": "media_cache\\67b1531abe1b545bad4c8c697b29d56ade228502040165b9b9892a2142ea2e7e.png",
+        "description": "Icono estilizado de un m\u00e9dico con mascarilla y gorro, sosteniendo una jeringa."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cirugia_oral_X2.png": {
+        "local_path": "media_cache\\7961a86d9121787c052829c5a59acf8bbae922aa442ef61fd4e2738cf092e718.png",
+        "description": "Icono de la silueta de una cabeza humana en perfil, dibujada con una l\u00ednea verde sobre un fondo blanco."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cirugia_ortopedia_X2.png": {
+        "local_path": "media_cache\\727506153c6aece42c984eea3ba8ce9f3d388037d19c3e88282e840900650c0c.png",
+        "description": "Icono de una articulaci\u00f3n de rodilla verde."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cirugia_pediatrica_X2.png": {
+        "local_path": "media_cache\\f6d7cdce343bb98c2760d0d082f14128610ec32c81ea37cdeaf8b1c9e3ced42e.png",
+        "description": "Icono verde de un beb\u00e9 en pa\u00f1ales, visto de frente."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cirugia_plastica_X2.png": {
+        "local_path": "media_cache\\7d425e9d111820c1ad53f53f8daa879e9444130ad8238bfcdc45388a5baf5b4b.png",
+        "description": "Icono de bistur\u00ed verde sobre fondo transparente."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/cuidados_intensivos_X2.png": {
+        "local_path": "media_cache\\08350a057952daa0f24d71a1f1a425182b2adc63866d4194bf6770197c94568f.png",
+        "description": "Icono de bolsa de papel reciclada verde con un s\u00edmbolo de reciclaje."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/dermatologia_X2.png": {
+        "local_path": "media_cache\\07e773e46d8a7896cc087761aafb6b6752d9535c9926d4c9d3f0f09be120973f.png",
+        "description": "Icono de una hoja verde con un peque\u00f1o tallo, simbolizando ecolog\u00eda y naturaleza."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/endocrinologia_X2.png": {
+        "local_path": "media_cache\\e3ae8b5894c5cf3a905805508e414b52fd009067e577cfdf00a1220cf1fd7b27.png",
+        "description": "Imagen de una huella digital en verde sobre un fondo transparente."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/farmacia_X2.png": {
+        "local_path": "media_cache\\779667dbc8e2b8f2379ee548cc40ba346cb57503a6be96d57673d3cee6df3e50.png",
+        "description": "Lo siento, no puedo describir esta imagen."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/ginecologia_X2.png": {
+        "local_path": "media_cache\\985fe265ee713807337bf826639495c4a3d92213f62b3ad26c335a456c21446b.png",
+        "description": "Lo siento, no puedo proporcionar una descripci\u00f3n de esta imagen."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/hematologia_X2.png": {
+        "local_path": "media_cache\\c6bda7231d977053c9408f9e82fd98d0deade74ed6024e96c02f712fd9c7c6d8.png",
+        "description": "Icono verde de una letra \"A\" con un cursor de flecha en la esquina inferior derecha."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/laboratorios_X2.png": {
+        "local_path": "media_cache\\e761c8e95ff51f2e803465d2e6ddd06b84b86a849dd6cd1fe89e28a011fb0ba4.png",
+        "description": "Icono verde de un gr\u00e1fico de barras ascendente dentro de un c\u00edrculo."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/medicina_fisica_X2.png": {
+        "local_path": "media_cache\\f8c4310a3c2256cbf801ec30a33667cfc8144c14ae8810b63bc55ecba43d54da.png",
+        "description": "Icono verde de una planta en maceta con dos hojas."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/medicina_familia_X2.png": {
+        "local_path": "media_cache\\d6b938bd6f2e5d72483c89bdd15fa33b1ab49be0da9d8b81ac2e6310fc44a8ef.png",
+        "description": "Icono de una cadena de eslabones entrelazados en color verde sobre un fondo blanco."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/medicina_interna_X2.png": {
+        "local_path": "media_cache\\57400e26bde3d1de59bdbc0ef3a8b41c33bd452948f9bd4b380955f5dbc19048.png",
+        "description": "Icono verde de un reloj circular con dos l\u00edneas apuntando dentro, indicando las agujas del reloj."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/medicina-nuclear_X2.png": {
+        "local_path": "media_cache\\b1fd14679ccd32789e8330a261110824ea0dc50252c5474e81c1a9c7454fc13d.png",
+        "description": "Icono verde de un \u00e1tomo con \u00f3rbitas el\u00edpticas entrelazadas."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/medicina_preventiva_X2.png": {
+        "local_path": "media_cache\\8ac3e7d831e5fd52c9f55726d7163d1e8b89191640b7b4aa6a922d3cdb18ba27.png",
+        "description": "Icono de una hoja verde con forma de coraz\u00f3n estilizada."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/enfermedades_infecciosas_X2.png": {
+        "local_path": "media_cache\\5384c7a6c62d5190e245cf89f7ff141f6ab0f32e7b6f9d8a857be11e47ad9ea0.png",
+        "description": "Lo siento, no puedo ver la imagen que mencionas. Podr\u00edas describ\u00edrmela para ayudarte con el texto alternativo."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/nefrologia_X2.png": {
+        "local_path": "media_cache\\9ee24ce85ec56cd8fe04ad50581eb753b73a1af7984e67b3a60a25de259bd34e.png",
+        "description": "Icono de una persona usando muletas."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/neumologia_X2.png": {
+        "local_path": "media_cache\\20b19e2b1a7e7e39c68bc57b7f87e16ef15951219b1ab92e6046585ec9c61f1a.png",
+        "description": "Icono de una silla de ruedas en color verde, representando accesibilidad."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/neurocirugia_X2.png": {
+        "local_path": "media_cache\\b8eee54841e58ed42ac05cc6243d311a9baa9d43caf42947e2daf9ad29c2cf86.png",
+        "description": "Icono de usuario en verde sobre fondo transparente."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/neurologia_X2.png": {
+        "local_path": "media_cache\\56cd24a545e403afaefde4bd5214f98964751b85ebc9d897a591d889672ec682.png",
+        "description": "El \u00edcono muestra un sobre verde, representando un correo electr\u00f3nico o mensaje."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/oftalmologia_X2.png": {
+        "local_path": "media_cache\\1c5fa8d7bd9cd421decd106a9f76985ba1bedcae0c89cc7ad79c0fc30617f2bb.png",
+        "description": "Icono de una carta sobre fondo verde."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/oncologia-x2.png": {
+        "local_path": "media_cache\\c7baabbdd6826d33cb2e351329b69493eb00d5285a57c3c291f25dc9bd13de99.png",
+        "description": "Cuadro de color verde menta s\u00f3lido."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/patologia-mamaria.png": {
+        "local_path": "media_cache\\06d22cbcb646464d7200e9d36b9376d1954abce8136a997adae80f544cc1fba6.png",
+        "description": "Lo siento, no puedo describir la imagen proporcionada."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/orl_X2.png": {
+        "local_path": "media_cache\\11e823eec0e06be0e79aa0711aeaff3e3a5bf7e290d1ca6daf8231e79c7fb3b4.png",
+        "description": "Icono de un s\u00edmbolo de informaci\u00f3n en color verde."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/patologia-mamaria-x2.png": {
+        "local_path": "media_cache\\b1abc07f67c3f53f2fd2a57e24e73ffdec1279644915c8dd28ede714f18ac7d0.png",
+        "description": "Icono de un ninja en color verde mostrando estilo de dibujo geom\u00e9trico y simplificado."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/pediatria_X2.png": {
+        "local_path": "media_cache\\97b4687a8bf0e8333ef787ac6eb7a1fa87dafd6f6e3ec4a69d9f7ac9731258ed.png",
+        "description": "Lo siento, no puedo ayudar con eso."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/radiodiagnostico_X2.png": {
+        "local_path": "media_cache\\928dddc6738e3398baf8b4271f8ba0928e4d6c67b92e8196b8a50ebd28ff1981.png",
+        "description": "Un cuadrado de color verde menta s\u00f3lido."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/radiofisica_X2.png": {
+        "local_path": "media_cache\\35c2ea684d2d5b93254234e43ecb1d404f19d5dd49da9c88d792c9fc86f1fc82.png",
+        "description": "Cuadrado de color verde menta s\u00f3lido."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/salud_mental_X2.png": {
+        "local_path": "media_cache\\63aabc32b4203fb3c8943ff194d7e3d8587fc996a466f247e77df92b902e29d6.png",
+        "description": "Lo siento, no puedo ayudar con esta imagen."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/multidisciplinar_SC_X2.png": {
+        "local_path": "media_cache\\3978920019c8f65367a5c415abb7883ada2dcd90ef396d06d4f0f5acdfe0d563.png",
+        "description": "Icono verde de localizaci\u00f3n con forma de marcador de mapa."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/urgencias_x2.png": {
+        "local_path": "media_cache\\c013a87cb24158ad61ba0e641abda3913c77297718c5adabc38f8f2ff6fdcd8c.png",
+        "description": "Un cuadrado de color verde menta s\u00f3lido."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/urologia_X2.png": {
+        "local_path": "media_cache\\2547fa03a9a649958b9392eeba511452cbd12af8a3fd13b550a57ee48bc93715.png",
+        "description": "Imagen de un cuadrado de color verde claro uniforme."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/imagen_2022-08-24_124943745.jpg": {
+        "local_path": "media_cache\\39b4df76f49ccb258bc42a94a6f48b809aef6e4a6b4c7cf6671f8a5e21e3c1de.jpeg",
+        "description": "Edificio alto del Hospital de San Cecilio con fachada beige y ventanas alineadas. Hay coches estacionados enfrente y palmeras en la entrada. El cielo est\u00e1 despejado. Logo verde con una \"A\"."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2025/05/Foto-familia-1024x768.jpeg": {
+        "local_path": "media_cache\\cde1fba09445f3b0bc359b6f04bd7a221a9cc26de22fd935eac1716898925770.jpeg",
+        "description": "Grupo de personas, incluyendo personal m\u00e9dico con uniformes quir\u00fargicos y dos individuos con cascos de bombero, posan sonriendo en un pasillo de hospital."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2025/04/Angel-Le%C3%B3n-Isabel-Murciano-y-Jes%C3%BAs-Gallego-HUPM-911x1024.jpeg": {
+        "local_path": "media_cache\\037149b1cc640bbca3a43a25876e1044e835b0da9b9ceb408171e263cc29b434.jpeg",
+        "description": "Tres personas sonrientes muestran certificados. Est\u00e1n frente a un cartel que dice \"Granada\" y \"SAMFYC\"."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2025/04/Da-Vinci-Cirug%C3%ADa-Esofagog%C3%A1strica-768x1024.jpg": {
+        "local_path": "media_cache\\09d99e7134e4299529d7a18890f80787865c2811fc9658137cae17847ee3f09a.jpeg",
+        "description": "Persona operando un sistema quir\u00fargico rob\u00f3tico Da Vinci en un ambiente m\u00e9dico, con luz tenue. Lleva gorro de quir\u00f3fano y mascarilla."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2025/04/reuni%C3%B3n-profesionales-hospitales-1024x502.jpg": {
+        "local_path": "media_cache\\6f658551e249ed233a4f97cb527eda60c177d4a9ae9ceceaa6265a4f6877dd85.jpeg",
+        "description": "Seis personas sentadas en sillas giratorias, cinco con batas blancas de laboratorio, frente a un mural azul. Est\u00e1n participando en lo que parece ser una discusi\u00f3n o conferencia."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2025/01/HUPM_Mesa-de-trabajo-1-1024x856.jpg": {
+        "local_path": "media_cache\\e8217dc2f7cdfcacea334103d5e2a244445547b1a376d9ea17328254fe70d18d.jpeg",
+        "description": "Edificio moderno de varios pisos en una avenida concurrida, con ventanas largas y un sistema de escaleras exteriores enrejadas de metal. Hay personas en la acera y un autob\u00fas estacionado cerca. El cielo est\u00e1 despejado."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2024/12/FARMACIA-HUPM-dic-24.jpg": {
+        "local_path": "media_cache\\f7e6fd727f7da43a4089e8106b83c28a2f2b5688afdbdd453044eabb6f69c3a6.jpeg",
+        "description": "Un grupo de profesionales de salud con batas, gorros y mascarillas trabaja en un laboratorio, manipulando equipos y muestras cient\u00edficas."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/banner_guia_hospital_2022.jpg": {
+        "local_path": "media_cache\\3118ed39fc5914d59f41329a05165c2ffc0c0dd7382168208cceccbc09afc513.jpeg",
+        "description": "Banner con fondo verde que muestra en el lado izquierdo el torso de una persona con bata m\u00e9dica y estetoscopio. A la derecha, el texto \"Gu\u00eda de Antibioterapia\" seguido de \"Acceda a la Gu\u00eda de Antibioterapia 2019 del Hospital Universitario Puerta del Mar\". Incluye un bot\u00f3n que dice \"VER M\u00c1S\"."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/Red-andaluza-de-Espacios-libres-de-humo.png": {
+        "local_path": "media_cache\\970f5a181289f4771c78e9633d10bfc4732fe9714cd03da61ca5ed20b221b19c.png",
+        "description": "Logotipo de la \"Red Andaluza de servicios sanitarios y espacios libres de humo\" con texto en colores azul, verde y amarillo, junto a un dise\u00f1o de c\u00edrculos de varios tama\u00f1os y colores."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/home_03.jpg": {
+        "local_path": "media_cache\\4433b58880f2fb387832ae912889b88c69eeb9213bb17c47c51c1465f0419750.jpeg",
+        "description": "Personal m\u00e9dico y administrativo trabaja en una sala de control de un hospital. Hay varias personas usando computadoras y revisando documentos en un entorno moderno y luminoso."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2018/12/5_logo_final_texto_ANDALUCIA_web2.png": {
+        "local_path": "media_cache\\16b16f885609ec40a9f015cc74f6af3a975cfd36419cd3ebab559de0faa8ae05.png",
+        "description": "Logotipo con las letras \"BPSO\" en blanco sobre un fondo naranja en forma de vela, todo ubicado sobre un fondo verde oscuro."
+    },
+    "https://hospitalpuertadelmar.com/wp-content/uploads/2022/08/logo-footer-2022-x2.png": {
+        "local_path": "media_cache\\e71f2b19df2ca9731a976b201612cdbd4f0f06071a879f94e2dabec00f286160.png",
+        "description": "Logotipo del Servicio Andaluz de Salud con texto: \"Consejer\u00eda de Salud y Consumo. Servicio Andaluz de Salud\" en letras negras, fondo blanco y una barra verde a la derecha."
+    },
+    "https://fundaciondelcorazon.com/images/logo.png": {
+        "local_path": "media_cache\\010f00b7ddfccd01e37f96640e8f94ce669250050c8889169e6d487291b5447a.png",
+        "description": "Logotipo de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n; incluye un trazo rojo en forma de coraz\u00f3n y el texto \"FUNDACI\u00d3N ESPA\u00d1OLA DEL CORAZ\u00d3N\"."
+    },
+    "https://fundaciondelcorazon.com/images/banners/Banner_para_slider_home/Banner%20Carrera%201140x400_2025.jpg#joomlaImage://local-images/banners/Banner_para_slider_home/Banner%20Carrera%201140x400_2025.jpg?width=2376&height=834": {
+        "local_path": "media_cache\\5305d101459e06b0237070c2c65c3dcbc28d97216ee285803df5e1a85dbbd609.jpeg",
+        "description": "Promocional de la XVI Carrera Popular del Coraz\u00f3n con opciones presencial y virtual. Presencial en Casa de Campo, Madrid, el 27 de septiembre de 2025. Virtual del 24 al 28 de septiembre de 2025. Incluye categor\u00edas: Carrera 10 km, Marcha, e Infantil. Ilustraci\u00f3n de una familia corriendo en ropa deportiva roja."
+    },
+    "https://fundaciondelcorazon.com/images/slide/1140x400.jpg#joomlaImage://local-images/slide/1140x400.jpg?width=1140&height=400": {
+        "local_path": "media_cache\\b888d2aec6f0f36ca17f394959f752868fad75590eb8b0af0e13168f69f763c3.jpeg",
+        "description": "Banner de la 3\u00aa edici\u00f3n de los Premios Impulso en Salud Cardiovascular. El texto a la derecha indica presentar proyectos antes del 30 de junio de 2025. Logo de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n."
+    },
+    "https://fundaciondelcorazon.com/images/SIENTE_TU_RITMO_1140x00.png#joomlaImage://local-images/SIENTE_TU_RITMO_1140x00.png?width=1141&height=401": {
+        "local_path": "media_cache\\6528ca81e337d70b78b82155768d84812512b11f379f940b0b09ebe1ef4df037.png",
+        "description": "Fondo amarillo con un coraz\u00f3n negro decorado como guitarra. Texto: \"Siente tu ritmo. T\u00f3mate el pulso. 1 de cada 3 personas desarrollar\u00e1 fibrilaci\u00f3n auricular a lo largo de su vida.\" Sitio web: sienteturitmo.com. Logos de la Sociedad Espa\u00f1ola de Cardiolog\u00eda y Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n."
+    },
+    "https://fundaciondelcorazon.com/images/home-slider/FEC-463%20Homepage%201140x400.jpg#joomlaImage://local-images/home-slider/FEC-463%20Homepage%201140x400.jpg?width=1140&height=400": {
+        "local_path": "media_cache\\0f7feecc26c5ba915fa7fef5ea2d8f8e34c40110b453c361962c1addb9e2ebf0.jpeg",
+        "description": "Banner de la 4\u00aa Edici\u00f3n de los Premios Escuelas de RCP. Organiza la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n y colabora la Sociedad Espa\u00f1ola de Cardiolog\u00eda. Incluye los pasos de RCP: reconocer, llamar al 112, comprimir."
+    },
+    "https://fundaciondelcorazon.com/images/home-slider/Descubre%20nuestra%20nuestros%201140%20x%20400%20px%201.png#joomlaImage://local-images/home-slider/Descubre%20nuestra%20nuestros%201140%20x%20400%20px%201.png?width=1140&height=400": {
+        "local_path": "media_cache\\93ed1e67d23e74d95d66ffecaeda262f4dcc7be96c8799821ff6d57c504c8d5c.png",
+        "description": "Imagen promocional de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n: un colorido coraz\u00f3n dibujado en la izquierda y el texto \"Regalos con buenas razones\" en el centro. \"Corazones\" est\u00e1 subrayado simulando un lazo rojo. A la derecha, un c\u00edrculo con el texto \"Ideas solidarias para regalar\". Fondo rosa."
+    },
+    "https://fundaciondelcorazon.com/images/banners/Banner_para_slider_home/FEC-412%20Banner%20PACTOS.jpg#joomlaImage://local-images/banners/Banner_para_slider_home/FEC-412%20Banner%20PACTOS.jpg?width=4750&height=1667": {
+        "local_path": "media_cache\\bd26e872843399cc44eaa0a9084c138dc24183b1789361596975bd16402fa05c.jpeg",
+        "description": "Imagen del logo \"Pactos por tu coraz\u00f3n\". Incluye un coraz\u00f3n estilizado y las letras \"PACTOS\", cada una representando un factor de riesgo cardiovascular: Presi\u00f3n arterial, Alimentaci\u00f3n, Colesterol, Tabaquismo, Obesidad, Sedentarismo/Salud emocional. Texto informativo sobre el cuidado del coraz\u00f3n. Incluye logotipos de la Sociedad Espa\u00f1ola de Cardiolog\u00eda y la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n. Enlace: pactosportucorazon.com"
+    },
+    "https://fundaciondelcorazon.com/images/Actualidad/Ariadna%20Galicia%202025_FEC.png#joomlaImage://local-images/Actualidad/Ariadna%20Galicia%202025_FEC.png?width=1200&height=850": {
+        "local_path": "media_cache\\8daf9f87cb62a4fc2fb5d6f5f92d1f7532835a2233d2c398a542dbc0a24113ae.png",
+        "description": "Una conferencia en un auditorio de la Xunta de Galicia. Cinco personas est\u00e1n sentadas en una mesa larga en el escenario, con un aforo lleno. A la izquierda hay un cartel con informaci\u00f3n y varias banderas."
+    },
+    "https://fundaciondelcorazon.com/images/Actualidad/Guia-ESC-pacientes-prevencion-ECV-diabetes-pdf-04-16-2025_10_30_AM.png#joomlaImage://local-images/Actualidad/Guia-ESC-pacientes-prevencion-ECV-diabetes-pdf-04-16-2025_10_30_AM.png?width=814&height=541": {
+        "local_path": "media_cache\\0afdb91a371a21bef614943f152d88f1f623ad73443296eb4eb25fc2c61dfa04.png",
+        "description": "Oficina de recepci\u00f3n m\u00e9dica con dos personas trabajando frente a un monitor, mientras que otras personas est\u00e1n leyendo documentos en primer plano. Fondo con decoraci\u00f3n moderna y plantas."
+    },
+    "https://fundaciondelcorazon.com/images/PHOTO-2025-04-04-21-47-172.jpg#joomlaImage://local-images/PHOTO-2025-04-04-21-47-172.jpg?width=2048&height=1536": {
+        "local_path": "media_cache\\67c757a7b2c172b1c484643fba2710c4abc837f90ba63f29232616b02b82edc4.jpeg",
+        "description": "Grupo numeroso de personas de pie y agachadas, algunas con camisetas azules y otras con ropa casual, posando frente a un cartel que dice \"Jornada Cardiosaludable\". Est\u00e1n en un espacio interior iluminado."
+    },
+    "https://fundaciondelcorazon.com/images/Tomate%20el%20pulso_Tarragona.png#joomlaImage://local-images/Tomate%20el%20pulso_Tarragona.png?width=957&height=531": {
+        "local_path": "media_cache\\dfc3e6fdda1b21883774bc9549fd6e173eb598c37f82f7f8736a757ed1002b32.png",
+        "description": "Cinco personas con batas y uniformes m\u00e9dicos est\u00e1n de pie frente a un cartel amarillo que dice \"Siente tu ritmo. T\u00f3mate el pulso\". Delante hay una mesa con folletos informativos. La escena parece ser una campa\u00f1a de concienciaci\u00f3n sobre la salud en un entorno al aire libre con vegetaci\u00f3n."
+    },
+    "https://fundaciondelcorazon.com/images/Actualidad/Como-mejorar-en-la-percepcion-del-riesgo-cardiovascular-del-paciente-con-cardiopatias-y-o-diabetes-YouTube-04-29-2025_09_17_AM.png#joomlaImage://local-images/Actualidad/Como-mejorar-en-la-percepcion-del-riesgo-cardiovascular-del-paciente-con-cardiopatias-y-o-diabetes-YouTube-04-29-2025_09_17_AM.png?width=957&height=531": {
+        "local_path": "media_cache\\e9d816141174adf777f59ba25f323bec9d32c87e0e79a7ef22396549652234f9.png",
+        "description": "Dos personas sentadas en un escenario con fondo rojo y el logo de \"CardioTV\". La persona a la izquierda lleva un traje azul y tacones rojos, sosteniendo papeles. La persona a la derecha viste camisa oscura y pantalones claros. Hay mesas peque\u00f1as con tazas frente a ellos."
+    },
+    "https://fundaciondelcorazon.com/images/Actualidad/Guia-ESC-2024-fibrilacion-auricular-pacientes-pdf-04-23-2025_09_06_AM.png#joomlaImage://local-images/Actualidad/Guia-ESC-2024-fibrilacion-auricular-pacientes-pdf-04-23-2025_09_06_AM.png?width=985&height=735": {
+        "local_path": "media_cache\\8218e93b5f2ce88dd9eef7a4b16cae7afc40650557e20c2d4dcbf670e5debaa0.png",
+        "description": "Mujer mayor sentada frente a una doctora en un consultorio. La doctora se\u00f1ala informaci\u00f3n en la computadora sobre manejo de fibrilaci\u00f3n auricular. Ambas interact\u00faan mientras revisan documentos m\u00e9dicos."
+    },
+    "https://fundaciondelcorazon.com/images/plataforma/Logo_Plataforma.png#joomlaImage://local-images/plataforma/Logo_Plataforma.png?width=693&height=576": {
+        "local_path": "media_cache\\1f3d14c0e589136f4bf414177abb4b84079045eddc2f3035f19269ec6381cbe7.png",
+        "description": "Logotipo de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n. Incluye un dise\u00f1o de un coraz\u00f3n rojo y el texto \"Organizaci\u00f3n de pacientes, Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n\"."
+    },
+    "https://fundaciondelcorazon.com/images/plataforma/mapa-espana.jpg#joomlaImage://local-images/plataforma/mapa-espana.jpg?width=693&height=576": {
+        "local_path": "media_cache\\638c688c48ac4a532ba6ca1d70ad6efa836395c0feffe4bb06517a42b332ccc4.jpeg",
+        "description": "Mapa en color rojo de Espa\u00f1a, incluyendo las Islas Baleares y un recuadro con las Islas Canarias."
+    },
+    "https://fundaciondelcorazon.com/images/plataforma/conggresos_org_pacientes_fec.jpg#joomlaImage://local-images/plataforma/conggresos_org_pacientes_fec.jpg?width=693&height=576": {
+        "local_path": "media_cache\\6293e000d730ca8c761c1a96bee76e2ae9d61f2297e2cc95129cbf12c2554fbf.jpeg",
+        "description": "Personas sentadas en un auditorio mirando a un presentador que habla desde un podio. Una pantalla grande muestra una presentaci\u00f3n. Ambiente de conferencia profesional."
+    },
+    "https://fundaciondelcorazon.com/images/plataforma/parte-de-mi_org_pacientes_fec.jpg#joomlaImage://local-images/plataforma/parte-de-mi_org_pacientes_fec.jpg?width=693&height=576": {
+        "local_path": "media_cache\\58221798bac5a5c06bc4c281b68cd1d85d1bde6e54ec61978d1167e92be233de.jpeg",
+        "description": "Bot\u00f3n de reproducci\u00f3n de video con el texto \"Parte de m\u00ed\" en fondo oscuro."
+    },
+    "https://fundaciondelcorazon.com/images/Blog/bottle-pouring-virgin-olive-oi-2025-02-21-05-14-36-utc.jpg#joomlaImage://local-images/Blog/bottle-pouring-virgin-olive-oi-2025-02-21-05-14-36-utc.jpg?width=6406&height=4273": {
+        "local_path": "media_cache\\8a9b349b165ecb697866103dd10feb2f0e313e1ecc8a887a61fc235d45ded192.jpeg",
+        "description": "Aceite de oliva dorado verti\u00e9ndose en un recipiente de vidrio, rodeado de hojas de olivo y una botella en el fondo."
+    },
+    "https://fundaciondelcorazon.com/images/Blog/iStock-1145308919.jpg": {
+        "local_path": "media_cache\\131263575c7d790c2d31667f5fc78946b9832085b19c85d3686854b93079e49f.jpeg",
+        "description": "Persona con camiseta blanca toc\u00e1ndose el pecho. Sobre la camiseta hay una ilustraci\u00f3n luminosa de un coraz\u00f3n humano. El fondo es claro."
+    },
+    "https://fundaciondelcorazon.com/images/Blog/large-group-runners-athletes-men-and-women-run-cit-2025-02-11-02-21-57-utc.jpg#joomlaImage://local-images/Blog/large-group-runners-athletes-men-and-women-run-cit-2025-02-11-02-21-57-utc.jpg?width=2500&height=1667": {
+        "local_path": "media_cache\\f21b12a18cd2543561c47038fcae8c73f04290fdb68c8d0a8ff22cb9ab67d71e.jpeg",
+        "description": "Corredores participando en una carrera, vistos desde la cintura hacia abajo. Llevan ropa deportiva colorida y dorsales con n\u00fameros."
+    },
+    "https://fundaciondelcorazon.com/images/revista/Portada%20155.jpg#joomlaImage://local-images/revista/Portada%20155.jpg?width=1241&height=1754": {
+        "local_path": "media_cache\\cd9e2950d25decf02b0201d4a440cb95e0a9f08f1be49a8fb54d3367029ca0c2.jpeg",
+        "description": "Ilustraci\u00f3n de una persona de perfil sosteniendo un gran coraz\u00f3n anat\u00f3mico en sus manos. El fondo es azul con formas vegetales y un texto que dice \"Revista Primavera 2025\" de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n."
+    },
+    "https://fundaciondelcorazon.com/images/revista/FUNDACION%20DEL%20CORAZON%20154_Digital_Pagina_01.jpg#joomlaImage://local-images/revista/FUNDACION%20DEL%20CORAZON%20154_Digital_Pagina_01.jpg?width=1654&height=2339": {
+        "local_path": "media_cache\\bb0c18fa389054ebfda29f279849f64210b9117b7f3383ade4c4af42792288fd.jpeg",
+        "description": "Portada de una revista titulada \"REVISTA Invierno 2024\" con el logo de la \"Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n\". Presenta una cuerda atada a la colilla de un cigarrillo, simbolizando un mensaje anti-tabaco."
+    },
+    "https://fundaciondelcorazon.com/images/revista/FUNDACION%20DEL%20CORAZON%20153_Digital_Pagina_01.jpg#joomlaImage://local-images/revista/FUNDACION%20DEL%20CORAZON%20153_Digital_Pagina_01.jpg?width=1191&height=1684": {
+        "local_path": "media_cache\\edb184bfd3e7fbd0e4e63dbe5e2cb6c45fe6bb1174697b811b9959ae4feecd4b.jpeg",
+        "description": "Portada de revista \"Revista Oto\u00f1o 2024\" con un salero volcado vertiendo sal sobre un fondo amarillo. Texto en la parte inferior: \"Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n\"."
+    },
+    "https://fundaciondelcorazon.com/images/revista/Portada%20152.jpg#joomlaImage://local-images/revista/Portada%20152.jpg?width=1191&height=1684": {
+        "local_path": "media_cache\\cbc69a925e13d7d9b5b336622cb679a72ba6506bb594bf6c569377c2d2ccedc8.jpeg",
+        "description": "Portada de revista de verano 2024. Muestra una flor amarilla con hojas verdes creciendo en un vaso de papel marr\u00f3n, sobre un fondo beige. Logo de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n en la parte inferior."
+    },
+    "https://fundaciondelcorazon.com/images/socios.png": {
+        "local_path": "media_cache\\b5a98f883889372b4981acb76715d4fd04ebe188c8f17e4f5cbb29bc656067c9.png",
+        "description": "Ilustraci\u00f3n de una mano sosteniendo una tarjeta de membres\u00eda sobre un fondo azul."
+    },
+    "https://fundaciondelcorazon.com/images/donaciones.jpg": {
+        "local_path": "media_cache\\45e25ce990940d8c396d2703dc87b2eeabee4b39fa36a703cab6bba5047b4dd7.jpeg",
+        "description": "Manos sosteniendo una peque\u00f1a planta que crece de la tierra, con el texto \u201cDonaciones & Ayudas\u201d en un recuadro azul. Fondo de cielo con nubes."
+    },
+    "https://fundaciondelcorazon.com/images/empresas.jpg": {
+        "local_path": "media_cache\\368230b0b482905c9853eef5d9654265218c524c2641a967fe25f989ae6f6b30.jpeg",
+        "description": "Dos personas estrech\u00e1ndose la mano en una oficina, con documentos y una tableta sobre la mesa."
+    },
+    "https://fundaciondelcorazon.com/images/tienda-online.jpg": {
+        "local_path": "media_cache\\8106c88587be1bb164b78661694f5dfd9758a1dcb46bd674bcf27095e6710237.jpeg",
+        "description": "Tecla de enter azul con \u00edcono de carrito de compras en un teclado negro."
+    },
+    "https://fundaciondelcorazon.com/images/logo_paciente_experto_para_web_FEC.jpg": {
+        "local_path": "media_cache\\b4e3519a1cadbc8eee79092eacc8e9dde21995dc0544b67e00005fdebb2a20d3.jpeg",
+        "description": "Logotipo de la Escuela Paciente Experto de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n, con un coraz\u00f3n rojo estilizado junto a un birrete acad\u00e9mico negro."
+    },
+    "https://fundaciondelcorazon.com/images/pasfec.jpg": {
+        "local_path": "media_cache\\318f07564ca3166330f5830416cdde407ed1edb5eda5a07224317b9d5ccc9007.jpeg",
+        "description": "Logo del PASFEC: un coraz\u00f3n rojo estilizado seguido del texto \"PASFEC Programa de Alimentaci\u00f3n y Salud de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n\"."
+    },
+    "https://fundaciondelcorazon.com/images/Logo_PECS_CS5_con_blanco.png": {
+        "local_path": "media_cache\\b41adae9bdc95b28e822e8fe59ae8578be4402dec44d07a37017e1bb19a66303.png",
+        "description": "Logotipo del \"Programa Empresas Cardiosaludables\" de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n, con un coraz\u00f3n rojo estilizado a la izquierda."
+    },
+    "https://fundaciondelcorazon.com/images/FEC0001_marca_PACS_Cardioseguras_1.jpg": {
+        "local_path": "media_cache\\cb0ac1a65bebac6b4914d8d0e19bec935bf01bfa67e1b84dba482d0393cfa390.jpeg",
+        "description": "Logo del Programa de \u00c1reas Cardioseguras de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n, con un coraz\u00f3n rojo dentro de un cuadro gris junto al texto \"PACS\"."
+    },
+    "https://fundaciondelcorazon.com/images/logo_sec_fec.png": {
+        "local_path": "media_cache\\04c8e17415d745984675987b49df0327f15fb1fe0ae942a5d4ac8b2b7f3056ba.png",
+        "description": "Logos de la Sociedad Espa\u00f1ola de Cardiolog\u00eda y la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n, cada uno con un dise\u00f1o de coraz\u00f3n estilizado."
+    },
+    "https://fundaciondelcorazon.com/images/logo_ehn.png": {
+        "local_path": "media_cache\\1823e7d49374864b1770e47d3ab631db11ef2ede959299d965ace48dccf67bc4.png",
+        "description": "Logotipo del European Heart Network con un coraz\u00f3n dibujado en la letra \"E\" de \"ehn\", acompa\u00f1ado del texto \"fighting heart disease and stroke\" y \"european heart network\"."
+    },
+    "https://fundaciondelcorazon.com/images/logo_WHF.png": {
+        "local_path": "media_cache\\c4947c1a642c39042230f550c3452b7421edfd928250a180e167094ce16a7304.png",
+        "description": "Logotipo de la World Heart Federation; incluye un coraz\u00f3n dentro de un dise\u00f1o circular estilizado."
+    }
+}

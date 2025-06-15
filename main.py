@@ -54,6 +54,10 @@ def main():
 
         print("\n--- PASO 2: Generando página accesible ---")
         original_html = driver.page_source
+        original_html_path = os.path.join(run_path, "original_page.html")
+        with open(original_html_path, 'w', encoding='utf-8') as f:
+            f.write(original_html)
+
         media_descriptions = process_media_elements(driver, args.url, client)
         accessible_html = generate_accessible_html_with_parser(
             original_html,
