@@ -18,28 +18,35 @@
 - [📁 ¿Dónde se guardan los resultados?](#-dónde-se-guardan-los-resultados)
 - [🛠️ ¿Qué tecnología usa?](#️-qué-tecnología-usa)
 - [🏗️ Arquitectura del Sistema](#️-arquitectura-del-sistema)
-- [📂 Estructura del Proyecto](#-estructura-del-proyecto)
 
 ## 🏗️ Arquitectura del Sistema
 
 El sistema está diseñado con una arquitectura modular que permite procesar y mejorar páginas web de manera eficiente. Aquí está el diagrama de la arquitectura:
 
-graph TD
-    A["🌐 Página Web Original"] --> B["🔍 Analizador de Accesibilidad"]
-    B --> C["📊 Detector de Problemas<br/>(axe-core)"]
-    B --> D["🖼️ Procesador de Imágenes"]
-    
-    D --> E["🤖 OpenAI API<br/>Generación de Descripciones"]
-    C --> F["🛠️ Motor de Correcciones"]
-    E --> F
-    
-    F --> G["📝 Generador de Informes"]
-    F --> H["💾 Página Web Mejorada"]
-    
-    G --> I["📊 Informes y Métricas"]
-    
-    J["🗄️ Base de Datos Local"] --> D
-    J --> F
+```
+accessibility-project/
+├── main.py                     # Punto de entrada de la aplicación
+├── requirements.txt            # Dependencias del proyecto
+├── README.md                   # Documentación principal
+│
+├── core/                       # Núcleo de la aplicación
+│   ├── analyzer.py            # Análisis de accesibilidad
+│   ├── html_generator.py      # Generación de HTML accesible
+│   ├── image_processing.py    # Procesamiento de imágenes
+│   ├── report.py             # Generación de informes
+│   └── webdriver_setup.py     # Configuración de Selenium
+│
+├── utils/                      # Utilidades y helpers
+│   ├── violation_utils.py     # Manejo de violaciones WCAG
+│   ├── io_utils.py           # Operaciones de entrada/salida
+│   └── html_utils.py         # Utilidades para HTML
+│
+├── config/                     # Configuraciones
+│   └── constants.py          # Constantes globales
+│
+└── templates/                  # Plantillas
+    └── comparison_template.html # Template para informes
+```
 
 ### Componentes Principales:
 
@@ -219,32 +226,6 @@ results/
 - **🔍 BeautifulSoup4**: Herramienta para leer y modificar páginas web
 - **📝 Jinja2**: Creador de informes bonitos y claros
 
-## 📂 Estructura del Proyecto
-
-```
-accessibility-project/
-├── main.py                     # Punto de entrada de la aplicación
-├── requirements.txt            # Dependencias del proyecto
-├── README.md                   # Documentación principal
-│
-├── core/                       # Núcleo de la aplicación
-│   ├── analyzer.py            # Análisis de accesibilidad
-│   ├── html_generator.py      # Generación de HTML accesible
-│   ├── image_processing.py    # Procesamiento de imágenes
-│   ├── report.py             # Generación de informes
-│   └── webdriver_setup.py     # Configuración de Selenium
-│
-├── utils/                      # Utilidades y helpers
-│   ├── violation_utils.py     # Manejo de violaciones WCAG
-│   ├── io_utils.py           # Operaciones de entrada/salida
-│   └── html_utils.py         # Utilidades para HTML
-│
-├── config/                     # Configuraciones
-│   └── constants.py          # Constantes globales
-│
-└── templates/                  # Plantillas
-    └── comparison_template.html # Template para informes
-```
 
 ### 📝 Descripción de Componentes
 
