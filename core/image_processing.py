@@ -1,11 +1,14 @@
 import os
 import time
 import hashlib
+import json
+import base64
 import requests
+from requests.exceptions import SSLError
 from urllib.parse import urljoin, urlparse
 from selenium.webdriver.common.by import By
 from config.constants import IMAGE_DOMAIN_BLACKLIST, CACHE_DIR
-from utils.io_utils import load_cache, save_cache, get_image_as_base64
+from utils.io_utils import load_cache, save_cache, get_image_as_base64, log_openai_call
 
 
 def get_image_description(image_path, client):
@@ -15,26 +18,36 @@ def get_image_description(image_path, client):
         return "No se pudo procesar la imagen."
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
+        user_message = {
+            "role": "user",
+            "content": [
                 {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "Describe esta imagen para el texto alternativo ('alt') de una página web. Sé conciso y útil para una persona con discapacidad visual."
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
-                        }
-                    ],
+                    "type": "text",
+                    "text": "Describe esta imagen para el texto alternativo ('alt') de una página web. Sé conciso y útil para una persona con discapacidad visual."
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
                 }
             ],
+        }
+        
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[user_message],
             max_tokens=100,
         )
-        return response.choices[0].message.content.strip()
+        
+        description = response.choices[0].message.content.strip()
+        
+        log_openai_call(
+            prompt=f"Vision API call - Describe esta imagen para el texto alternativo ('alt') de una página web. Imagen: {os.path.basename(image_path)}",
+            response=description,
+            model="gpt-4o",
+            call_type="vision"
+        )
+        
+        return description
     except Exception as e:
         print(f"Error al llamar a OpenAI: {e}")
         return "Descripción no disponible."
@@ -74,9 +87,22 @@ def process_media_elements(driver, base_url, client):
         response = None
         for attempt in range(max_retries):
             try:
-                response = requests.get(img_url, stream=True, timeout=15, headers=headers)
+                # Intentar primero con verificación SSL normal
+                response = requests.get(img_url, stream=True, timeout=15, headers=headers, verify=True)
                 response.raise_for_status()
                 break
+            except SSLError as ssl_error:
+                # Si falla la verificación SSL, intentar sin verificación (para certificados autofirmados)
+                print(f"  > Error SSL en intento {attempt + 1}, reintentando sin verificación SSL: {ssl_error}")
+                try:
+                    response = requests.get(img_url, stream=True, timeout=15, headers=headers, verify=False)
+                    response.raise_for_status()
+                    print(f"  > ✓ Imagen descargada (sin verificación SSL)")
+                    break
+                except Exception as e2:
+                    print(f"  > Intento {attempt + 1} fallido incluso sin verificación SSL: {e2}")
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
             except Exception as e:
                 print(f"  > Intento {attempt + 1} fallido: {e}")
                 if attempt < max_retries - 1:
@@ -108,3 +134,4 @@ def process_media_elements(driver, base_url, client):
             print(f"  > Error procesando imagen {img_url}: {e}")
 
     return media_descriptions
+

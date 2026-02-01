@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="612px" height="792px" viewBox="0 0 612 792" enable-background="new 0 0 612 792" xml:space="preserve">
+<g>
+	<g>
+		
+			<ellipse fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" cx="192.364" cy="505.314" rx="170.228" ry="170.228"/>
+		<g>
+			
+				<path fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="
+				M240.579,553.572c-11.255,9.849-26.731,16.883-43.614,16.883c-35.172,0-64.717-29.545-64.717-64.717
+				c0-35.173,29.545-64.718,64.717-64.718c16.883,0,32.359,7.034,43.614,16.883"/>
+			<g>
+				
+					<line fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="111.145" y1="486.041" x2="194.152" y2="486.041"/>
+				
+					<line fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="111.145" y1="525.435" x2="194.152" y2="525.435"/>
+			</g>
+		</g>
+	</g>
+	<g>
+		<path fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="
+			M192.744,193.407c0-32.358,84.414-59.089,188.524-59.089s188.524,26.731,188.524,59.089"/>
+		<path fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="
+			M569.793,282.042c0,32.358-84.414,59.089-188.524,59.089c-28.138,0-54.869-1.407-80.193-5.627"/>
+		<path fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="
+			M569.793,369.269c0,32.358-84.414,59.089-188.524,59.089"/>
+		<path fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="
+			M569.793,457.903c0,32.358-80.193,57.683-181.49,59.09"/>
+		<path fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="
+			M381.269,604.221c104.11,0,188.524-26.731,188.524-59.09V193.407c0,32.359-84.414,59.09-188.524,59.09
+			s-188.524-26.731-188.524-59.09v98.483"/>
+	</g>
+</g>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+  <g id="icono_app" transform="translate(-550 -2637)">
+    <circle id="Elipse_27" data-name="Elipse 27" cx="15" cy="15" r="15" transform="translate(550 2637)" fill="#1b4990"/>
+    <g id="smartphone" transform="translate(558.04 2641.557)">
+      <path id="Trazado_2450" data-name="Trazado 2450" d="M11.932,17.9V1.989H1.989V17.9ZM0,0V19.887H13.921V0Z" fill="#fff" fill-rule="evenodd"/>
+      <path id="Trazado_2451" data-name="Trazado 2451" d="M11.58,23.207a1.29,1.29,0,1,1-1.29-1.29A1.29,1.29,0,0,1,11.58,23.207Z" transform="translate(-3.195 -7.781)" fill="#fff"/>
+      <circle id="Elipse_28" data-name="Elipse 28" cx="15" cy="15" r="15" transform="translate(-8.04 -4.557)" fill="#1b4990" opacity="0"/>
+    </g>
+  </g>
+</svg>

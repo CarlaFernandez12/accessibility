@@ -4,4 +4,5 @@ requests
 webdriver-manager
 python-dotenv
 beautifulsoup4
+lxml
 jinja2 

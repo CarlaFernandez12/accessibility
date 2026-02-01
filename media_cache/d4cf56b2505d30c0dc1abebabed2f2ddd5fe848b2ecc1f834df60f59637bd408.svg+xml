@@ -1,0 +1,9 @@
+<svg id="icoconfig" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+  <path id="Trazado_66" data-name="Trazado 66" d="M15,0A15,15,0,1,0,30,15,15,15,0,0,0,15,0Z" fill="#1b4990"/>
+  <g id="ico_configuracion" transform="translate(24.875 0.813)">
+    <rect id="Rectángulo_263" data-name="Rectángulo 263" width="24" height="24" transform="translate(-21.875 1.187)" fill="#f5f5f5" opacity="0"/>
+    <path id="Trazado_2045" data-name="Trazado 2045" d="M9.71,18.614a4.083,4.083,0,0,0-3.906-3.2,4.083,4.083,0,0,0-3.906,3.2H-1.225v2.132H1.9a4.083,4.083,0,0,0,3.906,3.2,4.083,4.083,0,0,0,3.906-3.2H17.9V18.614ZM7.821,19.68A2.077,2.077,0,0,1,5.8,21.812a2.135,2.135,0,0,1,0-4.264A2.077,2.077,0,0,1,7.821,19.68Z" transform="translate(-18.592 -0.757)" fill="#fff" fill-rule="evenodd"/>
+    <path id="Trazado_2046" data-name="Trazado 2046" d="M15.751,3.2A4.083,4.083,0,0,0,11.845,0,4.083,4.083,0,0,0,7.939,3.2H-1.271V5.33H7.939a4.083,4.083,0,0,0,3.906,3.2,4.083,4.083,0,0,0,3.906-3.2h2.144V3.2Zm-1.89,1.066a2.02,2.02,0,1,1-4.033,0,2.077,2.077,0,0,1,2.017-2.132A2.077,2.077,0,0,1,13.861,4.264Z" transform="translate(-18.583 4)" fill="#fff" fill-rule="evenodd"/>
+    <path id="Trazado_2598" data-name="Trazado 2598" d="M15,0A15,15,0,1,0,30,15,15,15,0,0,0,15,0Z" transform="translate(-24.875 -0.813)" fill="#1b4990" opacity="0"/>
+  </g>
+</svg>

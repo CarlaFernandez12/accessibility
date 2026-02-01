@@ -15,6 +15,31 @@ def setup_driver():
     options.add_argument("--browser-timeout=300000")
     options.add_argument("--script-timeout=300000")
     options.add_argument("--page-load-timeout=300000")
+    # Permitir sitios HTTP (no seguros) y contenido mixto
+    options.add_argument("--allow-running-insecure-content")
+    options.add_argument("--disable-web-security")
+    options.add_argument("--ignore-certificate-errors")
+    options.add_argument("--ignore-ssl-errors")
+    options.add_argument("--ignore-certificate-errors-spki-list")
+    options.add_argument("--allow-insecure-localhost")
+    options.add_argument("--disable-features=VizDisplayCompositor")
+    # Deshabilitar advertencias de seguridad para sitios HTTP
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    # Configurar preferencias para ignorar errores SSL
+    prefs = {
+        "profile.default_content_setting_values": {
+            "mixed_content": 1,  # Permitir contenido mixto (HTTP en HTTPS)
+        },
+        "profile.content_settings.exceptions.automatic_https_redirects": {
+            "*": {
+                "setting": 1  # Permitir redirecciones automáticas HTTP->HTTPS
+            }
+        }
+    }
+    options.add_experimental_option("prefs", prefs)
+    # Añadir opción experimental para ignorar errores de certificado
+    options.add_experimental_option('useAutomationExtension', False)
+    options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
 
     local_chromedriver_path = "chromedriver.exe"
 
