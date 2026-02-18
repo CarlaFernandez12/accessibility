@@ -1,12 +1,19 @@
 """
-Módulo para generación de HTML accesible.
+Accessible HTML generation and post‑processing helpers.
 
-Este módulo proporciona funciones para corregir errores de accesibilidad
-en HTML usando LLMs y técnicas de procesamiento de texto.
+This module is responsible for:
+    - Guiding colour contrast corrections.
+    - Building compact prompts for the LLM.
+    - Applying fragment‑level fixes back into the DOM.
+    - Performing a final responsive merge while preserving accessibility fixes.
+
+Business logic and behaviour must remain stable; refactors here focus on
+clarity, documentation and type hints only.
 """
 
 import json
 import re
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
@@ -16,12 +23,12 @@ from utils.html_utils import convert_paths_to_absolute
 from utils.io_utils import log_openai_call
 from utils.violation_utils import flatten_violations, prioritize_violations
 
-# Constantes para cálculos de contraste
+# Constants for contrast calculations
 CONTRAST_RATIO_MAX = 21.0
 CONTRAST_ADJUSTMENT = 0.05
 LUMINANCE_THRESHOLD = 0.5
 
-# Colores candidatos para contraste
+# Candidate colours used when searching for valid contrast combinations
 DARK_COLOR_CANDIDATES = [
     '#000000', '#212121', '#424242', '#000080', '#006400',
     '#8B0000', '#4A4A4A', '#2C2C2C'
@@ -31,8 +38,8 @@ LIGHT_COLOR_CANDIDATES = [
     '#FFFF00', '#D3D3D3', '#C0C0C0'
 ]
 
-# Coeficientes para cálculo de luminancia (WCAG)
-LUMINANCE_COEFFICIENTS = {
+# Coefficients for luminance calculation (WCAG)
+LUMINANCE_COEFFICIENTS: Dict[str, float] = {
     'r': 0.2126,
     'g': 0.7152,
     'b': 0.0722
@@ -41,48 +48,38 @@ LUMINANCE_THRESHOLD_ADJUST = 0.03928
 LUMINANCE_ADJUSTMENT_FACTOR = 12.92
 LUMINANCE_GAMMA = 2.4
 
-# ============================================================================
-# Funciones auxiliares para cálculos de contraste
-# ============================================================================
-
-def hex_to_rgb(hex_color):
+def hex_to_rgb(hex_color: str) -> Tuple[int, int, int]:
     """
-    Convierte un color hexadecimal a RGB.
-    
+    Convert a hexadecimal colour into an RGB tuple.
+
     Args:
-        hex_color: Color en formato hexadecimal (con o sin #)
-        
+        hex_color: Colour in hexadecimal format (with or without leading '#').
+
     Returns:
-        Tupla (r, g, b) con valores de 0 a 255
+        Tuple (r, g, b) with integer components in [0, 255].
     """
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 
-def _adjust_component_luminance(component):
+def _adjust_component_luminance(component: float) -> float:
     """
-    Ajusta un componente de color para el cálculo de luminancia según WCAG.
-    
-    Args:
-        component: Componente de color normalizado (0.0-1.0)
-        
-    Returns:
-        Componente ajustado para cálculo de luminancia
+    Adjust a single RGB component for luminance computation according to WCAG.
     """
     if component <= LUMINANCE_THRESHOLD_ADJUST:
         return component / LUMINANCE_ADJUSTMENT_FACTOR
     return ((component + 0.055) / 1.055) ** LUMINANCE_GAMMA
 
 
-def get_luminance(rgb):
+def get_luminance(rgb: Tuple[int, int, int]) -> float:
     """
-    Calcula la luminosidad relativa según WCAG 2.1.
-    
+    Compute relative luminance according to WCAG 2.1.
+
     Args:
-        rgb: Tupla (r, g, b) con valores de 0 a 255
-        
+        rgb: Tuple (r, g, b) with integer components in [0, 255].
+
     Returns:
-        Luminancia relativa (0.0-1.0)
+        Relative luminance in [0.0, 1.0].
     """
     r, g, b = [c / 255.0 for c in rgb]
     adjusted_r = _adjust_component_luminance(r)
@@ -96,16 +93,16 @@ def get_luminance(rgb):
     )
 
 
-def calculate_contrast_ratio(color1_hex, color2_hex):
+def calculate_contrast_ratio(color1_hex: str, color2_hex: str) -> float:
     """
-    Calcula el ratio de contraste entre dos colores según WCAG.
-    
+    Calculate the contrast ratio between two colours according to WCAG.
+
     Args:
-        color1_hex: Primer color en formato hexadecimal
-        color2_hex: Segundo color en formato hexadecimal
-        
+        color1_hex: First colour in hexadecimal format.
+        color2_hex: Second colour in hexadecimal format.
+
     Returns:
-        Ratio de contraste (1.0-21.0)
+        Contrast ratio in the range [1.0, 21.0].
     """
     lum1 = get_luminance(hex_to_rgb(color1_hex))
     lum2 = get_luminance(hex_to_rgb(color2_hex))
@@ -117,16 +114,17 @@ def calculate_contrast_ratio(color1_hex, color2_hex):
     return (lighter + CONTRAST_ADJUSTMENT) / (darker + CONTRAST_ADJUSTMENT)
 
 
-def find_contrasting_color(bg_color_hex, required_ratio):
+def find_contrasting_color(bg_color_hex: str, required_ratio: float) -> str:
     """
-    Encuentra un color que cumpla el ratio de contraste requerido.
-    
+    Find a foreground colour that satisfies the required contrast ratio.
+
     Args:
-        bg_color_hex: Color de fondo en formato hexadecimal
-        required_ratio: Ratio de contraste requerido (ej: "4.5:1")
-        
+        bg_color_hex: Background colour in hexadecimal form.
+        required_ratio: Required contrast ratio (e.g. 4.5).
+
     Returns:
-        Color que cumple el contraste requerido
+        Hex colour string that meets or exceeds the required ratio
+        against the supplied background colour.
     """
     try:
         bg_luminance = get_luminance(hex_to_rgb(bg_color_hex))
@@ -144,8 +142,8 @@ def find_contrasting_color(bg_color_hex, required_ratio):
     except Exception:
         return '#000000'
 
-def _candidate_image_keys(src_value, base_url):
-    """Genera claves candidatas para buscar descripciones de imágenes"""
+def _candidate_image_keys(src_value: Optional[str], base_url: str) -> List[str]:
+    """Generate candidate keys for looking up image descriptions."""
     if not src_value:
         return []
     candidates = {src_value}
@@ -158,42 +156,56 @@ def _candidate_image_keys(src_value, base_url):
         pass  
     return list(candidates)
 
-def _normalize_angular_selector(selector):
-    """Normaliza un selector CSS eliminando atributos Angular dinámicos (_ngcontent-*, _nghost-*)"""
+def _normalize_angular_selector(selector: str) -> str:
+    """
+    Normalize a CSS selector by stripping Angular‑specific runtime attributes.
+
+    This is useful when selectors include `_ngcontent-*` or `_nghost-*`
+    attributes injected by Angular, which do not exist in the original templates.
+    """
     if not selector:
         return selector
-    
-    # Eliminar atributos Angular del selector: [attr="_ngcontent-xxx"] o [_ngcontent-xxx]
+
+    # Remove Angular attributes from the selector: [attr="_ngcontent-xxx"] or [_ngcontent-xxx]
     normalized = re.sub(r'\[_ngcontent-[^\]]+\]', '', selector)
     normalized = re.sub(r'\[_nghost-[^\]]+\]', '', normalized)
     normalized = re.sub(r'\[attr="_ngcontent-[^"]+"\]', '', normalized)
     normalized = re.sub(r'\[attr="_nghost-[^"]+"\]', '', normalized)
     
-    # Limpiar espacios múltiples
+    # Collapse multiple spaces
     normalized = re.sub(r'\s+', ' ', normalized).strip()
     
     return normalized
 
-def _normalize_angular_html(html_str):
-    """Normaliza HTML eliminando atributos Angular dinámicos para comparación"""
+
+def _normalize_angular_html(html_str: Optional[str]) -> Optional[str]:
+    """
+    Normalize HTML by stripping Angular runtime attributes for comparison.
+    """
     if not html_str:
         return html_str
-    
-    # Eliminar atributos _ngcontent-* y _nghost-*
+
+    # Remove _ngcontent-* and _nghost-* attributes
     normalized = re.sub(r'\s+_ngcontent-[^=]*="[^"]*"', '', html_str)
     normalized = re.sub(r'\s+_nghost-[^=]*="[^"]*"', '', normalized)
-    
+
     return normalized
 
-def _css_to_xpath(css_selector):
-    """Convierte un selector CSS a XPath básico"""
+
+def _css_to_xpath(css_selector: Optional[str]) -> Optional[str]:
+    """
+    Convert a CSS selector into a basic XPath expression.
+
+    This is intentionally conservative and only supports a subset of selectors,
+    enough for the mapping heuristics used in this module.
+    """
     if not css_selector:
         return None
-    
-    # Normalizar selector Angular primero
+
+    # Normalize Angular selector first
     css_selector = _normalize_angular_selector(css_selector)
     
-    # Limpiar selector de pseudo-clases problemáticas primero
+    # Strip selector of problematic pseudo-classes first
     xpath = re.sub(r':nth-child\([^)]+\)', '', css_selector)
     xpath = re.sub(r':first-child', '', xpath)
     xpath = re.sub(r':last-child', '', xpath)
@@ -247,7 +259,7 @@ def _css_to_xpath(css_selector):
             # Es un tag name
             xpath_parts.append(xpath_part)
         else:
-            # Es un atributo, añadirlo al último tag
+            # It's an attribute, add it to the last tag
             if xpath_parts:
                 xpath_parts[-1] += xpath_part
             else:
@@ -257,14 +269,14 @@ def _css_to_xpath(css_selector):
     if not xpath_parts:
         return '//*'
     
-    # Determinar separador basado en si había >
+    # Determine separator based on whether there was >
     separator = '//' if '>' not in css_selector else '/'
     result = separator + separator.join(xpath_parts)
     
     return result
 
 def _find_node_by_html_snippet(soup, html_snippet):
-    """Encuentra un nodo comparando su HTML con el snippet de la violación, ignorando atributos Angular"""
+    """Find a node by comparing its HTML to the violation snippet, ignoring Angular attributes"""
     if not html_snippet or html_snippet == 'No HTML snippet':
         return None
     
@@ -293,14 +305,14 @@ def _find_node_by_html_snippet(soup, html_snippet):
                     snippet_attrs = {k for k in snippet_tag.attrs.keys() if not k.startswith('_ng')}
                     element_attrs = {k for k in element.attrs.keys() if not k.startswith('_ng')}
                     
-                    # Si hay atributos en común o el snippet es muy similar
+                    # If there are common attributes or the snippet is very similar
                     if snippet_attrs.intersection(element_attrs) or len(snippet_clean) > 50:
                         return element
     
     return None
 
 def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0):
-    """Intenta encontrar un nodo usando múltiples estrategias: CSS, XPath, y HTML snippet matching, con soporte para Angular"""
+    """Try to find a node using multiple strategies: CSS, XPath, and HTML snippet matching, with Angular support"""
     # Normalizar selector Angular primero
     normalized_selector = _normalize_angular_selector(selector)
     
@@ -308,13 +320,13 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
     try:
         nodes = soup.select(normalized_selector)
         if nodes:
-            # Si hay múltiples nodos, usar el índice de la violación o el HTML snippet para encontrar el correcto
+            # If multiple nodes, use violation index or HTML snippet to find the right one
             if len(nodes) == 1:
                 return nodes[0]
             elif html_snippet:
-                # Normalizar HTML snippet para comparación
+                # Normalise HTML snippet for comparison
                 snippet_clean = _normalize_angular_html(html_snippet)
-                # Si hay múltiples nodos, usar el HTML snippet para encontrar el correcto
+                # If multiple nodes, use HTML snippet to find the correct one
                 for node in nodes:
                     node_html = str(node)
                     node_clean = _normalize_angular_html(node_html)
@@ -323,7 +335,7 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
                 # Si no se encuentra por snippet, devolver el primero
                 return nodes[0] if nodes else None
             else:
-                # Si no hay snippet, devolver el nodo en el índice de la violación
+                # If no snippet, return node at violation index
                 return nodes[violation_index % len(nodes)] if nodes else None
     except Exception:
         pass
@@ -400,7 +412,7 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
                             if candidates:
                                 return candidates[0]
                 elif html_snippet:
-                    # Buscar entre múltiples nodos usando el snippet
+                    # Search among multiple nodes using the snippet
                     for node in nodes:
                         node_xml = etree.tostring(node, encoding='unicode', method='html')
                         if html_snippet in node_xml:
@@ -413,7 +425,7 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
                                         return candidate
                                 return soup.find(found.name, found.attrs) if found else None
                 else:
-                    # Sin snippet, usar el nodo en el índice de la violación
+                    # No snippet, use node at violation index
                     if violation_index < len(nodes):
                         node_xml = etree.tostring(nodes[violation_index], encoding='unicode', method='html')
                         node_soup = BeautifulSoup(node_xml, 'html.parser')
@@ -437,11 +449,11 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
         # Extraer todas las clases del selector (ej: .article-preview, .info, .date)
         class_matches = re.findall(r'\.([a-zA-Z0-9_-]+)', selector)
         if class_matches:
-            # Intentar encontrar por la última clase (el elemento objetivo)
+            # Try to find by the last class (the target element)
             target_class = class_matches[-1]
             nodes = soup.find_all(class_=re.compile(f'\\b{re.escape(target_class)}\\b'))
             if nodes and html_snippet:
-                # Si hay snippet, buscar el que más coincida
+                # If there's a snippet, find the best match
                 snippet_clean = _normalize_angular_html(html_snippet)
                 for node in nodes:
                     node_html = str(node)
@@ -462,7 +474,7 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
         # Extraer atributos del selector (ej: [aria-label="..."], [href$="..."])
         attr_matches = re.findall(r'\[([^\]]+)\]', selector)
         if attr_matches:
-            for attr_match in reversed(attr_matches):  # Empezar por el último
+            for attr_match in reversed(attr_matches):  # Start from the last
                 if '=' in attr_match:
                     attr_name, attr_value = attr_match.split('=', 1)
                     attr_value = attr_value.strip('"\'')
@@ -480,7 +492,7 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
     except Exception:
         pass
     
-    # Estrategia 6: Último recurso - selector simplificado (última parte)
+    # Strategy 6: Last resort - simplified selector (last part)
     try:
         last_part = selector.split('>')[-1].strip()
         last_part = re.sub(r':[a-z-]+(\([^)]+\))?', '', last_part)
@@ -488,7 +500,7 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
             nodes = soup.select(last_part)
             if nodes:
                 if html_snippet:
-                    # Intentar encontrar el que más coincida con el snippet
+                    # Try to find the one that best matches the snippet
                     snippet_clean = _normalize_angular_html(html_snippet)
                     for node in nodes:
                         node_html = str(node)
@@ -499,9 +511,9 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
     except Exception:
         pass
     
-    # Estrategia 7: Buscar por tag name del último elemento del selector
+    # Strategy 7: Search by tag name of the selector's last element
     try:
-        # Extraer el tag name del último elemento
+        # Extract tag name of last element
         parts = selector.split('>')
         last_part = parts[-1].strip()
         # Quitar pseudo-clases, clases, IDs
@@ -513,10 +525,10 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
                 for node in nodes:
                     node_html = str(node)
                     node_clean = _normalize_angular_html(node_html)
-                    # Buscar coincidencias más estrictas
+                    # Look for stricter matches
                     if snippet_clean in node_clean or node_clean in snippet_clean:
                         return node
-                    # O al menos buscar por contenido de texto si es pequeño
+                    # Or at least search by text content if small
                     if len(snippet_clean) < 200 and node.get_text(strip=True) in snippet_clean:
                         return node
     except Exception:
@@ -525,7 +537,7 @@ def _find_node_by_selector(soup, selector, html_snippet=None, violation_index=0)
     return None
 
 def _fix_owl_controls(node_to_fix, violation, fixed_dot_containers):
-    """Corrige controles de Owl Carousel con heurísticas"""
+    """Fix Owl Carousel controls with heuristics"""
     violation_id_val = (violation.get('violation_id') or violation.get('id') or '').lower()
     description_val = (violation.get('description') or '').lower()
     # No abortar si no coincide exactamente: intentaremos etiquetar botones sin texto igualmente
@@ -570,7 +582,7 @@ def _fix_owl_controls(node_to_fix, violation, fixed_dot_containers):
     return False
 
 def _fix_link_name(node_to_fix, violation):
-    """Corrige enlaces sin texto discernible añadiendo aria-label o texto visible"""
+    """Fix links without discernible text by adding aria-label or visible text"""
     if node_to_fix.name != 'a':
         return False
     
@@ -620,13 +632,13 @@ def _fix_link_name(node_to_fix, violation):
     # 3. Intentar inferir desde clases CSS
     if not label and class_list:
         label_candidates = {
-            'home': 'Inicio', 'menu': 'Menú', 'nav': 'Navegación',
+            'home': 'Home', 'menu': 'Menu', 'nav': 'Navigation',
             'logo': 'Logo', 'icon': 'Icono', 'social': 'Red social',
             'facebook': 'Facebook', 'twitter': 'Twitter', 'instagram': 'Instagram',
             'linkedin': 'LinkedIn', 'youtube': 'YouTube', 'email': 'Correo',
-            'phone': 'Teléfono', 'contact': 'Contacto', 'about': 'Acerca de',
-            'next': 'Siguiente', 'prev': 'Anterior', 'back': 'Atrás',
-            'more': 'Más información', 'read': 'Leer más', 'download': 'Descargar'
+            'phone': 'Phone', 'contact': 'Contact', 'about': 'About',
+            'next': 'Next', 'prev': 'Previous', 'back': 'Back',
+            'more': 'More information', 'read': 'Read more', 'download': 'Download'
         }
         joined = ' '.join(class_list).lower()
         for key, val in label_candidates.items():
@@ -647,7 +659,7 @@ def _fix_link_name(node_to_fix, violation):
             elif 'fa-envelope' in icon_classes_str or 'email' in icon_classes_str:
                 label = 'Correo'
             elif 'fa-phone' in icon_classes_str or 'phone' in icon_classes_str:
-                label = 'Teléfono'
+                label = 'Phone'
             elif 'fa-facebook' in icon_classes_str:
                 label = 'Facebook'
             elif 'fa-twitter' in icon_classes_str:
@@ -663,7 +675,7 @@ def _fix_link_name(node_to_fix, violation):
             elif 'fa-arrow-left' in icon_classes_str or 'prev' in icon_classes_str:
                 label = 'Anterior'
     
-    # 5. Si aún no hay label, usar uno genérico basado en el contexto
+    # 5. If still no label, use a generic one based on context
     if not label:
         # Verificar si hay un elemento hermano con texto que pueda servir de contexto
         parent = node_to_fix.find_parent()
@@ -685,7 +697,7 @@ def _fix_link_name(node_to_fix, violation):
     return False
 
 def _build_contrast_prompt(violation, original_fragment, recommended_color_str, apply_to_children, contrast_info, color_suggestions, has_screenshots=False):
-    """Prompt compacto para corrección de contraste en HTML."""
+    """Compact prompt for contrast correction in HTML."""
     description = violation.get('description', 'Error de contraste de color')
     failure_summary = violation.get('failure_summary', '')
 
@@ -696,7 +708,7 @@ def _build_contrast_prompt(violation, original_fragment, recommended_color_str, 
     parts = [
         f"Corrige ESTE error de contraste de color en el siguiente fragmento HTML.",
         "",
-        f"VIOLACIÓN: {description}",
+        f"VIOLATION: {description}",
     ]
     if failure_summary:
         parts.append(f"DETALLE: {failure_summary}")
@@ -710,10 +722,10 @@ def _build_contrast_prompt(violation, original_fragment, recommended_color_str, 
         parts.append(screenshot_note)
 
     parts.append("")
-    parts.append("REGLAS RÁPIDAS:")
+    parts.append("QUICK RULES:")
     parts.append(f"- Ajusta SOLO el color del texto: style=\"color: {recommended_color_str}\"")
-    parts.append("- Mantén fondos y layout tal como están (no cambies tamaños ni posiciones).")
-    parts.append("- Si hay elementos hijos con texto, aplica también el nuevo color de texto a esos elementos.")
+    parts.append("- Keep backgrounds and layout as they are (do not change sizes or positions).")
+    parts.append("- If there are child elements with text, apply the new text colour to those elements too.")
 
     parts.append("")
     parts.append("FRAGMENTO A CORREGIR:")
@@ -734,30 +746,30 @@ def _build_general_prompt(violation, original_fragment, images_info, has_screens
     
     screenshot_note = ""
     if has_screenshots:
-        screenshot_note = "Mantén el aspecto visual que se ve en las capturas (layout, colores, responsive)."
+        screenshot_note = "Keep the visual appearance shown in the screenshots (layout, colours, responsive)."
 
     lines = [
         "Corrige ESTE error de accesibilidad en el siguiente fragmento HTML.",
         "",
-        f"VIOLACIÓN: {description}",
+        f"VIOLATION: {description}",
     ]
     if failure_summary:
         lines.append(f"DETALLE: {failure_summary}")
     if help_text:
         lines.append(f"AYUDA (Axe): {help_text}")
     if help_url:
-        lines.append(f"Más info: {help_url}")
+        lines.append(f"More info: {help_url}")
     if images_info:
         lines.append(images_info.strip())
     if screenshot_note:
         lines.append(screenshot_note)
 
     lines.append("")
-    lines.append("REGLAS RÁPIDAS (según el tipo de error):")
-    lines.append("- button-name / link-name → añade texto visible o aria-label=\"...\".")
-    lines.append("- image-alt / role-img-alt → añade alt=\"...\" o aria-label=\"...\".")
-    lines.append("- aria-* → añade/corrige atributos aria- (aria-label, aria-labelledby, role, etc.).")
-    lines.append("- focus / keyboard → asegúrate de que el elemento es focuseable y operable con teclado.")
+    lines.append("QUICK RULES (by error type):")
+    lines.append("- button-name / link-name → add visible text or aria-label=\"...\".")
+    lines.append("- image-alt / role-img-alt → add alt=\"...\" or aria-label=\"...\".")
+    lines.append("- aria-* → add/fix aria attributes (aria-label, aria-labelledby, role, etc.).")
+    lines.append("- focus / keyboard → ensure the element is focusable and keyboard operable.")
 
     lines.append("")
     lines.append("FRAGMENTO A CORREGIR:")
@@ -779,7 +791,7 @@ def _extract_clean_html(response_content):
     return content.strip()
 
 def _process_image_descriptions(soup, media_descriptions, base_url):
-    """Aplica descripciones de imágenes a las etiquetas img"""
+    """Apply image descriptions to img tags"""
     for img_tag in soup.find_all('img'):
         src = img_tag.get('src')
         for key in _candidate_image_keys(src, base_url):
@@ -798,7 +810,7 @@ def _get_text_elements(node):
     return text_elements
 
 def _get_fragment_images(fragment_html, media_descriptions, base_url):
-    """Extrae información de imágenes del fragmento"""
+    """Extract image information from the fragment"""
     fragment_soup = BeautifulSoup(fragment_html, 'html.parser')
     fragment_images = []
     for img in fragment_soup.find_all('img'):
@@ -809,7 +821,7 @@ def _get_fragment_images(fragment_html, media_descriptions, base_url):
                     fragment_images.append(f"  - {img_src}: {media_descriptions[key]}")
                     break
     if fragment_images:
-        return f"\n**Descripciones de imágenes disponibles**:\n" + "\n".join(fragment_images) + "\nIMPORTANTE: Si el fragmento contiene imágenes, usa estas descripciones para los atributos `alt` y `title`. MANTÉN estas descripciones exactas.\n"
+        return f"\n**Available image descriptions**:\n" + "\n".join(fragment_images) + "\nIMPORTANT: If the fragment contains images, use these descriptions for the `alt` and `title` attributes. KEEP these descriptions exact.\n"
     return ""
 
     
@@ -817,7 +829,7 @@ def _get_fragment_images(fragment_html, media_descriptions, base_url):
 
 
 def _calculate_contrast_info(violation):
-    """Calcula información de contraste y genera recomendaciones"""
+    """Compute contrast information and generate recommendations"""
     contrast_data = violation.get('contrast_data', {})
     bg_color = contrast_data.get('bgColor', '')
     fg_color = contrast_data.get('fgColor', '')
@@ -835,12 +847,12 @@ def _calculate_contrast_info(violation):
     contrast_info = ""
     if bg_color and fg_color:
         contrast_info = f"""
-**INFORMACIÓN DE CONTRASTE DETECTADA**:
+**CONTRAST INFORMATION DETECTED**:
 - Color de fondo actual: {bg_color}
 - Color de texto actual: {fg_color}
 - Ratio de contraste actual: {current_ratio}
 - Ratio de contraste requerido: {required_ratio}
-- Tamaño de fuente: {font_size}
+- Font size: {font_size}
 - Peso de fuente: {font_weight}
 - Tipo de texto: {'Texto grande (requiere 3:1)' if is_large_text else 'Texto normal (requiere 4.5:1)'}
 
@@ -867,9 +879,9 @@ def _calculate_contrast_info(violation):
                 bg_rgb = tuple(int(bg_color.lower()[i:i+2], 16) for i in (1, 3, 5))
                 bg_luminance = (0.299 * bg_rgb[0] + 0.587 * bg_rgb[1] + 0.114 * bg_rgb[2]) / 255
                 recommended_color = '#000000' if bg_luminance > 0.5 else '#FFFFFF'
-                color_suggestions = f"**COLOR RECOMENDADO**: {recommended_color} - garantiza contraste máximo\n"
+                color_suggestions = f"**RECOMMENDED COLOR**: {recommended_color} - ensures maximum contrast\n"
             except:
-                color_suggestions = "**COLOR RECOMENDADO**: #000000 (negro) - color seguro para la mayoría de fondos claros\n"
+                color_suggestions = "**RECOMMENDED COLOR**: #000000 (black) - safe colour for most light backgrounds\n"
     
     return contrast_info, color_suggestions, recommended_color, required_ratio
 
@@ -883,8 +895,8 @@ def _get_apply_to_children_text(node_to_fix, text_elements, recommended_color_st
 - El fragmento contiene elementos hijos con texto (como <p>, <span>, <a>, <li>, etc.)
 - DEBES aplicar el estilo `color: {recommended_color_str}` al elemento principal Y a TODOS los elementos hijos que contengan texto
 - Si el elemento principal es un contenedor, aplica el estilo directamente al contenedor Y a los elementos hijos de texto
-- Ejemplo: Si tienes `<div><p>Texto</p><span>Más texto</span></div>`, el resultado debe ser:
-  `<div style="color: {recommended_color_str}"><p style="color: {recommended_color_str}">Texto</p><span style="color: {recommended_color_str}">Más texto</span></div>`
+- Example: If you have `<div><p>Text</p><span>More text</span></div>`, the result should be:
+  `<div style="color: {recommended_color_str}"><p style="color: {recommended_color_str}">Text</p><span style="color: {recommended_color_str}">More text</span></div>`
 - NO olvides aplicar el estilo a TODOS los elementos hijos que contengan texto visible
 """
     return ""
@@ -929,89 +941,89 @@ def _call_llm_for_fix(client, prompt, system_message, screenshot_paths=None):
     return _extract_clean_html(response.choices[0].message.content)
 
 def _build_responsive_prompt(original_html, current_html, has_screenshots=False):
-    """Construye el prompt para restaurar diseño responsive"""
+    """Build the prompt to restore responsive design"""
     screenshot_instructions = ""
     if has_screenshots:
         screenshot_instructions = """
-🚨 CRÍTICO - REFERENCIA VISUAL:
-He incluido capturas de pantalla que muestran cómo se ve REALMENTE la página en diferentes tamaños (mobile, tablet, desktop) ANTES de las correcciones.
+🚨 CRITICAL - VISUAL REFERENCE:
+I have included screenshots that show how the page REALLY looks at different sizes (mobile, tablet, desktop) BEFORE the fixes.
 
-**INSTRUCCIONES OBLIGATORIAS**:
-1. EXAMINA DETALLADAMENTE cada captura para entender el diseño visual REAL
-2. El diseño final DEBE verse IDÉNTICO a las capturas en términos de:
-   - Layout y distribución de elementos
-   - Tamaños y espaciado
-   - Colores de fondo (NO cambies los que se ven en las capturas)
-   - Responsive behavior (cómo se adapta en mobile/tablet/desktop)
-3. MANTÉN todas las correcciones de accesibilidad (aria-label, alt, roles, estilos de contraste)
-4. El resultado debe ser: diseño de las capturas + correcciones de accesibilidad invisibles
+**MANDATORY INSTRUCTIONS**:
+1. EXAMINE each screenshot in detail to understand the REAL visual design
+2. The final design MUST look IDENTICAL to the screenshots in terms of:
+   - Layout and element distribution
+   - Sizes and spacing
+   - Background colours (do NOT change those visible in the screenshots)
+   - Responsive behaviour (how it adapts on mobile/tablet/desktop)
+3. KEEP all accessibility fixes (aria-label, alt, roles, contrast styles)
+4. The result must be: design from the screenshots + invisible accessibility fixes
 
 """
     
-    return f"""Eres un experto en diseño web responsive. HAZ UN MERGE INTELIGENTE: combina el diseño responsive del HTML original con las correcciones de accesibilidad del HTML actual.
+    return f"""You are a responsive web design expert. DO A SMART MERGE: combine the responsive design from the original HTML with the accessibility fixes from the current HTML.
 {screenshot_instructions}
 
-## OBJETIVO CRÍTICO:
-Hacer un MERGE elemento por elemento:
-- Del HTML ORIGINAL: tomar SOLO las propiedades CSS de layout (width, height, position, display, flex, grid, margin, padding, unidades)
-- Del HTML ACTUAL: mantener TODOS los atributos de accesibilidad (aria-label, lang, alt, title, labels, roles ARIA, style="color:...")
+## CRITICAL GOAL:
+Perform an element-by-element MERGE:
+- From the ORIGINAL HTML: take ONLY layout CSS properties (width, height, position, display, flex, grid, margin, padding, units)
+- From the CURRENT HTML: keep ALL accessibility attributes (aria-label, lang, alt, title, labels, ARIA roles, style="color:...")
 
-## PROCESO DE MERGE (elemento por elemento):
-1. Para cada elemento en el HTML actual, encuentra el elemento correspondiente en el HTML original (por selector/clase/id)
-2. Del elemento ORIGINAL: copia SOLO las propiedades CSS de layout en el atributo `style` o `class`
-3. Del elemento ACTUAL: mantén TODOS estos atributos de accesibilidad:
+## MERGE PROCESS (element by element):
+1. For each element in the current HTML, find the corresponding element in the original HTML (by selector/class/id)
+2. From the ORIGINAL element: copy ONLY layout CSS properties into the `style` or `class` attribute
+3. From the CURRENT element: keep ALL these accessibility attributes:
    - aria-label, aria-labelledby, aria-describedby, aria-current, role
    - lang
-   - alt, title (en imágenes)
-   - id (si se usó para asociar labels)
-   - style="color: ..." (estilos de contraste) - CRÍTICO: NUNCA elimines estos
-   - style="background-color: ..." (si se añadió para corregir contraste) - CRÍTICO: NUNCA elimines estos
-   - CUALQUIER atributo style que contenga "color:" o "background-color:" - CRÍTICO: NUNCA elimines estos
-   - label for="..." (si se añadieron labels)
-   - Todos los atributos ARIA que se hayan añadido
-4. Combina ambos: el elemento final debe tener las propiedades CSS del original + todos los atributos de accesibilidad del actual
-5. Si un elemento tiene style="color: ..." o style="background-color: ..." en el HTML ACTUAL, DEBES preservarlo COMPLETAMENTE en el resultado final
+   - alt, title (on images)
+   - id (if used to associate labels)
+   - style="color: ..." (contrast styles) - CRITICAL: NEVER remove these
+   - style="background-color: ..." (if added to fix contrast) - CRITICAL: NEVER remove these
+   - ANY style attribute containing "color:" or "background-color:" - CRITICAL: NEVER remove these
+   - label for="..." (if labels were added)
+   - All ARIA attributes that were added
+4. Combine both: the final element must have the original's CSS properties + all accessibility attributes from the current one
+5. If an element has style="color: ..." or style="background-color: ..." in the CURRENT HTML, you MUST preserve it COMPLETELY in the final result
 
-## REGLAS ESTRICTAS:
-1. NUNCA elimines atributos que empiecen con "aria-"
-2. NUNCA elimines atributos "alt", "title", "lang"
-3. NUNCA elimines elementos `<label>` que se hayan añadido
-4. NUNCA elimines estilos `style="color: ..."` que se hayan añadido - CRÍTICO PARA CONTRASTE
-5. NUNCA elimines estilos `style="background-color: ..."` que se hayan añadido para contraste - CRÍTICO
-6. Si un elemento tiene `style` con "color:" o "background-color:" en el HTML ACTUAL, DEBES preservarlo COMPLETAMENTE, incluso si combinas con otros estilos del original
-7. SIEMPRE mantén las clases del original (pueden tener CSS responsivo)
-8. SIEMPRE mantén las propiedades CSS de layout del original (width, height, position, display, flex, grid, margin, padding)
-9. Al combinar estilos, SIEMPRE preserva primero los estilos de contraste (color, background-color) del HTML ACTUAL, luego añade los estilos de layout del original
+## STRICT RULES:
+1. NEVER remove attributes that start with "aria-"
+2. NEVER remove "alt", "title", "lang" attributes
+3. NEVER remove `<label>` elements that were added
+4. NEVER remove `style="color: ..."` styles that were added - CRITICAL FOR CONTRAST
+5. NEVER remove `style="background-color: ..."` styles that were added for contrast - CRITICAL
+6. If an element has `style` with "color:" or "background-color:" in the CURRENT HTML, you MUST preserve it COMPLETELY, even when merging with other styles from the original
+7. ALWAYS keep the original's classes (they may have responsive CSS)
+8. ALWAYS keep the original's layout CSS properties (width, height, position, display, flex, grid, margin, padding)
+9. When merging styles, ALWAYS preserve the contrast styles (color, background-color) from the CURRENT HTML first, then add the original's layout styles
 
-## PROHIBIDO:
-• NO elimines correcciones de accesibilidad
-• NO restaures atributos que eliminen las correcciones
-• NO cambies el diseño responsive original (solo combínalo con las correcciones)
+## FORBIDDEN:
+• Do NOT remove accessibility fixes
+• Do NOT restore attributes that would remove the fixes
+• Do NOT change the original responsive design (only merge it with the fixes)
 
-## HTML ORIGINAL (referencia para diseño responsive):
+## ORIGINAL HTML (reference for responsive design):
 ```html
 {original_html}
 ```
 
-## HTML ACTUAL (con correcciones de accesibilidad):
+## CURRENT HTML (with accessibility fixes):
 ```html
 {current_html}
 ```
 
-⚠️ CRÍTICO - IMPORTANTE:
-1. Ambos HTML deben estar COMPLETOS en el prompt - NO elimines ninguna parte
-2. Debes procesar TODO el contenido desde el inicio hasta el final
-3. Debes incluir footer, scripts al final, y cualquier elemento de la parte inferior
-4. El HTML resultante DEBE tener al menos el 95% de la longitud del HTML original
-5. Si el HTML original tiene 100,000 caracteres, el resultado debe tener al menos 95,000 caracteres
-6. NO cortes el HTML por la mitad - debe estar COMPLETO
+⚠️ CRITICAL - IMPORTANT:
+1. Both HTML blocks must be COMPLETE in the prompt - do NOT remove any part
+2. You must process ALL content from start to end
+3. You must include footer, scripts at the end, and any bottom elements
+4. The resulting HTML MUST be at least 95% of the original HTML length
+5. If the original HTML has 100,000 characters, the result must have at least 95,000 characters
+6. Do NOT cut the HTML in half - it must be COMPLETE
 
-**VERIFICACIÓN REQUERIDA**: Antes de responder, verifica que tu respuesta tenga aproximadamente la misma longitud que el HTML original. Si tu respuesta es significativamente más corta, significa que cortaste contenido y debes volver a generar el HTML completo.
+**REQUIRED VERIFICATION**: Before responding, verify that your response is approximately the same length as the original HTML. If your response is significantly shorter, you have cut content and must regenerate the full HTML.
 
-Devuelve el HTML COMPLETO haciendo el MERGE: diseño responsive del original + TODAS las correcciones de accesibilidad del actual. El HTML resultante DEBE tener la misma longitud y estructura completa que el original."""
+Return the COMPLETE HTML doing the MERGE: original's responsive design + ALL accessibility fixes from the current one. The resulting HTML MUST have the same length and full structure as the original."""
         
 def _validate_responsive_html(responsive_html, original_html, current_html):
-    """Valida y procesa el HTML responsive resultante"""
+    """Validate and process the resulting responsive HTML"""
     if not responsive_html or "<html" not in responsive_html.lower():
         return None
     
@@ -1024,14 +1036,14 @@ def _validate_responsive_html(responsive_html, original_html, current_html):
     
     if body and len(body.get_text().strip()) >= 100:
         if length_ratio < 0.7:
-            print(f"  ⚠️ ADVERTENCIA: El HTML resultante es significativamente más corto ({length_ratio:.1%} del original)")
+            print(f"  ⚠️ WARNING: Resulting HTML is significantly shorter ({length_ratio:.1%} of original)")
         return soup
     else:
-        print("  ⚠️ ADVERTENCIA: El body parece estar vacío o truncado")
+        print("  ⚠️ WARNING: Body appears empty or truncated")
         return None
 
 def _ensure_discernible_buttons(soup):
-    """Asegura que los botones icon-only tengan texto discernible vía aria-label."""
+    """Ensure icon-only buttons have discernible text via aria-label."""
     print("--- [DEBUG] Iniciando _ensure_discernible_buttons (v2) ---")
     label_candidates = {
         'bi-plus-lg': 'Agregar', 'bi-plus': 'Agregar', 'plus': 'Agregar', 'add': 'Agregar',
@@ -1042,7 +1054,7 @@ def _ensure_discernible_buttons(soup):
     
     buttons = set(soup.find_all('button'))
     buttons.update(soup.find_all(role='button'))
-    print(f"  > [DEBUG] Encontrados {len(buttons)} elementos de tipo botón.")
+    print(f"  > [DEBUG] Found {len(buttons)} button-type elements.")
 
     for btn in buttons:
         classes_str = ' '.join(btn.get('class', []))
@@ -1050,10 +1062,10 @@ def _ensure_discernible_buttons(soup):
         # 1. Comprobar si tiene texto visible
         has_text = (btn.get_text() or '').strip() != ''
         
-        # 2. Comprobar si tiene un aria-label existente y no vacío
+        # 2. Check if it has an existing non-empty aria-label
         has_aria_label = (btn.get('aria-label') or '').strip() != ''
         
-        # Si tiene texto O un aria-label válido, está bien. Pasamos al siguiente.
+        # If it has text OR a valid aria-label, it's fine. Move to next.
         if has_text or has_aria_label:
             if has_text:
                 print(f"\n  > [DEBUG] SALTANDO (tiene texto): <{btn.name} class='{classes_str}'>")
@@ -1061,7 +1073,7 @@ def _ensure_discernible_buttons(soup):
                 print(f"\n  > [DEBUG] SALTANDO (ya tiene aria-label): <{btn.name} class='{classes_str}' aria-label='{btn.get('aria-label')}'>")
             continue
 
-        # Si estamos aquí, es un botón-icono SIN texto y SIN aria-label.
+        # If we're here, it's an icon-only button with NO text and NO aria-label.
         # NECESITA ser corregido, independientemente de lo que tenga en 'title'.
         print(f"\n  > [DEBUG] PROCESANDO: <{btn.name} class='{classes_str}'>")
         print(f"    ... tiene texto?   {has_text}")
@@ -1081,13 +1093,13 @@ def _ensure_discernible_buttons(soup):
             final_label = inferred_label
             print(f"    > Inferencia por clase: '{key}' -> '{final_label}'")
         else:
-            # 4. Si no se infiere, usar el 'title' si existe y no está vacío
+            # 4. If not inferred, use 'title' if it exists and is non-empty
             title_val = (btn.get('title') or '').strip()
             if title_val:
                 final_label = title_val
                 print(f"    > Usando 'title' existente: '{final_label}'")
             else:
-                # 5. Como último recurso, usar una etiqueta genérica
+                # 5. As a last resort, use a generic label
                 final_label = 'Button'
                 print(f"    > Usando etiqueta por defecto: '{final_label}'")
 
@@ -1096,8 +1108,24 @@ def _ensure_discernible_buttons(soup):
     
     print("--- [DEBUG] Finalizado _ensure_discernible_buttons (v2) ---")
 
+
+def _ensure_discernible_links(soup):
+    """Asegura que los enlaces sin texto tengan nombre accesible (link-name)."""
+    print("--- [DEBUG] Iniciando _ensure_discernible_links ---")
+    fixed_count = 0
+    for a_tag in soup.find_all('a'):
+        try:
+            # Reuse _fix_link_name heuristic logic
+            fixed = _fix_link_name(a_tag, {})
+            if fixed:
+                fixed_count += 1
+        except Exception as e:
+            print(f"  ⚠️ Error corrigiendo enlace sin texto discernible: {e}")
+    print(f"  > [DEBUG] Enlaces corregidos (link-name): {fixed_count}")
+    print("--- [DEBUG] Finalizado _ensure_discernible_links ---")
+
 def generate_accessible_html_with_parser(original_html, axe_results, media_descriptions, client, base_url, driver, screenshot_paths=None):
-    print("\n--- Iniciando Proceso de Corrección Solo con LLMs ---")
+    print("\n--- Starting LLM-only correction process ---")
     
     soup = BeautifulSoup(original_html, 'html.parser')
     all_violations = flatten_violations(axe_results.get('violations', []))
@@ -1129,7 +1157,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
     if violation_types:
         print(f"  → Tipos de violaciones encontradas:")
         for v_type, count in sorted(violation_types.items(), key=lambda x: x[1], reverse=True):
-            print(f"     - {v_type}: {count} violación(es)")
+            print(f"     - {v_type}: {count} violation(s)")
     
     for violation in violations_to_fix:
         try:
@@ -1140,29 +1168,29 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
             # Normalizar selector Angular primero
             normalized_selector = _normalize_angular_selector(selector)
 
-            # Intentar encontrar el elemento - método original simple que funcionaba mejor
+            # Try to find the element - original simple method that worked best
             node_to_fix = None
             try:
-                # Método 1: Intentar con selector normalizado (sin atributos Angular)
+                # Method 1: Try with normalised selector (no Angular attributes)
                 node_to_fix = soup.select_one(normalized_selector)
             except Exception:
                 pass
 
-            # Método 2: Intentar con selector original (por si acaso)
+            # Method 2: Try with original selector (just in case)
             if not node_to_fix:
                 try:
                     node_to_fix = soup.select_one(selector)
                 except Exception:
                     pass
 
-            # Si no se encontró, intentar con select (método original alternativo)
+            # If not found, try with select (original alternative method)
             if not node_to_fix:
                 try:
                     nodes = soup.select(normalized_selector)
                     if not nodes:
                         nodes = soup.select(selector)
                     if nodes:
-                        # Si hay múltiples, usar el HTML snippet normalizado para encontrar el correcto
+                        # If multiple, use normalised HTML snippet to find the right one
                         if len(nodes) == 1:
                             node_to_fix = nodes[0]
                         elif html_snippet:
@@ -1182,7 +1210,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                 except Exception:
                     pass
 
-            # Si aún no se encontró, intentar con selector simplificado (método original)
+            # If still not found, try simplified selector (original method)
             if not node_to_fix:
                 try:
                     simplified = re.sub(r':nth-child\([^)]+\)|:first-child|:last-child|:nth-of-type\([^)]+\)', '', normalized_selector).strip()
@@ -1191,19 +1219,19 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                 except Exception:
                     pass
 
-            # Si aún no se encontró, usar función mejorada con XPath (incluye normalización Angular)
+            # If still not found, use improved XPath function (includes Angular normalisation)
             if not node_to_fix:
                 node_to_fix = _find_node_by_selector(soup, selector, html_snippet, 0)
 
-            # Último intento: buscar por HTML snippet directamente
+            # Last attempt: search by HTML snippet directly
             if not node_to_fix:
-                print(f"  ⚠️ No se encontró elemento para selector: {selector[:50]}... (intentando con HTML snippet y estrategias avanzadas)")
+                print(f"  ⚠️ No element found for selector: {selector[:50]}... (trying HTML snippet and advanced strategies)")
                 if html_snippet:
                     node_to_fix = _find_node_by_html_snippet(soup, html_snippet)
 
                 if not node_to_fix:
-                    # Las estrategias avanzadas (5-7) ya fueron intentadas en _find_node_by_selector (línea 1038)
-                    # que incluyen búsqueda por clases, IDs y atributos extraídos del selector
+                    # Advanced strategies (5-7) were already tried in _find_node_by_selector
+                    # including search by classes, IDs and attributes extracted from the selector
                     print(f"  ✗ No se pudo encontrar elemento para: {selector[:50]}...")
                     print(f"     Selector completo: {selector[:150]}")
                     if html_snippet:
@@ -1229,16 +1257,16 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                 contrast_info, color_suggestions, recommended_color, required_ratio = _calculate_contrast_info(violation)
                 apply_to_children = _get_apply_to_children_text(node_to_fix, text_elements, recommended_color)
                 prompt = _build_contrast_prompt(violation, original_fragment, recommended_color, apply_to_children, contrast_info, color_suggestions, has_screenshots)
-                system_message = f"Eres un experto en accesibilidad. CORRIGE el contraste de color añadiendo el atributo style con color: {recommended_color}. Es OBLIGATORIO corregir este error. Si hay elementos hijos con texto, aplica el estilo también a ellos. NO añadas otros atributos innecesarios. MANTÉN el diseño responsive tal como aparece en las capturas (si están disponibles)."
+                system_message = f"You are an accessibility expert. FIX the colour contrast by adding the style attribute with color: {recommended_color}. You MUST fix this error. If there are child elements with text, apply the style to them too. Do NOT add other unnecessary attributes. KEEP the responsive design as shown in the screenshots (if available)."
             else:
                 prompt = _build_general_prompt(violation, original_fragment, images_info, has_screenshots)
-                system_message = "Eres un experto en accesibilidad web. Tu PRIORIDAD es corregir TODOS los errores de accesibilidad mencionados MANTENIENDO el diseño responsive que se ve en las capturas. Las correcciones deben ser 'invisibles' visualmente (usa aria-label, roles, alt text). NO añadas comentarios HTML ni atributos que muestren que fueron correcciones. El HTML debe verse como si fuera código original, no corregido."
+                system_message = "You are a web accessibility expert. Your PRIORITY is to fix ALL mentioned accessibility errors while KEEPING the responsive design shown in the screenshots. Fixes should be visually 'invisible' (use aria-label, roles, alt text). Do NOT add HTML comments or attributes that show they were fixes. The HTML should look like original code, not corrected."
             
             corrected_fragment_str = _call_llm_for_fix(client, prompt, system_message, screenshot_paths)
             log_openai_call(prompt=prompt, response=corrected_fragment_str, model="gpt-4o", call_type="html_fix")
             
             if corrected_fragment_str:
-                # Limpiar posible código markdown alrededor de la respuesta
+                # Strip possible markdown code around the response
                 cleaned_response = corrected_fragment_str.strip()
                 if cleaned_response.startswith("```"):
                     parts = cleaned_response.split("```")
@@ -1260,7 +1288,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                     print(f"    ⚠️ Error parseando respuesta del LLM: {parse_error}")
                     # Intentar extraer solo el HTML del tag principal
                     try:
-                        # Buscar el primer tag HTML válido
+                        # Find the first valid HTML tag
                         import re
                         tag_match = re.search(r'<[a-zA-Z][^>]*>.*?</[a-zA-Z]+>', cleaned_response, re.DOTALL)
                         if tag_match:
@@ -1278,10 +1306,10 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                     original_normalized = _normalize_angular_html(original_str)
                     new_normalized = _normalize_angular_html(new_str)
                     
-                    # Si son idénticos después de normalizar, el LLM no hizo cambios
+                    # If identical after normalising, the LLM made no changes
                     if original_normalized.strip() == new_normalized.strip():
                         failed_fixes += 1
-                        print(f"    ✗ Error: El LLM devolvió el mismo código sin correcciones")
+                        print(f"    ✗ Error: LLM returned the same code with no fixes")
                     else:
                         # Intentar reemplazar el nodo
                         replaced = False
@@ -1302,7 +1330,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                                     normalized_sel = _normalize_angular_selector(selector)
                                     nodes = soup.select(normalized_sel)
                                 if nodes:
-                                    # Buscar el nodo que más coincida con el original
+                                    # Find the node that best matches the original
                                     for candidate_node in nodes:
                                         try:
                                             candidate_normalized = _normalize_angular_html(str(candidate_node))
@@ -1310,11 +1338,11 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                                                 candidate_node.replace_with(new_node)
                                                 replaced = True
                                                 successful_fixes += 1
-                                                print(f"    ✓ Corregido exitosamente (después de reintento)")
+                                                print(f"    ✓ Fixed successfully (after retry)")
                                                 break
                                         except Exception:
                                             continue
-                                    # Si no se encontró coincidencia pero hay nodos, usar el primero
+                                    # If no match found but there are nodes, use the first
                                     if not replaced and nodes:
                                         nodes[0].replace_with(new_node)
                                         replaced = True
@@ -1349,15 +1377,15 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                             
                             if not replaced:
                                 failed_fixes += 1
-                                print(f"    ✗ Error: No se pudo aplicar la corrección después de múltiples intentos")
+                                print(f"    ✗ Error: Could not apply fix after multiple attempts")
                                 print(f"       Selector: {selector[:100]}")
                 else:
                     failed_fixes += 1
-                    print(f"    ✗ Error: No se pudo parsear la corrección del LLM")
+                    print(f"    ✗ Error: Could not parse LLM correction")
                     print(f"       Respuesta recibida: {cleaned_response[:200]}...")
             else:
                 failed_fixes += 1
-                print(f"    ✗ Error: Respuesta vacía del LLM")
+                print(f"    ✗ Error: Empty response from LLM")
             
         except Exception as e:
             failed_fixes += 1
@@ -1365,23 +1393,24 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
     
     print(f"\n[Resumen] Correcciones exitosas: {successful_fixes}, Fallidas: {failed_fixes}")
     
-    print(f"\n[Fase 3/3] Restaurando diseño responsive manteniendo correcciones de accesibilidad...")
+    print(f"\n[Phase 3/3] Restoring responsive design while keeping accessibility fixes...")
     
     try:
-        # Pase de seguridad: garantizar botones con texto discernible antes del merge responsive
+        # Pase de seguridad: garantizar botones y enlaces con texto discernible antes del merge responsive
         _ensure_discernible_buttons(soup)
+        _ensure_discernible_links(soup)
         current_html = str(soup)
 
-        # Verificar el tamaño del HTML para evitar exceder el límite de tokens
-        # GPT-4o tiene un límite de ~128k tokens. Si el HTML es muy grande, saltar el merge responsive
-        estimated_tokens = len(original_html) / 4 + len(current_html) / 4  # Aproximación: 1 token ≈ 4 caracteres
+        # Check HTML size to avoid exceeding token limit
+        # GPT-4o has a ~128k token limit. If HTML is very large, skip responsive merge
+        estimated_tokens = len(original_html) / 4 + len(current_html) / 4  # Approx: 1 token ≈ 4 chars
         if estimated_tokens > 100000:  # Dejar margen de seguridad
-            print(f"  ⚠️ HTML demasiado grande ({estimated_tokens:.0f} tokens estimados), saltando merge responsive para evitar límite de tokens")
+            print(f"  ⚠️ HTML too large ({estimated_tokens:.0f} tokens estimated), skipping responsive merge to avoid token limit")
             print(f"  → Usando HTML corregido directamente (las correcciones de accesibilidad se mantienen)")
         else:
             has_screenshots = screenshot_paths is not None and len(screenshot_paths) > 0
             responsive_prompt = _build_responsive_prompt(original_html, current_html, has_screenshots)
-            responsive_system = "Eres un experto en diseño responsive. HAZ UN MERGE elemento por elemento: combina las propiedades CSS de layout del HTML original con TODOS los atributos de accesibilidad del HTML actual. NUNCA elimines atributos aria-*, alt, title, lang, labels, o estilos de contraste (color, background-color). CRÍTICO: Los estilos de contraste (style con 'color:' o 'background-color:') del HTML ACTUAL DEBEN preservarse COMPLETAMENTE. Si un elemento tiene estilos de contraste en el ACTUAL, preserva esos estilos y añade los estilos de layout del ORIGINAL. El resultado debe tener el diseño responsive del original + todas las correcciones de accesibilidad. CRÍTICO: Mantén TODO el contenido del HTML, incluyendo footer, scripts al final, y cualquier elemento de la parte inferior. NO elimines ninguna parte del HTML. Si hay capturas disponibles, el diseño final DEBE verse IDÉNTICO a las capturas en términos de layout, tamaños, espaciado y colores de fondo."
+            responsive_system = "You are a responsive design expert. MERGE element by element: combine the layout CSS properties from the original HTML with ALL accessibility attributes from the current HTML. NEVER remove aria-*, alt, title, lang, labels, or contrast styles (color, background-color). CRITICAL: Contrast styles (style with 'color:' or 'background-color:') in the CURRENT HTML MUST be preserved COMPLETELY. If an element has contrast styles in the CURRENT one, keep those styles and add the layout styles from the ORIGINAL. The result must have the original's responsive design + all accessibility fixes. CRITICAL: Keep ALL HTML content, including footer, scripts at the end, and any bottom elements. Do NOT remove any part of the HTML. If screenshots are available, the final design MUST look IDENTICAL to the screenshots in terms of layout, sizes, spacing and background colours."
             
             try:
                 messages = [
@@ -1426,7 +1455,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                 
                 if validated_soup:
                     soup = validated_soup
-                    print(f"  ✓ Diseño responsive restaurado manteniendo accesibilidad")
+                    print(f"  ✓ Responsive design restored while keeping accessibility")
                 else:
                     print(f"  → Usando HTML actual en lugar del merge")
             except Exception as api_error:
@@ -1440,5 +1469,5 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
         print(f"  ⚠️ Error restaurando responsive: {e}. Continuando con HTML actual...")
     
     soup = convert_paths_to_absolute(soup, base_url)
-    print("\n--- Proceso de Corrección Finalizado ---")
+    print("\n--- Correction process finished ---")
     return str(soup)

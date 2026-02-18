@@ -1,15 +1,18 @@
 """
-Módulo para capturas de pantalla automáticas durante el análisis de accesibilidad.
-Toma capturas en diferentes tamaños de pantalla para verificar el diseño responsive.
+Screenshot utilities used during accessibility analysis.
+
+This module captures screenshots at multiple viewport sizes to validate
+responsive behaviour, and can also create simple HTML galleries for review.
 """
 
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from selenium.webdriver.remote.webdriver import WebDriver
 
 
-# Tamaños de viewport comunes para testing responsive
-VIEWPORT_SIZES = [
+# Common viewport sizes for basic responsive testing
+VIEWPORT_SIZES: List[Dict[str, int]] = [
     {"name": "mobile", "width": 375, "height": 667},  # iPhone SE
     {"name": "tablet", "width": 768, "height": 1024},  # iPad
     {"name": "desktop", "width": 1920, "height": 1080},  # Full HD
@@ -21,57 +24,59 @@ def take_screenshots(
     url: str,
     output_dir: Path,
     viewport_sizes: Optional[List[Dict[str, int]]] = None,
-    prefix: str = "screenshot"
+    prefix: str = "screenshot",
 ) -> List[str]:
     """
-    Toma capturas de pantalla de una URL en diferentes tamaños de viewport.
-    
+    Capture full‑page screenshots of a URL for several viewport sizes.
+
     Args:
-        driver: WebDriver de Selenium
-        url: URL de la que tomar capturas
-        output_dir: Directorio donde guardar las capturas
-        viewport_sizes: Lista de tamaños de viewport. Si es None, usa VIEWPORT_SIZES por defecto
-        prefix: Prefijo para los nombres de archivo (default: "screenshot")
-    
+        driver: Selenium WebDriver instance.
+        url: Target URL to capture.
+        output_dir: Directory where screenshots will be written.
+        viewport_sizes: Optional list of viewport dictionaries; if None, uses
+                        the default VIEWPORT_SIZES.
+        prefix: File name prefix for generated screenshots.
+
     Returns:
-        Lista de rutas a las capturas tomadas
+        List of absolute screenshot file paths.
     """
     if viewport_sizes is None:
         viewport_sizes = VIEWPORT_SIZES
-    
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    screenshot_paths = []
-    
+    screenshot_paths: List[str] = []
+
     try:
-        # Navegar a la URL
+        # Navigate to the URL
         driver.get(url)
-        
-        # Esperar a que cargue la página
+
+        # Give the page some time to fully render
         import time
+
         time.sleep(3)
-        
-        # Tomar capturas en cada tamaño de viewport
+
+        # Capture screenshots for each viewport
         for viewport in viewport_sizes:
             width = viewport["width"]
             height = viewport["height"]
             name = viewport.get("name", f"{width}x{height}")
-            
-            # Cambiar tamaño de ventana
+
+            # Adjust window size
             driver.set_window_size(width, height)
-            time.sleep(1)  # Esperar a que se ajuste el layout
-            
-            # Tomar captura
+            time.sleep(1)  # Allow layout to adjust
+
+            # Capture screenshot
             screenshot_path = output_dir / f"{prefix}_{name}.png"
             driver.save_screenshot(str(screenshot_path))
             screenshot_paths.append(str(screenshot_path))
-            print(f"  ✓ Captura guardada: {screenshot_path.name} ({width}x{height})")
-        
-        # Restaurar tamaño original (desktop por defecto)
+            print(f"  ✓ Screenshot saved: {screenshot_path.name} ({width}x{height})")
+
+        # Restore a default desktop viewport
         driver.set_window_size(1920, 1080)
-        
-    except Exception as e:
-        print(f"  ⚠️ Error al tomar capturas de pantalla: {e}")
-    
+
+    except Exception as exc:
+        print(f"  ⚠️ Error while taking screenshots: {exc}")
+
     return screenshot_paths
 
 
@@ -79,71 +84,69 @@ def take_component_screenshot(
     driver: WebDriver,
     element_selector: str,
     output_path: Path,
-    viewport_size: Optional[Dict[str, int]] = None
+    viewport_size: Optional[Dict[str, int]] = None,
 ) -> Optional[str]:
     """
-    Toma una captura de pantalla de un elemento específico del DOM.
-    
+    Capture a screenshot of a specific DOM element.
+
     Args:
-        driver: WebDriver de Selenium
-        element_selector: Selector CSS o XPath del elemento
-        output_path: Ruta donde guardar la captura
-        viewport_size: Tamaño del viewport. Si es None, usa el tamaño actual
-    
+        driver: Selenium WebDriver instance.
+        element_selector: CSS selector or XPath for the element.
+        output_path: Destination path for the screenshot file.
+        viewport_size: Optional viewport size to apply before capturing.
+
     Returns:
-        Ruta a la captura si fue exitosa, None en caso contrario
+        Screenshot file path if successful, None otherwise.
     """
     try:
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        
-        # Si se especifica viewport, ajustarlo
+
+        # Optionally adjust viewport size
         if viewport_size:
             driver.set_window_size(viewport_size["width"], viewport_size["height"])
             import time
+
             time.sleep(1)
-        
-        # Encontrar el elemento
+
+        # Attempt CSS selector first
         try:
-            # Intentar primero con CSS selector
             element = driver.find_element(By.CSS_SELECTOR, element_selector)
-        except:
+        except Exception:
             try:
-                # Intentar con XPath
+                # Fallback to XPath
                 element = driver.find_element(By.XPATH, element_selector)
-            except:
-                print(f"  ⚠️ No se pudo encontrar el elemento: {element_selector}")
+            except Exception:
+                print(f"  ⚠️ Could not find element: {element_selector}")
                 return None
-        
-        # Tomar captura del elemento
+
+        # Capture element screenshot
         output_path.parent.mkdir(parents=True, exist_ok=True)
         element.screenshot(str(output_path))
         return str(output_path)
-        
-    except Exception as e:
-        print(f"  ⚠️ Error al tomar captura del elemento: {e}")
+
+    except Exception as exc:
+        print(f"  ⚠️ Error while taking element screenshot: {exc}")
         return None
 
 
 def create_screenshot_summary(screenshot_paths: List[str], output_path: Path) -> str:
     """
-    Crea un resumen HTML con las capturas para fácil visualización.
-    
+    Generate a simple HTML gallery summarising the provided screenshots.
+
     Args:
-        screenshot_paths: Lista de rutas a las capturas
-        output_path: Ruta donde guardar el HTML
-    
+        screenshot_paths: List of screenshot file paths.
+        output_path: Destination HTML path.
+
     Returns:
-        Ruta al archivo HTML generado
+        The path to the generated HTML file.
     """
     html_content = """
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capturas de Pantalla - Análisis de Accesibilidad</title>
+    <title>Accessibility Analysis Screenshots</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -178,26 +181,28 @@ def create_screenshot_summary(screenshot_paths: List[str], output_path: Path) ->
     </style>
 </head>
 <body>
-    <h1>Capturas de Pantalla - Análisis de Accesibilidad</h1>
+    <h1>Accessibility Analysis Screenshots</h1>
 """
-    
-    for i, path in enumerate(screenshot_paths, 1):
+
+    for path in screenshot_paths:
         path_obj = Path(path)
         relative_path = path_obj.name
-        viewport_name = path_obj.stem.replace("screenshot_", "").replace("_", " ").title()
-        
+        viewport_name = (
+            path_obj.stem.replace("screenshot_", "").replace("_", " ").title()
+        )
+
         html_content += f"""
     <div class="screenshot-container">
-        <h2>Vista: {viewport_name}</h2>
-        <img src="{relative_path}" alt="Captura de pantalla {viewport_name}">
+        <h2>View: {viewport_name}</h2>
+        <img src="{relative_path}" alt="Screenshot {viewport_name}">
     </div>
 """
-    
+
     html_content += """
 </body>
 </html>
 """
-    
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html_content, encoding="utf-8")
     return str(output_path)

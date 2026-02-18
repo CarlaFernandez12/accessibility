@@ -1,19 +1,21 @@
 """
-Utilidades para procesamiento de violaciones de accesibilidad.
+Utilities for processing accessibility violations.
 
-Este módulo proporciona funciones para agrupar, aplanar y priorizar
-violaciones de accesibilidad detectadas por Axe.
+This module provides functions to group, flatten and prioritise
+accessibility violations reported by Axe.
 """
 
-# Valores por defecto
+from typing import Any, Dict, List
+
+# Default values
 _DEFAULT_VIOLATION_ID = 'unknown-violation'
 _DEFAULT_DESCRIPTION = 'No description'
 _DEFAULT_IMPACT = 'moderate'
 _DEFAULT_SELECTOR = 'No selector'
 _DEFAULT_HTML_SNIPPET = 'No HTML snippet'
 
-# Orden de prioridad de impactos
-_IMPACT_PRIORITY = {
+# Impact priority order
+_IMPACT_PRIORITY: Dict[str, int] = {
     'critical': 1,
     'serious': 2,
     'moderate': 3,
@@ -21,17 +23,17 @@ _IMPACT_PRIORITY = {
 }
 
 
-def group_and_simplify_violations(violations):
+def group_and_simplify_violations(violations: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """
-    Agrupa violaciones por tipo y mejora la información para procesamiento consistente.
-    
+    Group violations by type and improve information for consistent processing.
+
     Args:
-        violations: Lista de violaciones de Axe
-        
+        violations: List of Axe violations
+
     Returns:
-        Diccionario con violaciones agrupadas por ID
+        Dictionary with violations grouped by ID
     """
-    grouped_violations = {}
+    grouped_violations: Dict[str, Dict[str, Any]] = {}
     if not violations:
         return grouped_violations
         
@@ -64,17 +66,17 @@ def group_and_simplify_violations(violations):
             
     return grouped_violations
 
-def flatten_violations(violations):
+def flatten_violations(violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Convierte violaciones agrupadas en lista plana con información mejorada.
-    
+    Convert grouped violations into a flat list with improved information.
+
     Args:
-        violations: Lista de violaciones de Axe
-        
+        violations: List of Axe violations
+
     Returns:
-        Lista plana de violaciones con información expandida
+        Flat list of violations with expanded information
     """
-    flat_list = []
+    flat_list: List[Dict[str, Any]] = []
     if not violations:
         return flat_list
         
@@ -105,8 +107,8 @@ def flatten_violations(violations):
     return flat_list
 
 
-def _extract_contrast_data(node, violation_data):
-    """Extrae datos específicos de contraste de color del nodo."""
+def _extract_contrast_data(node: Dict[str, Any], violation_data: Dict[str, Any]) -> None:
+    """Extract colour contrast-specific data from the node."""
     any_data = node.get('any', [])
     if not any_data:
         return
@@ -122,15 +124,15 @@ def _extract_contrast_data(node, violation_data):
             'fontWeight': contrast_data.get('fontWeight')
         }
 
-def prioritize_violations(violations):
+def prioritize_violations(violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Prioriza violaciones por impacto y tipo para procesamiento más efectivo.
-    
+    Prioritise violations by impact and type for more effective processing.
+
     Args:
-        violations: Lista de violaciones a priorizar
-        
+        violations: List of violations to prioritise
+
     Returns:
-        Lista de violaciones ordenadas por prioridad
+        List of violations ordered by priority
     """
     return sorted(
         violations,

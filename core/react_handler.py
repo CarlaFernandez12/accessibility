@@ -1,3 +1,15 @@
+"""
+React accessibility workflows and Axe‑driven component corrections.
+
+This module encapsulates logic specific to React projects:
+    - Detecting React usage from package.json and source files.
+    - Running Axe against a React dev server.
+    - Mapping violations back to JSX/TSX components and guiding LLM fixes.
+
+All prompts and high‑level behaviour must remain unchanged; refactors here
+aim at clearer structure, type hints and documentation only.
+"""
+
 import json
 import re
 import subprocess
@@ -12,16 +24,16 @@ from core.screenshot_handler import take_screenshots, create_screenshot_summary
 
 def _normalize_react_html(html: str) -> str:
     """
-    Normaliza HTML generado por React para poder compararlo con los componentes JSX.
-    
-    - Elimina atributos generados en runtime (data-react-*, etc.)
-    - Colapsa espacios en blanco para hacer comparaciones más robustas.
+    Normalise React‑generated HTML so it can be compared with JSX components.
+
+    - Removes runtime‑specific attributes (data-react-*, etc.).
+    - Collapses whitespace for more robust comparisons.
     """
     if not html:
         return ""
     
     text = html
-    # Quitar atributos "ruido" típicos de React en el DOM renderizado
+    # Strip React runtime "noise" attributes from rendered DOM
     text = re.sub(r'\sdata-react[^= ]*="[^"]*"', "", text)
     # Normalizar espacios en blanco
     text = re.sub(r"\s+", " ", text)
@@ -44,7 +56,7 @@ def _jsx_contains_html_elements(jsx_content: str, html_snippet: str) -> bool:
     if not tags:
         return False
     
-    # Verificar que todos los tags principales estén en el JSX
+    # Ensure all main tags are present in the JSX
     for tag in tags:
         if f'<{tag}' not in normalized_jsx:
             return False
@@ -77,7 +89,7 @@ def detect_react_project(project_path: str) -> bool:
                 for dep in all_deps.keys()
             )
             
-            # También verificar si hay archivos JSX/TSX
+            # Also check for JSX/TSX files
             has_jsx = any(project_root.glob("**/*.jsx")) or any(project_root.glob("**/*.tsx"))
             
             return has_react or has_jsx
@@ -107,7 +119,7 @@ def discover_react_components(source_roots: List[Path]) -> List[Path]:
     """
     Descubre todos los componentes React en el proyecto.
     
-    Busca archivos .jsx, .tsx, y también .js/.ts que contengan JSX
+    Find .jsx, .tsx, and .js/.ts files that contain JSX
     """
     components: List[Path] = []
     
@@ -119,14 +131,14 @@ def discover_react_components(source_roots: List[Path]) -> List[Path]:
         if "node_modules" in str(root):
             continue
         
-        # Buscar archivos JSX/TSX explícitos (SIEMPRE incluir estos)
+        # Find explicit JSX/TSX files (ALWAYS include these)
         jsx_files = [p for p in root.glob("**/*.jsx") if "node_modules" not in str(p)]
         tsx_files = [p for p in root.glob("**/*.tsx") if "node_modules" not in str(p)]
         components.extend(jsx_files)
         components.extend(tsx_files)
         print(f"[React + Axe]   → Encontrados {len(jsx_files)} .jsx y {len(tsx_files)} .tsx")
         
-        # SIEMPRE buscar también en .js/.ts que puedan contener JSX
+        # ALWAYS also search .js/.ts that may contain JSX
         # Muchos proyectos React usan .js para componentes
         js_files = [p for p in root.glob("**/*.js") if "node_modules" not in str(p)]
         ts_files = [p for p in root.glob("**/*.ts") if "node_modules" not in str(p)]
@@ -141,12 +153,12 @@ def discover_react_components(source_roots: List[Path]) -> List[Path]:
         
         js_components_found = 0
         for js_file in js_files:
-            # Saltar archivos de configuración comunes (pero NO index.js - puede ser componente)
+            # Skip common config files (but NOT index.js - may be a component)
             if any(skip in str(js_file) for skip in skip_patterns):
                 continue
             try:
                 content = js_file.read_text(encoding="utf-8", errors="ignore")
-                # Si el archivo es muy pequeño, probablemente no es un componente
+                # If file is very small, likely not a component
                 if len(content) < 30:
                     continue
                 # Buscar indicadores de componente React (MUY permisivo)
@@ -171,12 +183,12 @@ def discover_react_components(source_roots: List[Path]) -> List[Path]:
         
         ts_components_found = 0
         for ts_file in ts_files:
-            # Saltar archivos de configuración comunes (pero NO index.ts - puede ser componente)
+            # Skip common config files (but NOT index.ts - may be a component)
             if any(skip in str(ts_file) for skip in skip_patterns):
                 continue
             try:
                 content = ts_file.read_text(encoding="utf-8", errors="ignore")
-                # Si el archivo es muy pequeño, probablemente no es un componente
+                # If file is very small, likely not a component
                 if len(content) < 30:
                     continue
                 # Buscar indicadores de componente React (MUY permisivo)
@@ -208,7 +220,7 @@ def map_axe_violations_to_react_components(
     """
     Mapea las violaciones de Axe (sobre HTML renderizado) a los componentes React (*.jsx, *.tsx).
     
-    Estrategia idéntica a Angular pero adaptada para JSX.
+    Same strategy as Angular but adapted for JSX.
     """
     if not axe_results:
         return {}
@@ -232,7 +244,7 @@ def map_axe_violations_to_react_components(
             for v in violations:
                 impact = v.get("impact", "unknown")
                 impacts[impact] = impacts.get(impact, 0) + 1
-            print(f"[React + Axe] Distribución por impacto: {impacts}")
+            print(f"[React + Axe] Distribution by impact: {impacts}")
         return {}
     
     print(f"[React + Axe] Filtrando violaciones WCAG A/AA:")
@@ -250,7 +262,7 @@ def map_axe_violations_to_react_components(
         ]
         source_roots = [root for root in possible_roots if root.exists()]
         
-        # Fallback: si no se encontró nada, usar src/ aunque no exista (comportamiento original)
+        # Fallback: if nothing found, use src/ even if it doesn't exist (original behaviour)
         if not source_roots:
             source_roots = [project_root / "src"]
     
@@ -274,9 +286,9 @@ def map_axe_violations_to_react_components(
         else:
             print(f"[React + Axe] ⚠️ ERROR: El directorio del proyecto no existe: {project_root}")
         
-        # Si aún no encuentra nada, mostrar algunos archivos para diagnóstico
+        # If still nothing, show some files for diagnosis
         if len(all_found_components) == 0 and project_root.exists():
-            print(f"[React + Axe] ⚠️ DIAGNÓSTICO: Listando algunos archivos encontrados para verificar...")
+            print(f"[React + Axe] ⚠️ DIAGNOSTIC: Listing some found files to verify...")
             try:
                 js_files = [f for f in project_root.glob("**/*.js") if "node_modules" not in str(f)][:10]
                 jsx_files = [f for f in project_root.glob("**/*.jsx") if "node_modules" not in str(f)][:10]
@@ -318,14 +330,14 @@ def map_axe_violations_to_react_components(
     
     issues_by_component: Dict[str, List[Dict]] = {}
     
-    print(f"[React + Axe] Mapeando {len(wcag_violations)} violación(es) WCAG A/AA a componentes...")
+    print(f"[React + Axe] Mapping {len(wcag_violations)} WCAG A/AA violation(s) to components...")
     
     for violation in wcag_violations:
         violation_id = violation.get("id", "")
         violation_description = violation.get("description", "")
         impact = violation.get("impact", "unknown")
         wcag_level = "WCAG A" if impact == "critical" else "WCAG AA" if impact == "serious" else "Otro"
-        print(f"  → Violación [{wcag_level}]: {violation_id} - {violation_description} (impacto: {impact})")
+        print(f"  → Violation [{wcag_level}]: {violation_id} - {violation_description} (impact: {impact})")
         
         for node in violation.get("nodes", []):
             html_snippet = node.get("html") or ""
@@ -342,14 +354,14 @@ def map_axe_violations_to_react_components(
             matched_component = None
             match_method = ""
             
-            # 1) Búsqueda sobre contenido normalizado
+            # 1) Search on normalised content
             for rel_path, comp_data in components.items():
                 if normalized_snippet in comp_data["normalized"]:
                     matched_component = rel_path
                     match_method = "contenido normalizado"
                     break
             
-            # 2) Buscar por clases CSS específicas del snippet (más preciso)
+            # 2) Search by snippet's specific CSS classes (more precise)
             if not matched_component and html_snippet:
                 # Extraer todas las clases del snippet HTML
                 classes_in_snippet = re.findall(r'class=["\']([^"\']+)["\']', html_snippet)
@@ -357,10 +369,10 @@ def map_axe_violations_to_react_components(
                     all_classes = ' '.join(classes_in_snippet).split()
                     # Buscar componentes que contengan TODAS las clases principales
                     for rel_path, comp_data in components.items():
-                        # Verificar que al menos algunas clases importantes estén presentes
+                        # Ensure at least some important classes are present
                         matching_classes = [cls for cls in all_classes if cls in comp_data["jsx"]]
                         if len(matching_classes) >= min(2, len(all_classes)):  # Al menos 2 clases o todas si hay menos
-                            # Validar que el tag principal también existe
+                            # Ensure main tag also exists
                             snippet_tag = re.search(r'<(\w+)', html_snippet)
                             if snippet_tag:
                                 tag_name = snippet_tag.group(1)
@@ -369,7 +381,7 @@ def map_axe_violations_to_react_components(
                                     match_method = f"clases CSS ({', '.join(matching_classes[:3])})"
                                     break
             
-            # 3) Fallback: buscar en JSX crudo (solo si no se encontró con clases)
+            # 3) Fallback: search raw JSX (only if not found via classes)
             if not matched_component:
                 for rel_path, comp_data in components.items():
                     if _jsx_contains_html_elements(comp_data["jsx"], normalized_snippet):
@@ -406,24 +418,24 @@ def map_axe_violations_to_react_components(
                     for variation in class_variations:
                         if variation and (variation in comp_data["jsx"] or variation in comp_data["normalized"]):
                             matched_component = rel_path
-                            match_method = f"selector CSS (variación: {variation})"
+                            match_method = f"CSS selector (variation: {variation})"
                             break
                     if matched_component:
                         break
             
-            # 5) Buscar por texto visible en el HTML snippet (mejorado - más específico)
+            # 5) Search by visible text in HTML snippet (improved - more specific)
             if not matched_component and html_snippet:
                 # Extraer texto visible del HTML (sin tags)
                 text_content = re.sub(r'<[^>]+>', '', html_snippet).strip()
-                # Limpiar espacios múltiples
+                # Collapse multiple spaces
                 text_content = re.sub(r'\s+', ' ', text_content)
-                # Buscar texto significativo (más de 3 caracteres)
+                # Look for significant text (more than 3 chars)
                 if len(text_content) > 3:
-                    # Primero intentar búsqueda exacta del texto completo
+                    # First try exact match of full text
                     for rel_path, comp_data in components.items():
                         # Buscar el texto completo en el JSX
                         if text_content in comp_data["jsx"]:
-                            # Validar que el tag también existe
+                            # Ensure the tag also exists
                             snippet_tag = re.search(r'<(\w+)', html_snippet)
                             if snippet_tag:
                                 tag_name = snippet_tag.group(1)
@@ -432,15 +444,15 @@ def map_axe_violations_to_react_components(
                                     match_method = f"texto visible exacto: '{text_content[:30]}...'"
                                     break
                     
-                    # Si no se encontró texto exacto, buscar palabras clave significativas
+                    # If no exact text match, search for significant keywords
                     if not matched_component:
                         words = [w for w in text_content.split() if len(w) > 3]
                         if words:
-                            # Buscar componentes que contengan múltiples palabras clave
+                            # Find components that contain multiple keywords
                             for rel_path, comp_data in components.items():
                                 matching_words = [w for w in words if w in comp_data["jsx"]]
                                 if len(matching_words) >= min(2, len(words)):  # Al menos 2 palabras o todas si hay menos
-                                    # Validar que el tag también existe
+                                    # Ensure the tag also exists
                                     snippet_tag = re.search(r'<(\w+)', html_snippet)
                                     if snippet_tag:
                                         tag_name = snippet_tag.group(1)
@@ -449,14 +461,14 @@ def map_axe_violations_to_react_components(
                                             match_method = f"texto visible (palabras: {', '.join(matching_words[:3])})"
                                             break
             
-            # 6) Estrategias específicas para iframes
+            # 6) Iframe-specific strategies
             if not matched_component and "iframe" in html_snippet.lower():
                 # Buscar en componentes comunes (App.js, index.js)
                 common_names = ["App.js", "App.jsx", "App.tsx", "index.js", "index.jsx"]
                 for rel_path in components.keys():
                     if any(name in rel_path for name in common_names):
                         matched_component = rel_path
-                        match_method = "componente común (iframe)"
+                        match_method = "common component (iframe)"
                         break
                 
                 # Si no, buscar por indicadores CSS (position: fixed)
@@ -467,12 +479,12 @@ def map_axe_violations_to_react_components(
                             match_method = "indicador CSS (iframe)"
                             break
                 
-                # Último recurso: primer componente disponible
+                # Last resort: first available component
                 if not matched_component and components:
                     matched_component = list(components.keys())[0]
                     match_method = "fallback (iframe)"
             
-            # NO usar fallback genérico - si no se encuentra, no mapear
+            # Do NOT use generic fallback - if not found, do not map
             # Esto evita mapear violaciones a componentes incorrectos
             
             if matched_component:
@@ -484,22 +496,22 @@ def map_axe_violations_to_react_components(
                     "node": node,
                 })
                 if "fallback" in match_method:
-                    print(f"    ⚠️ Mapeado con fallback a {matched_component} (método: {match_method})")
-                    print(f"      Nota: No se encontró coincidencia exacta, usando componente por defecto")
+                    print(f"    ⚠️ Mapped with fallback to {matched_component} (method: {match_method})")
+                    print(f"      Note: No exact match found, using default component")
                 else:
-                    print(f"    ✓ Mapeado a {matched_component} (método: {match_method})")
+                    print(f"    ✓ Mapped to {matched_component} (method: {match_method})")
             else:
-                # Mostrar más información de debug
+                # Show more debug info
                 html_preview = html_snippet[:100].replace('\n', ' ') if html_snippet else "N/A"
                 print(f"    ⚠️ No se pudo mapear (selector: {selector[:50] if selector else 'N/A'}...)")
                 print(f"      HTML snippet: {html_preview}...")
                 if selector:
                     class_name = selector.lstrip('.').split()[0] if selector.startswith('.') else ""
                     if class_name:
-                        print(f"      Intentó buscar clase: {class_name}")
+                        print(f"      Tried to find class: {class_name}")
                 print(f"      Total componentes disponibles: {len(components)}")
     
-    # Filtrar componentes que estén en node_modules (no queremos tocar librerías de terceros)
+    # Filter out components in node_modules (we don't want to touch third-party libs)
     original_count = len(issues_by_component)
     filtered_issues_by_component: Dict[str, List[Dict]] = {
         rel_path: issues
@@ -509,7 +521,7 @@ def map_axe_violations_to_react_components(
 
     if original_count > 0 and not filtered_issues_by_component:
         print("[React + Axe] ⚠️ Todas las violaciones mapeadas pertenecen a archivos en node_modules.")
-        print("  → No se aplicarán correcciones en código de terceros (librerías).")
+        print("  → No fixes will be applied to third-party code (libraries).")
         print("  → Si quieres corregir esos errores, copia el markup a tus propios componentes en src/.")
         return {}
 
@@ -517,7 +529,7 @@ def map_axe_violations_to_react_components(
 
     print(f"[React + Axe] Total de componentes con violaciones mapeadas: {len(issues_by_component)}")
     for rel_path, issues in issues_by_component.items():
-        print(f"  - {rel_path}: {len(issues)} violación(es)")
+        print(f"  - {rel_path}: {len(issues)} violation(s)")
     
     print(f"[React + Axe] ✓ Se han asociado violaciones de Axe a {len(issues_by_component)} componente(s).")
     
@@ -564,156 +576,161 @@ def _build_axe_based_prompt_for_react_component(
     violations_text = "\n".join(violation_lines)
     total = len(issues)
 
-    # Detectar si hay errores de contraste para dar instrucciones más específicas
+    # Detect contrast errors to give more specific instructions
     has_contrast = any(issue.get("violation", {}).get("id", "") == "color-contrast" for issue in issues)
     
     contrast_instructions = ""
     if has_contrast:
         contrast_instructions = """
-🚨 CRÍTICO - CORRECCIÓN DE CONTRASTE:
-Estos son errores REALES detectados por Axe en la aplicación renderizada. DEBES corregirlos TODOS.
+🚨 CRITICAL - CONTRAST FIX:
+These are REAL errors detected by Axe on the rendered application. You MUST fix ALL of them.
 
-Para corregir errores de contraste:
-1. LOCALIZA el elemento usando el fragmento HTML proporcionado en "HTML: ..."
-   - Busca el elemento EXACTO en el código JSX que coincida con ese HTML
-   - Busca por:
-     * El texto contenido (ej: "Code", "Chat on whatsapp", "Save Contact")
-     * Las clases CSS específicas (ej: "btn-outline-light", "btn-success", "btn-outline-dark mx-1")
-     * La estructura del elemento (tag + clases + texto)
-   - Ignora atributos dinámicos de React (data-react-*, className generados, etc.)
-   - Si NO encuentras el elemento en este componente, busca en otros componentes del proyecto:
-     * Busca archivos que contengan el texto o las clases del HTML snippet
-     * Los elementos pueden estar en App.js, Home.js, Header.js, Footer.js, u otros componentes
-   - ⚠️ IMPORTANTE: Si el elemento NO está en este componente, DEBES indicarlo claramente o buscar en otros archivos
+To fix contrast errors:
+1. LOCATE the element using the HTML fragment provided in "HTML: ..."
+   - Find the EXACT element in the JSX code that matches that HTML
+   - Search by:
+     * Contained text (e.g. "Code", "Chat on whatsapp", "Save Contact")
+     * Specific CSS classes (e.g. "btn-outline-light", "btn-success", "btn-outline-dark mx-1")
+     * Element structure (tag + classes + text)
+   - Ignore dynamic React attributes (data-react-*, generated className, etc.)
+   - If you do NOT find the element in this component, search other components in the project:
+     * Search files that contain the text or classes from the HTML snippet
+     * Elements may be in App.js, Home.js, Header.js, Footer.js, or other components
+   - ⚠️ IMPORTANT: If the element is NOT in this component, you MUST state so clearly or search other files
 
-2. CORRIGE el color del texto según el fondo:
-   - Si el fondo es CLARO (blanco, gris claro, colores claros): usa texto OSCURO
-     * style={{ color: '#000000' }} o color="#000000" o color="black"
-   - Si el fondo es OSCURO (negro, gris oscuro, colores oscuros): usa texto CLARO
-     * style={{ color: '#FFFFFF' }} o color="#FFFFFF" o color="white"
+2. FIX the text colour according to the background:
+   - If background is LIGHT (white, light grey, light colours): use DARK text
+     * style={{ color: '#000000' }} or color="#000000" or color="black"
+   - If background is DARK (black, dark grey, dark colours): use LIGHT text
+     * style={{ color: '#FFFFFF' }} or color="#FFFFFF" or color="white"
 
-3. FORMATOS VÁLIDOS en React/JSX:
-   - style={{ color: '#000000' }} (estilo inline)
-   - color="#000000" (prop de Chakra UI como <Text color="#000000">)
-   - color="black" (prop de Chakra UI con nombre de color)
-   - Si el elemento ya tiene style={{ ... }}, añade color dentro del mismo objeto
+3. VALID FORMATS in React/JSX:
+   - style={{ color: '#000000' }} (inline style)
+   - color="#000000" (Chakra UI prop like <Text color="#000000">)
+   - color="black" (Chakra UI prop with colour name)
+   - If the element already has style={{ ... }}, add color inside the same object
 
-4. IMPORTANTE:
-   - Si el elemento usa Chakra UI (Text, Heading, Button, etc.), puedes modificar la prop color="..."
-   - Si el elemento es HTML nativo (<span>, <p>, <button>, etc.), usa style={{ color: '...' }}
-   - NO cambies colores de fondo, solo el color del texto
-   - NO devuelvas el código sin cambios si hay violaciones de contraste listadas
+4. IMPORTANT:
+   - If the element uses Chakra UI (Text, Heading, Button, etc.), you can modify the color="..." prop
+   - If the element is native HTML (<span>, <p>, <button>, etc.), use style={{ color: '...' }}
+   - Do NOT change background colours, only text colour
+   - Do NOT return the code unchanged if there are listed contrast violations
 
-⚠️ NO devuelvas el mismo código. DEBES hacer cambios reales en los colores."""
+⚠️ Do NOT return the same code. You MUST make real changes to the colours."""
     
-    prompt = f"""Corrige TODAS las {total} violaciones WCAG A/AA en este componente React.
+    prompt = f"""Fix ALL {total} WCAG A/AA violations in this React component.
 
-COMPONENTE: {component_path}
+COMPONENT: {component_path}
 
-VIOLACIONES:
+VIOLATIONS:
 {violations_text}
 {contrast_instructions}
 
-REGLAS RÁPIDAS:
-- color-contrast → ajusta SOLO el color del texto (style={{ color: '...' }} o color="...") según el fondo
-- aria-input-field-name / label → <label htmlFor="id"> o aria-label="texto" en inputs/selects
-- button-name → texto visible o aria-label="acción" en <button>
-- link-name → texto descriptivo o aria-label="destino" en <a>
-- image-alt / role-img-alt → alt="..." o aria-label="..." en imágenes/roles visuales
-- frame-title → title="..." en <iframe>
-- select-name → <label htmlFor> o aria-label en <select>
-- target-size → padding / minWidth / minHeight para área táctil (~44x44px)
-- nested-interactive → evita <button> dentro de <a> (y viceversa)
+QUICK RULES:
+- color-contrast → adjust ONLY text colour (style={{ color: '...' }} or color="...") according to background
+- aria-input-field-name / label → <label htmlFor="id"> or aria-label="text" on inputs/selects
+- button-name → visible text or aria-label="action" on <button>
+- link-name → descriptive text or aria-label="destination" on <a>
+- image-alt / role-img-alt → alt="..." or aria-label="..." on images/visual roles
+- frame-title → title="..." on <iframe>
+- select-name → <label htmlFor> or aria-label on <select>
+- target-size → padding / minWidth / minHeight for touch area (~44x44px)
+- nested-interactive → avoid <button> inside <a> (and vice versa)
 
-INSTRUCCIONES:
-- Corrige SOLO los elementos indicados en la lista de violaciones.
-- LOCALIZACIÓN PRECISA: Para cada violación, busca el elemento EXACTO usando:
-  * El texto visible del HTML snippet (ej: "Code", "Chat on whatsapp", "Save Contact")
-  * Las clases CSS del snippet (ej: "btn-outline-light", "btn-success", "btn-outline-dark mx-1 d-flex")
-  * El tag y estructura del elemento
-- Si NO encuentras el elemento en este componente:
-  * El elemento puede estar en otro componente (App.js, Home.js, Header.js, Footer.js, etc.)
-  * Busca en el proyecto por el texto o clases del HTML snippet
-  * Si no puedes acceder a otros componentes, indica claramente que el elemento no está en este archivo
-- Mantén hooks, props, estado y lógica React sin cambios.
-- No cambies layout (width, height, margin, padding, display, position, flex, grid).
-- No elimines ni añadas componentes JSX grandes; añade/modifica atributos en elementos existentes.
-- ⚠️ CRÍTICO: Si hay violaciones de contraste listadas, DEBES cambiar los colores. NO devuelvas el código sin cambios.
-- ⚠️ CRÍTICO: Si el elemento NO está en este componente, NO lo inventes. Busca en otros archivos o indica que no se encontró.
+INSTRUCTIONS:
+- Fix ONLY the elements listed in the violations list.
+- PRECISE LOCATION: For each violation, find the EXACT element using:
+  * Visible text from the HTML snippet (e.g. "Code", "Chat on whatsapp", "Save Contact")
+  * CSS classes from the snippet (e.g. "btn-outline-light", "btn-success", "btn-outline-dark mx-1 d-flex")
+  * Tag and element structure
+- If you do NOT find the element in this component:
+  * The element may be in another component (App.js, Home.js, Header.js, Footer.js, etc.)
+  * Search the project for the text or classes from the HTML snippet
+  * If you cannot access other components, state clearly that the element is not in this file
+- Keep hooks, props, state and React logic unchanged.
+- Do not change layout (width, height, margin, padding, display, position, flex, grid).
+- Do not remove or add large JSX components; add/modify attributes on existing elements.
+- ⚠️ CRITICAL: If contrast violations are listed, you MUST change the colours. Do NOT return the code unchanged.
+- ⚠️ CRITICAL: If the element is NOT in this component, do NOT invent it. Search other files or state that it was not found.
 
-COMPONENTE COMPLETO (ACTUAL):
+FULL COMPONENT (CURRENT):
 ```jsx
 {component_content}
 ```
 
-Devuelve SOLO el componente completo corregido, sin explicaciones."""
+Return ONLY the full corrected component, no explanations."""
 
     return prompt.strip()
 
 
 def _get_specific_instruction_for_violation(violation_id: str, html_snippet: str, contrast_info: str) -> str:
-    """Devuelve una instrucción específica y concisa para cada tipo de violación."""
+    """Return a specific, concise instruction for each violation type."""
     v_lower = violation_id.lower()
     
     if "color-contrast" in v_lower:
         if contrast_info:
-            # Extraer datos de contraste de forma simple
+            # Extract contrast data in a simple way
             bg = "#ffffff"  # default
-            if "Color de fondo:" in contrast_info:
+            if "Background color:" in contrast_info:
+                try:
+                    bg = contrast_info.split("Background color:")[1].split("\n")[0].strip()
+                except Exception:
+                    pass
+            elif "Color de fondo:" in contrast_info:
                 try:
                     bg = contrast_info.split("Color de fondo:")[1].split("\n")[0].strip()
                 except:
                     pass
             recommended = "#000000" if any(c in bg.lower() for c in ["#ff", "#fff", "#00d1", "white", "light"]) else "#FFFFFF"
-            return f"Añade style={{'color': '{recommended}'}} al elemento (fondo: {bg})"
-        return "Añade style={{'color': '#000000'}} o style={{'color': '#FFFFFF'}} según el fondo"
+            return f"Add style={{'color': '{recommended}'}} to the element (background: {bg})"
+        return "Add style={{'color': '#000000'}} or style={{'color': '#FFFFFF'}} according to background"
     
     if "aria-input-field-name" in v_lower or "label" in v_lower or "form-field" in v_lower:
-        return "Añade <label htmlFor=\"id\"> o aria-label=\"texto descriptivo\" al input/select/textarea"
+        return "Add <label htmlFor=\"id\"> or aria-label=\"descriptive text\" to input/select/textarea"
     
     if "button-name" in v_lower:
-        return "Añade texto visible dentro del <button> o aria-label=\"acción\" si solo tiene iconos"
+        return "Add visible text inside the <button> or aria-label=\"action\" if it only has icons"
     
     if "link-name" in v_lower:
-        return "Añade texto descriptivo dentro del <a> o aria-label=\"destino\" si solo tiene iconos"
+        return "Add descriptive text inside the <a> or aria-label=\"destination\" if it only has icons"
     
     if "image-alt" in v_lower or "img" in v_lower:
-        return "Añade alt=\"descripción\" o alt=\"\" si la imagen es decorativa"
+        return "Add alt=\"description\" or alt=\"\" if the image is decorative"
     
     if "frame-title" in v_lower:
-        return "Añade title=\"descripción del contenido\" al <iframe>"
+        return "Add title=\"content description\" to the <iframe>"
     
     if "select-name" in v_lower:
-        return "Añade <label htmlFor=\"id\"> o aria-label=\"texto\" al <select>"
+        return "Add <label htmlFor=\"id\"> or aria-label=\"text\" to the <select>"
     
     if "target-size" in v_lower:
-        return "Aumenta el área táctil (min 44x44px) con padding o minWidth/minHeight en style"
+        return "Increase touch area (min 44x44px) with padding or minWidth/minHeight in style"
     
     if "nested-interactive" in v_lower:
-        return "Separa elementos interactivos: no <button> dentro de <a>, no <a> dentro de <button>"
+        return "Separate interactive elements: no <button> inside <a>, no <a> inside <button>"
     
     if "aria-allowed-attr" in v_lower:
-        return "Elimina atributos ARIA no permitidos para el role del elemento"
+        return "Remove ARIA attributes not allowed for the element's role"
     
     if "aria-required-children" in v_lower:
-        return "Añade los elementos hijos requeridos para el role o cambia el role a uno válido"
+        return "Add the required child elements for the role or change the role to a valid one"
     
     if "aria-valid-attr-value" in v_lower:
-        return "Corrige valores inválidos de atributos ARIA (ej: role=\"invalid\" → role=\"button\")"
+        return "Fix invalid ARIA attribute values (e.g. role=\"invalid\" → role=\"button\")"
     
     if "aria-toggle" in v_lower:
-        return "Añade aria-label=\"estado del toggle\" al elemento con role=\"switch\" o role=\"checkbox\""
+        return "Add aria-label=\"toggle state\" to the element with role=\"switch\" or role=\"checkbox\""
     
-    return "Lee la descripción y aplica la corrección mínima necesaria"
+    return "Read the description and apply the minimum necessary fix"
 
 
 def fix_react_components_with_axe_violations(
     issues_by_component: Dict[str, List[Dict]], project_root: Path, client, screenshot_paths: Optional[List[str]] = None
 ) -> Dict[str, Dict[str, str]]:
     """
-    Usa la información de Axe para pedir al LLM que corrija los componentes React.
+    Use Axe information to ask the LLM to fix React components.
     
-    Esta función es IDÉNTICA a fix_templates_with_axe_violations de Angular pero para React.
+    This function is identical to Angular's fix_templates_with_axe_violations but for React.
     """
     fixes: Dict[str, Dict[str, str]] = {}
     
@@ -735,37 +752,37 @@ def fix_react_components_with_axe_violations(
             prompt = _build_axe_based_prompt_for_react_component(rel_path, original_content, issues)
             
             system_message = (
-                "Eres un EXPERTO en accesibilidad web (WCAG 2.2 A+AA) y React. "
-                "Tu MISIÓN es corregir TODAS las violaciones de accesibilidad indicadas por Axe "
-                "modificando el componente JSX completo. "
-                "🚨 CRÍTICO: DEBES hacer cambios reales al código. NO devuelvas el mismo código. "
-                "🚨 Si hay violaciones de contraste, DEBES añadir o modificar style={{ color: '...' }} o color=\"...\" "
-                "🚨 Si hay violaciones de aria-label, button-name, link-name, etc., DEBES añadir los atributos necesarios. "
-                "🚨 Mantén la lógica React (hooks, props, estado) sin romperla. "
-                "🚨 NO modifiques el diseño responsive - las correcciones deben ser invisibles visualmente. "
-                "🚨 Para contraste de color, SOLO ajusta el color del texto, NO cambies layout ni fondos. "
-                "🚨 Si devuelves el mismo código sin cambios, la corrección FALLA completamente. "
-                "⚠️ IMPORTANTE: Si hay errores de contraste listados, DEBES cambiar los colores. "
-                "⚠️ Si el código ya tiene un color pero Axe reporta error, significa que: "
-                "   a) El color no se está aplicando correctamente (añade !important o usa style inline), O "
-                "   b) Estás cambiando el elemento incorrecto. "
-                "⚠️ Busca el elemento EXACTO usando el 'Fragmento HTML afectado' y asegúrate de cambiar el color correcto. "
-                "⚠️ NO devuelvas el código sin cambios si hay violaciones de contraste reportadas."
+                "You are an EXPERT in web accessibility (WCAG 2.2 A+AA) and React. "
+                "Your MISSION is to fix ALL accessibility violations reported by Axe "
+                "by modifying the full JSX component. "
+                "🚨 CRITICAL: You MUST make real changes to the code. Do NOT return the same code. "
+                "🚨 If there are contrast violations, you MUST add or modify style={{ color: '...' }} or color=\"...\" "
+                "🚨 If there are aria-label, button-name, link-name violations, etc., you MUST add the required attributes. "
+                "🚨 Keep React logic (hooks, props, state) intact. "
+                "🚨 Do NOT change the responsive design - fixes must be visually invisible. "
+                "🚨 For colour contrast, ONLY adjust text colour, do NOT change layout or backgrounds. "
+                "🚨 If you return the same code unchanged, the fix FAILS completely. "
+                "⚠️ IMPORTANT: If contrast errors are listed, you MUST change the colours. "
+                "⚠️ If the code already has a colour but Axe reports an error, it means: "
+                "   a) The colour is not being applied correctly (add !important or use inline style), OR "
+                "   b) You are changing the wrong element. "
+                "⚠️ Find the EXACT element using the 'Affected HTML fragment' and make sure you change the correct colour. "
+                "⚠️ Do NOT return the code unchanged if contrast violations are reported."
             )
             
-            print(f"[React + Axe] Corrigiendo componente basado en Axe: {rel_path}")
-            print(f"[React + Axe] Violaciones a corregir: {len(issues)}")
+            print(f"[React + Axe] Fixing component based on Axe: {rel_path}")
+            print(f"[React + Axe] Violations to fix: {len(issues)}")
             for i, issue in enumerate(issues, 1):
                 violation_id = issue.get("violation", {}).get("id", "unknown")
                 print(f"  {i}. {violation_id}")
             
-            # Log del prompt para debugging
-            print(f"[React + Axe] 📝 Prompt generado (primeros 1500 chars):")
+            # Log prompt for debugging
+            print(f"[React + Axe] 📝 Generated prompt (first 1500 chars):")
             print(prompt[:1500])
             print(f"[React + Axe] ... (total: {len(prompt)} chars)")
             
-            # Log del código actual para comparar
-            print(f"[React + Axe] 📄 Código actual (primeros 500 chars):")
+            # Log current code for comparison
+            print(f"[React + Axe] 📄 Current code (first 500 chars):")
             print(original_content[:500])
             
             messages = [
@@ -780,40 +797,40 @@ def fix_react_components_with_axe_violations(
             if screenshot_paths and has_contrast_errors:
                 import base64
                 screenshot_instructions = """
-📸 CAPTURAS DE PANTALLA - CRÍTICO PARA PRESERVAR EL DISEÑO:
+📸 SCREENSHOTS - CRITICAL FOR PRESERVING DESIGN:
 
-He tomado capturas de la aplicación en diferentes tamaños de pantalla (mobile, tablet, desktop) que muestran cómo se ve REALMENTE la página antes de las correcciones.
+I have taken screenshots of the application at different screen sizes (mobile, tablet, desktop) that show how the page REALLY looks before the fixes.
 
-🚨 INSTRUCCIONES OBLIGATORIAS SOBRE LAS CAPTURAS:
-1. EXAMINA DETALLADAMENTE cada captura para entender:
-   - El diseño visual actual (layout, colores, espaciado, distribución)
-   - Cómo se adapta el contenido en diferentes tamaños de pantalla
-   - Qué elementos son visibles/ocultos en cada tamaño
-   - El estilo visual general de la aplicación
-   - Los colores de fondo REALES que se ven en las capturas
+🚨 MANDATORY INSTRUCTIONS ABOUT THE SCREENSHOTS:
+1. EXAMINE each screenshot in detail to understand:
+   - The current visual design (layout, colours, spacing, distribution)
+   - How content adapts at different screen sizes
+   - Which elements are visible/hidden at each size
+   - The application's overall visual style
+   - The REAL background colours visible in the screenshots
 
-2. CORRIGE TODOS LOS ERRORES de contraste listados arriba, PERO:
-   - MANTÉN el diseño visual que ves en las capturas
-   - NO cambies colores de fondo, tamaños de elementos, o distribución que se vea en las imágenes
-   - Para errores de contraste: ajusta SOLO el color del texto basándote en el fondo REAL que ves en las capturas
-   - Si el fondo es CLARO en las capturas: usa texto OSCURO (#000000, #212121)
-   - Si el fondo es OSCURO en las capturas: usa texto CLARO (#FFFFFF, #F5F5F5)
-   - NO añadas elementos visibles nuevos (usa aria-label o sr-only en su lugar)
-   - NO cambies display:none a display:block si en las capturas no se ve ese elemento
-   - Respeta el diseño responsive: si en mobile se ve de una forma, mantén esa forma
+2. FIX ALL contrast errors listed above, BUT:
+   - KEEP the visual design you see in the screenshots
+   - Do NOT change background colours, element sizes, or distribution shown in the images
+   - For contrast errors: adjust ONLY the text colour based on the REAL background you see in the screenshots
+   - If the background is LIGHT in the screenshots: use DARK text (#000000, #212121)
+   - If the background is DARK in the screenshots: use LIGHT text (#FFFFFF, #F5F5F5)
+   - Do NOT add new visible elements (use aria-label or sr-only instead)
+   - Do NOT change display:none to display:block if that element is not visible in the screenshots
+   - Respect the responsive design: if it looks a certain way on mobile, keep it that way
 
-3. TU OBJETIVO: Corregir TODOS los errores de contraste SIN cambiar cómo se ve la página en las capturas.
-   - Las correcciones deben ser "invisibles" visualmente
-   - Usa ajustes de contraste mínimos basados en los fondos REALES que ves en las capturas
-   - El diseño final debe verse IDÉNTICO a las capturas, pero accesible
+3. YOUR GOAL: Fix ALL contrast errors WITHOUT changing how the page looks in the screenshots.
+   - Fixes should be visually "invisible"
+   - Use minimal contrast adjustments based on the REAL backgrounds you see in the screenshots
+   - The final design must look IDENTICAL to the screenshots, but accessible
 
-Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es hacerla accesible manteniendo exactamente ese aspecto visual.
+The screenshots show the application BEFORE the fixes. Your job is to make it accessible while keeping that exact visual appearance.
 
-🚨 CRÍTICO - NO ROMPAS EL RESPONSIVE:
-- NO cambies propiedades de layout en style: width, height, margin, padding, display, position, flex, grid
-- NO modifiques className que afecten al responsive
-- Para contraste: SOLO cambia color del texto, NO toques layout ni fondos
-- El diseño debe verse IDÉNTICO en mobile, tablet y desktop después de las correcciones
+🚨 CRITICAL - DO NOT BREAK RESPONSIVE:
+- Do NOT change layout properties in style: width, height, margin, padding, display, position, flex, grid
+- Do NOT modify className that affect responsive behaviour
+- For contrast: ONLY change text colour, do NOT touch layout or backgrounds
+- The design must look IDENTICAL on mobile, tablet and desktop after the fixes
 """
                 user_content = [
                     {"type": "text", "text": prompt + screenshot_instructions}
@@ -874,37 +891,37 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
             # Corregir sintaxis React para atributos ARIA (similar a Angular)
             corrected = _fix_react_aria_syntax(corrected)
 
-            # VALIDACIÓN CRÍTICA: Verificar que el LLM devolvió código válido (IGUAL QUE ANGULAR)
+            # CRITICAL VALIDATION: ensure LLM returned valid code (SAME AS ANGULAR)
             is_valid_response = True
             
             if corrected.strip().startswith("//") or corrected.strip().startswith("/*"):
-                print(f"[React + Axe] ⚠️ El LLM devolvió un comentario en lugar de código para {rel_path}")
+                print(f"[React + Axe] ⚠️ LLM returned a comment instead of code for {rel_path}")
                 is_valid_response = False
             
             if is_valid_response and not re.search(r'<\w+|import\s+|export\s+|function\s+|const\s+|class\s+', corrected):
-                print(f"[React + Axe] ⚠️ El LLM no devolvió código React/JSX válido para {rel_path}")
+                print(f"[React + Axe] ⚠️ LLM did not return valid React/JSX code for {rel_path}")
                 is_valid_response = False
             
             if is_valid_response and len(corrected.strip()) < len(original_content.strip()) * 0.5:
                 print(f"[React + Axe] ⚠️ La respuesta del LLM es demasiado corta para {rel_path} ({len(corrected)} vs {len(original_content)} chars)")
                 is_valid_response = False
 
-            # VALIDACIÓN: Verificar que no se añadieron elementos nuevos
+            # VALIDATION: ensure no new elements were added
             orig_tags = set(re.findall(r'<(\w+)', original_content))
             corr_tags = set(re.findall(r'<(\w+)', corrected)) if corrected else set()
             new_tags = corr_tags - orig_tags
             
-            # Tags permitidos que pueden añadirse (solo <label> para inputs sin label)
+            # Allowed tags that may be added (only <label> for inputs without label)
             allowed_new_tags = {'label'}
             problematic_new_tags = new_tags - allowed_new_tags
             
             if problematic_new_tags:
-                print(f"[React + Axe] ⚠️ El LLM añadió elementos nuevos no permitidos: {problematic_new_tags}")
-                print(f"[React + Axe] ⚠️ NO se aplicarán los cambios para evitar añadir errores")
+                print(f"[React + Axe] ⚠️ LLM added disallowed new elements: {problematic_new_tags}")
+                print(f"[React + Axe] ⚠️ Changes will NOT be applied to avoid introducing errors")
                 is_valid_response = False
             
             # COMPARAR Y APLICAR (MEJORADO - Similar a Angular pero para React/JSX)
-            # Detectar diferencias más robustamente (incluyendo cambios de color en diferentes formatos)
+            # Detect differences more robustly (including colour changes in different formats)
             
             # 1. Detectar colores en style={{ color: '...' }}
             orig_colors_style = re.findall(r'style\s*=\s*\{\s*[^}]*color\s*:\s*["\']?([^"\';}]+)', original_content, re.IGNORECASE)
@@ -923,7 +940,7 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
             corr_colors = set(corr_colors_style + corr_colors_prop + corr_colors_css)
             has_color_diff = orig_colors != corr_colors
             
-            # Comparación más robusta: normalizar espacios pero detectar cambios reales
+            # More robust comparison: normalise spaces but detect real changes
             orig_normalized = re.sub(r'\s+', ' ', original_content.strip())
             corr_normalized = re.sub(r'\s+', ' ', corrected.strip()) if corrected else ""
             
@@ -969,10 +986,10 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
                 print(f"[React + Axe] ✓ Cambios aplicados en {rel_path}")
             else:
                 if not is_valid_response:
-                    print(f"[React + Axe] ⚠️ El LLM devolvió código inválido para {rel_path}")
+                    print(f"[React + Axe] ⚠️ LLM returned invalid code for {rel_path}")
                 else:
-                    print(f"[React + Axe] ⚠️ El LLM devolvió el mismo código para {rel_path}")
-                    # Si hay violaciones de contraste pero no se detectaron cambios, mostrar más info
+                    print(f"[React + Axe] ⚠️ LLM returned the same code for {rel_path}")
+                    # If contrast violations but no changes detected, show more info
                     has_contrast = any(issue.get("violation", {}).get("id", "") == "color-contrast" for issue in issues)
                     if has_contrast:
                         print(f"[React + Axe] ⚠️ HAY VIOLACIONES DE CONTRASTE PERO NO SE DETECTARON CAMBIOS")
@@ -980,18 +997,18 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
                         print(f"[React + Axe] Colores en corregido: {sorted(corr_colors)}")
                         print(f"[React + Axe] Estilos en original: {len(orig_styles)}")
                         print(f"[React + Axe] Estilos en corregido: {len(corr_styles)}")
-                        print(f"[React + Axe] El LLM probablemente no aplicó las correcciones")
-                        print("[React + Axe] 💡 Sugerencia: Verifica que el LLM añadió style={{ color: '...' }} "
-                              "o modificó la prop color=\"...\")")
+                        print(f"[React + Axe] LLM probably did not apply the fixes")
+                        print("[React + Axe] 💡 Suggestion: Check that the LLM added style={{ color: '...' }} "
+                              "or modified the color=\"...\" prop)")
 
         except Exception as e:
-            print(f"[React + Axe] ⚠️ Error corrigiendo {rel_path}: {e}")
+            print(f"[React + Axe] ⚠️ Error fixing {rel_path}: {e}")
     
     return fixes
 
 
 def _apply_react_accessibility_fixes(jsx_content: Optional[str]) -> Optional[str]:
-    """Aplica correcciones automáticas de accesibilidad a JSX (igual que Angular)."""
+    """Apply automatic accessibility fixes to JSX (same as Angular)."""
     if not jsx_content:
         return jsx_content
     
@@ -1013,7 +1030,7 @@ def _apply_react_accessibility_fixes(jsx_content: Optional[str]) -> Optional[str
 
 
 def _fix_basic_jsx_syntax_errors(jsx_content: Optional[str]) -> Optional[str]:
-    """Corrige errores básicos de sintaxis JSX comunes (igual que Angular pero para JSX)."""
+    """Fix common basic JSX syntax errors (same as Angular but for JSX)."""
     if not jsx_content:
         return jsx_content
     
@@ -1036,7 +1053,7 @@ def _fix_basic_jsx_syntax_errors(jsx_content: Optional[str]) -> Optional[str]:
 
 
 def _fix_react_aria_syntax(jsx_content: Optional[str]) -> Optional[str]:
-    """Corrige la sintaxis de atributos ARIA en JSX."""
+    """Fix ARIA attribute syntax in JSX."""
     if not jsx_content:
         return jsx_content
     return jsx_content
@@ -1044,7 +1061,7 @@ def _fix_react_aria_syntax(jsx_content: Optional[str]) -> Optional[str]:
 
 def run_axe_on_react_app(base_url: str, run_path: str, suffix: str = "", take_screenshots_flag: bool = False) -> Tuple[Dict, List[str]]:
     """
-    Ejecuta Axe sobre una aplicación React ya levantada y devuelve los resultados.
+    Run Axe on an already-running React app and return the results.
     """
     driver = None
     screenshot_paths = []
@@ -1054,9 +1071,9 @@ def run_axe_on_react_app(base_url: str, run_path: str, suffix: str = "", take_sc
         driver.get(base_url)
         
         if take_screenshots_flag:
-            # Convertir run_path a Path si es string
+            # Convert run_path to Path if it's a string
             run_path_obj = Path(run_path) if isinstance(run_path, str) else run_path
-            # take_screenshots espera: driver, url, output_dir, prefix
+            # take_screenshots expects: driver, url, output_dir, prefix
             screenshot_paths = take_screenshots(driver, base_url, run_path_obj, prefix=f"screenshot{suffix}" if suffix else "screenshot")
         
         axe_results = run_axe_analysis(driver, base_url)
@@ -1069,9 +1086,9 @@ def run_axe_on_react_app(base_url: str, run_path: str, suffix: str = "", take_sc
 
 def process_react_project(project_path: str, client, run_path: str, serve_app: bool = False) -> List[str]:
     """
-    Procesa un proyecto React local (flujo clásico sin Axe).
-    NOTA: El flujo con Axe se ejecuta en main.py con --react-axe.
+    Process a local React project (classic flow without Axe).
+    NOTE: The Axe flow runs in main.py with --react-axe.
     """
-    # Este flujo clásico no usa Axe, solo análisis estático si se implementa
-    # El flujo con Axe está en main.py (_process_react_project_flow)
+    # This classic flow does not use Axe, only static analysis if implemented
+    # The Axe flow is in main.py (_process_react_project_flow)
     return []

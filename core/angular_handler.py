@@ -1,3 +1,16 @@
+"""
+Angular accessibility workflows and Axe‑driven corrections.
+
+This module contains all logic specific to analysing and fixing Angular
+applications, including:
+    - Discovering templates and mapping Axe violations to them.
+    - Running Axe against a running Angular dev server.
+    - Guiding LLM‑driven corrections and optional automatic contrast fixes.
+
+Business behaviour must remain stable; refactors focus on structure,
+type hints and documentation only.
+"""
+
 import json
 import subprocess
 from pathlib import Path
@@ -10,20 +23,20 @@ from core.screenshot_handler import take_screenshots, create_screenshot_summary
 
 ANGULAR_CONFIG_FILE = "angular.json"
 
-# Flag para activar/desactivar las correcciones AUTOMÁTICAS de contraste en Angular.
-# Antes de introducir estas correcciones automáticas, el flujo de Angular dependía
-# casi exclusivamente del LLM y funcionaba de forma más predecible.
-# Para evitar regresiones (por ejemplo, añadir siempre `color: #000000` en textos
-# que están sobre fondos oscuros), las desactivamos por defecto.
+# Feature flag for automatic contrast corrections in Angular.
+# Before introducing these automatic fixes, the Angular flow relied almost
+# entirely on the LLM and behaved more predictably. To avoid regressions
+# (for example, always adding `color: #000000` over dark backgrounds),
+# this remains disabled by default.
 ENABLE_AUTOMATIC_CONTRAST_FIXES = False
 
 
 def _normalize_angular_html(html: str) -> str:
     """
-    Normaliza HTML generado por Angular para poder compararlo con los templates.
+    Normalise Angular-rendered HTML so it can be compared with templates.
 
-    - Elimina atributos generados en runtime (_ngcontent-*, _nghost-*, ng-reflect-*, etc.)
-    - Colapsa espacios en blanco para hacer comparaciones más robustas.
+    - Strip runtime-generated attributes (_ngcontent-*, _nghost-*, ng-reflect-*, etc.)
+    - Collapse whitespace for more robust comparisons.
     """
     if not html:
         return ""
@@ -31,34 +44,33 @@ def _normalize_angular_html(html: str) -> str:
     import re
 
     text = html
-    # Quitar atributos "ruido" típicos de Angular en el DOM renderizado
+    # Strip Angular runtime "noise" attributes from rendered DOM
     text = re.sub(r'\s(?:_ngcontent-[^= ]*|_nghost-[^= ]*|ng-reflect-[\w-]+)="[^"]*"', "", text)
-    # Normalizar espacios en blanco
+    # Normalise whitespace
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
 def run_axe_on_angular_app(base_url: str, run_path: str, suffix: str = "") -> Dict:
     """
-    Ejecuta Axe sobre una aplicación Angular ya levantada (por ejemplo en http://localhost:4200/)
-    y guarda el informe en JSON dentro del directorio de resultados de la ejecución.
-    
+    Run Axe on an already-running Angular app (e.g. http://localhost:4200/)
+    and save the report as JSON in the current run's results directory.
+
     Args:
-        base_url: URL base donde está sirviendo la app Angular (ej. http://localhost:4200/).
-        run_path: Directorio de resultados de la ejecución actual.
-        suffix: Sufijo opcional para diferenciar informes (ej. "_before", "_after").
-    
-    NOTA IMPORTANTE:
-    - Esta función asume que el proyecto Angular ya está sirviendo la aplicación
-      (por ejemplo, con `ng serve` o `npm start`) en la URL indicada en `base_url`.
-    - No modifica ningún fichero del proyecto; solo devuelve y guarda los resultados de Axe.
+        base_url: Base URL where the Angular app is served (e.g. http://localhost:4200/).
+        run_path: Current run's results directory.
+        suffix: Optional suffix to distinguish reports (e.g. "_before", "_after").
+
+    NOTE: This function assumes the Angular project is already serving the app
+    (e.g. via `ng serve` or `npm start`) at the given base_url. It does not
+    modify any project files; it only returns and saves Axe results.
     """
     safe_suffix = suffix or ""
     report_path = Path(run_path) / f"angular_axe_report{safe_suffix}.json"
 
     driver = None
     try:
-        print(f"\n[Angular + Axe] Analizando accesibilidad en {base_url} ...")
+        print(f"\n[Angular + Axe] Running accessibility analysis on {base_url} ...")
         driver = setup_driver()
         axe_results = run_axe_analysis(
             driver,
@@ -70,14 +82,14 @@ def run_axe_on_angular_app(base_url: str, run_path: str, suffix: str = "") -> Di
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(axe_results, f, indent=2, ensure_ascii=False)
 
-        print(f"[Angular + Axe] Informe guardado en: {report_path}")
+        print(f"[Angular + Axe] Report saved at: {report_path}")
         return axe_results
     except Exception as e:
-        print(f"[Angular + Axe] Error ejecutando Axe: {e}")
+        print(f"[Angular + Axe] Error running Axe: {e}")
         raise
     finally:
         if driver:
-            print("[Angular + Axe] Cerrando WebDriver.")
+            print("[Angular + Axe] Closing WebDriver.")
             driver.quit()
 
 
@@ -85,18 +97,16 @@ def map_axe_violations_to_templates(
     axe_results: Dict, project_root: Path, source_roots: Optional[List[Path]] = None
 ) -> Dict[str, List[Dict]]:
     """
-    Mapea las violaciones de Axe (sobre HTML renderizado) a los templates Angular (*.component.html).
+    Map Axe violations (on rendered HTML) to Angular templates (*.component.html).
 
-    Estrategia inicial (simple pero efectiva en muchos casos):
-    - Para cada nodo con violación, usamos el fragmento HTML (`html`) que devuelve Axe.
-    - Normalizamos tanto ese fragmento como el contenido de los templates para ignorar
-      atributos dinámicos de Angular (_ngcontent-*, _nghost-*, etc.).
-    - Buscamos coincidencias por substring; si encontramos el fragmento en un template,
-      asociamos esa violación a ese archivo.
+    Strategy: for each violating node we use the HTML fragment (`html`) from Axe,
+    normalise it and template content to strip Angular runtime attributes
+    (_ngcontent-*, _nghost-*, etc.), and match by substring to associate
+    violations with template files.
 
-    Devuelve:
-        Dict[str, List[Dict]] donde la clave es la ruta del template (relativa a project_root)
-        y el valor es una lista de diccionarios con información de la violación y el nodo.
+    Returns:
+        Dict[str, List[Dict]] keyed by template path (relative to project_root),
+        values are lists of violation/node info dicts.
     """
     if not axe_results:
         return {}
@@ -105,14 +115,14 @@ def map_axe_violations_to_templates(
     if not violations:
         return {}
 
-    # Determinar source_roots si no se pasan explícitamente
+    # Resolve source_roots if not provided
     if source_roots is None:
         angular_config = project_root / ANGULAR_CONFIG_FILE
         if angular_config.exists():
             config_data = _load_angular_config(angular_config)
             source_roots = _resolve_source_roots(project_root, config_data)
         else:
-            # Fallback: buscar en ubicaciones comunes
+            # Fallback: look in common locations
             possible_roots = [
                 project_root / "src",
                 project_root / "app",
@@ -120,15 +130,14 @@ def map_axe_violations_to_templates(
             ]
             source_roots = [r for r in possible_roots if r.exists()]
             if not source_roots:
-                print(f"[Angular + Axe] ⚠️ No se encontró angular.json ni directorios comunes (src/, app/)")
-                print(f"[Angular + Axe] Buscando templates en todo el proyecto...")
+                print(f"[Angular + Axe] ⚠️ angular.json and common dirs (src/, app/) not found")
+                print(f"[Angular + Axe] Searching for templates across the whole project...")
                 source_roots = [project_root]
 
-    # Cargar todos los templates en memoria:
-    #   ruta relativa -> {"normalized": str, "raw": str}
+    # Load all templates in memory: relative path -> {"normalized": str, "raw": str}
     templates: Dict[str, Dict[str, str]] = {}
     for root in source_roots:
-        # Incluir templates de componentes (*.component.html)
+        # Include component templates (*.component.html)
         for tpl_path in root.glob("**/*.component.html"):
             try:
                 raw = tpl_path.read_text(encoding="utf-8")
@@ -138,7 +147,7 @@ def map_axe_violations_to_templates(
             except Exception:
                 continue
 
-        # Incluir también templates INLINE en ficheros TypeScript (@Component({ template: `...` }))
+        # Also include INLINE templates in TypeScript files (@Component({ template: `...` }))
         for ts_path in root.glob("**/*.component.ts"):
             try:
                 ts_raw = ts_path.read_text(encoding="utf-8")
@@ -147,8 +156,8 @@ def map_axe_violations_to_templates(
 
             import re
 
-            # Buscar template: ` ... ` dentro de @Component({ ... })
-            # Patrón simple pero efectivo: template: `...`
+            # Find template: ` ... ` inside @Component({ ... })
+            # Simple but effective pattern: template: `...`
             inline_matches = re.findall(
                 r"template\s*:\s*`([\s\S]*?)`",
                 ts_raw,
@@ -159,17 +168,17 @@ def map_axe_violations_to_templates(
 
             for idx, inline_tpl in enumerate(inline_matches, start=1):
                 normalized = _normalize_angular_html(inline_tpl)
-                # Usar un nombre "virtual" para este template inline, ligado al .ts
+                # Use a virtual name for this inline template, tied to the .ts file
                 rel = str(ts_path.relative_to(project_root)) + f"::inline_template_{idx}"
                 templates[rel] = {"normalized": normalized, "raw": inline_tpl}
     
-    # Debug: mostrar cuántos templates se encontraron
+    # Debug: show how many templates were found
     if not templates:
-        print(f"[Angular + Axe] ⚠️ No se encontraron templates (*.component.html) en:")
+        print(f"[Angular + Axe] ⚠️ No templates (*.component.html) found in:")
         for root in source_roots:
             print(f"  - {root}")
-        print(f"[Angular + Axe] Buscando en todo el proyecto...")
-        # Búsqueda más agresiva: buscar en todo el proyecto
+        print(f"[Angular + Axe] Searching across the whole project...")
+        # More aggressive search: scan entire project
         for tpl_path in project_root.rglob("*.component.html"):
             try:
                 raw = tpl_path.read_text(encoding="utf-8")
@@ -180,14 +189,14 @@ def map_axe_violations_to_templates(
                 continue
     
     if templates:
-        print(f"[Angular + Axe] ✓ Encontrados {len(templates)} template(s) para mapear violaciones")
+        print(f"[Angular + Axe] ✓ Found {len(templates)} template(s) to map violations")
     else:
-        print(f"[Angular + Axe] ⚠️ No se encontraron templates. El mapeo puede fallar.")
-    
-    # También incluir index.html y otros archivos HTML estáticos en src/
+        print(f"[Angular + Axe] ⚠️ No templates found. Mapping may fail.")
+
+    # Also include index.html and other static HTML files in src/
     src_dir = project_root / "src"
     if src_dir.exists():
-        # Buscar index.html
+        # Find index.html
         index_html = src_dir / "index.html"
         if index_html.exists():
             try:
@@ -198,12 +207,12 @@ def map_axe_violations_to_templates(
             except Exception:
                 pass
         
-        # Buscar otros archivos HTML estáticos (no componentes)
+        # Find other static HTML files (not components)
         for html_path in src_dir.rglob("*.html"):
-            # Excluir componentes (ya procesados) y archivos en node_modules
+            # Exclude components (already processed) and node_modules
             if "node_modules" in str(html_path) or html_path.name.endswith(".component.html"):
                 continue
-            if html_path == index_html:  # Ya procesado
+            if html_path == index_html:  # Already processed
                 continue
             try:
                 raw = html_path.read_text(encoding="utf-8")
@@ -228,10 +237,10 @@ def map_axe_violations_to_templates(
 
             matched_template = None
 
-            # 1) Búsqueda sobre HTML normalizado
+            # 1) Search on normalised HTML
             for rel_path, tpl_data in templates.items():
                 if normalized_snippet in tpl_data["normalized"]:
-                    # VALIDACIÓN: Verificar que el elemento principal del snippet esté realmente en el template
+                    # VALIDATION: ensure the snippet's main element is actually in the template
                     snippet_tag = re.search(r'<(\w+)', html_snippet)
                     if snippet_tag:
                         tag_name = snippet_tag.group(1)
@@ -239,12 +248,12 @@ def map_axe_violations_to_templates(
                             matched_template = rel_path
                             break
 
-            # 2) Fallback: intentar con el fragmento original (sin normalizar)
+            # 2) Fallback: try original fragment (unnormalised)
             if not matched_template:
                 raw_snippet = html_snippet.strip()
                 for rel_path, tpl_data in templates.items():
                     if raw_snippet and raw_snippet in tpl_data["raw"]:
-                        # VALIDACIÓN: Verificar que el elemento principal esté en el template
+                        # VALIDATION: ensure main element is in the template
                         snippet_tag = re.search(r'<(\w+)', raw_snippet)
                         if snippet_tag:
                             tag_name = snippet_tag.group(1)
@@ -252,7 +261,7 @@ def map_axe_violations_to_templates(
                                 matched_template = rel_path
                                 break
 
-            # 3) Paso extra: intentar usar el selector CSS de Axe (clases/ids) para localizar el template
+            # 3) Extra step: try Axe CSS selector (classes/ids) to locate the template
             if not matched_template:
                 targets = node.get("target") or []
                 selector = targets[0] if targets and isinstance(targets[0], str) else None
@@ -260,21 +269,20 @@ def map_axe_violations_to_templates(
                 if selector:
                     import re
 
-                    # Caso especial: errores en elementos raíz como <html>
+                    # Special case: errors on root elements like <html>
                     if selector == "html" and violation_id == "html-has-lang":
-                        # Buscar index.html específicamente
+                        # Look for index.html specifically
                         for rel_path in templates.keys():
                             if "index.html" in rel_path:
                                 matched_template = rel_path
                                 break
                         if matched_template:
-                            # Continuar con el siguiente paso para añadir la entrada
                             pass
-                    
+
                     if not matched_template:
                         classes = re.findall(r"\.([a-zA-Z0-9_-]+)", selector)
                         ids = re.findall(r"#([a-zA-Z0-9_-]+)", selector)
-                        # También buscar nombres de elementos (sin punto ni #)
+                        # Also match element names (no . or #)
                         element_names = re.findall(r"^([a-zA-Z][a-zA-Z0-9-]*)(?=[\.#\s>+~:\[\]()]|$)", selector)
 
                         candidate_paths = []
@@ -285,18 +293,18 @@ def map_axe_violations_to_templates(
                             if element_names:
                                 element_found = False
                                 for elem_name in element_names:
-                                    # Buscar el elemento en el template (puede tener atributos)
+                                    # Find element in template (may have attributes)
                                     if f"<{elem_name}" in raw_tpl or f"<{elem_name} " in raw_tpl or f"<{elem_name}>" in raw_tpl:
                                         element_found = True
                                         break
                                 if not element_found:
                                     continue
 
-                            # Todas las clases del selector deben aparecer en el template
+                            # All selector classes must appear in the template
                             if classes and not all(cls in raw_tpl for cls in classes):
                                 continue
 
-                            # Todos los ids del selector deben aparecer en el template
+                            # All selector ids must appear in the template
                             if ids:
                                 has_all_ids = True
                                 for id_value in ids:
@@ -312,16 +320,16 @@ def map_axe_violations_to_templates(
                             if classes or ids or element_names:
                                 candidate_paths.append(rel_path)
 
-                        # Si solo hay un candidato claro, lo usamos
+                        # If only one clear candidate, use it
                         if len(candidate_paths) == 1:
                             matched_template = candidate_paths[0]
-                        # Si hay múltiples candidatos pero uno es index.html y el error es html-has-lang, usar index.html
+                        # If multiple candidates and one is index.html with html-has-lang, use index.html
                         elif len(candidate_paths) > 1 and violation_id == "html-has-lang":
                             for rel_path in candidate_paths:
                                 if "index.html" in rel_path:
                                     matched_template = rel_path
                                     break
-                        # Si hay múltiples candidatos y no es un caso especial, asociar la violación a TODOS
+                        # If multiple candidates and not special case, associate violation with ALL
                         elif len(candidate_paths) > 1:
                             for rel_path in candidate_paths:
                                 entry = {
@@ -330,7 +338,6 @@ def map_axe_violations_to_templates(
                                     "node": node,
                                 }
                                 issues_by_template.setdefault(rel_path, []).append(entry)
-                            # Ya hemos asignado esta violación a varios templates, continuar con el siguiente nodo
                             continue
 
             if not matched_template:
@@ -350,15 +357,15 @@ def fix_css_with_axe(
     axe_results: Dict, project_root: Path, client
 ) -> Dict[str, Dict[str, str]]:
     """
-    Aplica correcciones de contraste basadas en Axe a nivel de CSS global.
+    Apply Axe-based contrast fixes at global CSS level.
 
-    Versión inicial y conservadora:
-    - Solo actúa sobre violaciones 'color-contrast'.
-    - Solo considera selectores sencillos de clase (ej: '.navbar-brand').
-    - Solo genera reglas CSS nuevas para esos selectores y las añade al final
-      de 'src/styles.scss' (o 'src/styles.css' si no existe el primero).
-    - No toca layout (display, flex, grid, etc.), solo color / background-color
-      y opcionalmente font-weight.
+    Initial conservative behaviour:
+    - Only handles 'color-contrast' violations.
+    - Only considers simple class selectors (e.g. '.navbar-brand').
+    - Only adds new CSS rules for those selectors at the end of
+      'src/styles.scss' (or 'src/styles.css' if the former does not exist).
+    - Does not change layout (display, flex, grid, etc.), only color / background-color
+      and optionally font-weight.
     """
     fixes: Dict[str, Dict[str, str]] = {}
 
@@ -369,7 +376,7 @@ def fix_css_with_axe(
     if not violations:
         return fixes
 
-    # Localizar hoja de estilos global principal
+    # Locate main global stylesheet
     styles_scss = project_root / "src" / "styles.scss"
     styles_css = project_root / "src" / "styles.css"
     if styles_scss.exists():
@@ -377,7 +384,7 @@ def fix_css_with_axe(
     elif styles_css.exists():
         styles_path = styles_css
     else:
-        # No hay estilos globales estándar, salir sin hacer nada
+        # No standard global styles, do nothing
         return fixes
 
     try:
@@ -385,13 +392,13 @@ def fix_css_with_axe(
     except Exception:
         return fixes
 
-    # Agrupar violaciones de contraste por selector simple (clase)
+    # Group contrast violations by simple (class) selector
     from collections import defaultdict
     import re
 
     issues_by_selector: Dict[str, List[Dict]] = defaultdict(list)
     
-    # Selectores demasiado genéricos que NO debemos usar (romperían el diseño)
+    # Overly generic selectors we must NOT use (would break layout)
     GENERIC_SELECTORS_BLACKLIST = {
         ".btn", ".container", ".row", ".col", ".card", ".nav", ".navbar",
         ".form", ".input", ".label", ".text", ".title", ".header", ".footer",
@@ -403,47 +410,47 @@ def fix_css_with_axe(
         if violation.get("id") != "color-contrast":
             continue
         for node in violation.get("nodes", []):
-            # Intentar derivar un selector CSS basado en la clase del elemento
+            # Try to derive a CSS selector from the element's class
             html = node.get("html") or ""
             targets = node.get("target") or []
 
             selector = None
 
-            # 1) Extraer TODAS las clases del HTML y elegir la MÁS ESPECÍFICA (no la primera)
+            # 1) Extract ALL classes from HTML and pick the MOST SPECIFIC (not the first)
             class_match = re.search(r'class=["\']([^"\']+)["\']', html)
             if class_match:
                 classes_in_html = class_match.group(1).split()
                 if classes_in_html:
-                    # Priorizar clases más específicas (que no estén en blacklist)
-                    # Ej: "btn btn-primary" -> preferir ".btn-primary" sobre ".btn"
-                    for cls in reversed(classes_in_html):  # Empezar por la última (más específica)
+                    # Prefer more specific classes (not in blacklist)
+                    # e.g. "btn btn-primary" -> prefer ".btn-primary" over ".btn"
+                    for cls in reversed(classes_in_html):  # Start from last (most specific)
                         candidate = f".{cls}"
                         if candidate not in GENERIC_SELECTORS_BLACKLIST:
                             selector = candidate
                             break
-                    # Si todas están en blacklist, usar la última de todas formas (mejor que nada)
+                    # If all in blacklist, use last anyway (better than nothing)
                     if not selector and classes_in_html:
                         selector = f".{classes_in_html[-1]}"
 
-            # 2) Si no hay clase en el HTML, usar el target de Axe si es una clase simple
+            # 2) If no class in HTML, use Axe target if it's a simple class
             if not selector and targets and isinstance(targets[0], str):
                 raw_selector = targets[0].strip()
-                # Extraer solo la parte de clase del selector (ignorar atributos, pseudo-clases, etc.)
+                # Extract only the class part of the selector (ignore attributes, pseudo-classes, etc.)
                 class_parts = re.findall(r'\.([a-zA-Z0-9_-]+)', raw_selector)
                 if class_parts:
-                    # Usar la última clase encontrada (más específica)
+                    # Use the last class found (most specific)
                     selector = f".{class_parts[-1]}"
                     if selector in GENERIC_SELECTORS_BLACKLIST:
-                        # Si es genérica, intentar con la anterior
+                        # If generic, try the previous one
                         if len(class_parts) > 1:
                             selector = f".{class_parts[-2]}"
                         else:
-                            selector = None  # Descartar si solo hay una clase genérica
+                            selector = None  # Discard if only one generic class
 
             if not selector or selector in GENERIC_SELECTORS_BLACKLIST:
                 continue
 
-            # Extraer datos de contraste de la primera entrada relevante
+            # Extract contrast data from first relevant entry
             contrast_data = None
             any_checks = node.get("any", []) or []
             for check in any_checks:
@@ -466,7 +473,7 @@ def fix_css_with_axe(
     updated_css_blocks: List[str] = []
 
     for selector, issues in issues_by_selector.items():
-        # Construir texto de problemas para el prompt
+        # Build problem text for the prompt
         problems_lines: List[str] = []
         for issue in issues:
             data = (issue.get("contrast") or {}) if issue.get("contrast") else {}
@@ -481,7 +488,7 @@ def fix_css_with_axe(
 
         problems_text = "\n".join(problems_lines)
 
-        # Verificar si ya existe una regla para este selector (evitar duplicados)
+        # Check if a rule for this selector already exists (avoid duplicates)
         selector_exists = re.search(rf'\.{re.escape(selector.lstrip("."))}\s*\{{', original_styles, re.IGNORECASE)
         existing_note = ""
         if selector_exists:
@@ -500,25 +507,25 @@ HOJA DE ESTILOS GLOBAL ACTUAL (resumen):
 {original_styles[:4000]}
 ```
 
-TAREA CRÍTICA:
-- Debes proponer nuevas reglas CSS para el selector {selector} (y solo para él) que corrijan
-  TODOS los errores de contraste indicados.
-- Como este proyecto usa Bootstrap, DEBES usar !important en color para
-  asegurar que tus reglas sobrescriban los estilos de Bootstrap.
-- 🚨 IMPORTANTE: NO uses `background-color` a menos que sea absolutamente necesario.
-  Bootstrap ya maneja los fondos correctamente. Solo ajusta el `color` del texto.
-- NO CAMBIES el layout: NO toques display, position, flex, grid, width, height,
+CRITICAL TASK:
+- You must propose new CSS rules for the selector {selector} (and only for it) that fix
+  ALL the indicated contrast errors.
+- Since this project uses Bootstrap, you MUST use !important on color so that
+  your rules override Bootstrap styles.
+- 🚨 IMPORTANT: Do NOT use `background-color` unless absolutely necessary.
+  Bootstrap already handles backgrounds correctly. Only adjust the text `color`.
+- Do NOT change layout: do NOT touch display, position, flex, grid, width, height,
   margin, padding, align-items, justify-content, etc.
-- SOLO PUEDES MODIFICAR O AÑADIR:
-  - color (con !important) - OBLIGATORIO
-  - font-weight (opcional, solo si realmente ayuda a la legibilidad)
-- Calcula colores que cumplan al menos el ratio requerido (4.5:1 para texto normal, 3:1 para texto grande).
-- Para fondos oscuros (#007bff, #17a2b8, etc.), usa texto claro (#ffffff o similar).
-- Para fondos claros, usa texto oscuro (#000000, #212121, etc.).
+- YOU MAY ONLY MODIFY OR ADD:
+  - color (with !important) - REQUIRED
+  - font-weight (optional, only if it really helps readability)
+- Choose colours that meet at least the required ratio (4.5:1 for normal text, 3:1 for large text).
+- For dark backgrounds (#007bff, #17a2b8, etc.), use light text (#ffffff or similar).
+- For light backgrounds, use dark text (#000000, #212121, etc.).
 
-FORMATO DE RESPUESTA OBLIGATORIO:
-Devuelve EXCLUSIVAMENTE un bloque CSS listo para PEGAR al final de styles.css/styles.scss,
-DELIMITADO por:
+MANDATORY RESPONSE FORMAT:
+Return EXCLUSIVELY a CSS block ready to PASTE at the end of styles.css/styles.scss,
+DELIMITED by:
 
 <<<UPDATED_CSS>>>
 {selector} {{
@@ -526,15 +533,15 @@ DELIMITADO por:
 }}
 <<<END_UPDATED_CSS>>>
 
-NOTA: Solo incluye `color`, NO incluyas `background-color` a menos que sea absolutamente crítico.
+NOTE: Include only `color`, do NOT include `background-color` unless absolutely critical.
 
-NO incluyas explicaciones, ni markdown, ni ```css```, solo el bloque entre los marcadores.
+Do NOT include explanations, markdown, or ```css```, only the block between the markers.
 """.strip()
 
         system_message = (
-            "Eres un experto en accesibilidad (WCAG 2.2 AA) y en CSS. "
-            "Tu tarea es ajustar colores de texto/fondo para mejorar el contraste "
-            "SIN alterar el layout ni romper el diseño general."
+            "You are an accessibility (WCAG 2.2 AA) and CSS expert. "
+            "Your task is to adjust text/background colours to improve contrast "
+            "WITHOUT changing layout or breaking the overall design."
         )
 
         try:
@@ -554,7 +561,7 @@ NO incluyas explicaciones, ni markdown, ni ```css```, solo el bloque entre los m
                 call_type="angular_axe_css_fix",
             )
 
-            # Extraer bloque UPDATED_CSS
+            # Extract UPDATED_CSS block
             start_marker = "<<<UPDATED_CSS>>>"
             end_marker = "<<<END_UPDATED_CSS>>>"
             start_idx = content.find(start_marker)
@@ -566,7 +573,7 @@ NO incluyas explicaciones, ni markdown, ni ```css```, solo el bloque entre los m
             if not updated_block:
                 continue
 
-            # Validación muy básica: evitar propiedades de layout peligrosas
+            # Basic validation: avoid dangerous layout properties
             forbidden_props = [
                 "display:",
                 "position:",
@@ -590,17 +597,17 @@ NO incluyas explicaciones, ni markdown, ni ```css```, solo el bloque entre los m
             )
 
         except Exception as e:
-            print(f"[Angular + Axe CSS] ⚠️ Error corrigiendo selector {selector}: {e}")
+            print(f"[Angular + Axe CSS] ⚠️ Error fixing selector {selector}: {e}")
             continue
 
     if not updated_css_blocks:
         return fixes
 
-    # Limpiar reglas antiguas de "Axe-based contrast fix" para evitar acumulación
-    # Usar regex para eliminar bloques que empiezan con "/* Axe-based contrast fix" hasta el siguiente bloque o fin
+    # Remove old "Axe-based contrast fix" rules to avoid accumulation
+    # Use regex to strip blocks starting with "/* Axe-based contrast fix" until next block or end
     axe_block_pattern = r'/\* Axe-based contrast fix para[^*]*\*/(?:[^*]|\*(?!/))*?}'
     cleaned_styles = re.sub(axe_block_pattern, '', original_styles, flags=re.DOTALL)
-    # Limpiar líneas en blanco múltiples
+    # Collapse multiple blank lines
     cleaned_styles = re.sub(r'\n\s*\n\s*\n+', '\n\n', cleaned_styles).rstrip()
 
     new_styles = cleaned_styles + "\n\n" + "\n\n".join(updated_css_blocks) + "\n"
@@ -612,10 +619,10 @@ NO incluyas explicaciones, ni markdown, ni ```css```, solo el bloque entre los m
                 "corrected": new_styles,
             }
             print(
-                f"[Angular + Axe CSS] ✓ Añadidas {len(updated_css_blocks)} reglas de contraste en {styles_path}"
+                f"[Angular + Axe CSS] ✓ Added {len(updated_css_blocks)} contrast rules in {styles_path}"
             )
         except Exception as e:
-            print(f"[Angular + Axe CSS] ⚠️ No se pudo escribir en {styles_path}: {e}")
+            print(f"[Angular + Axe CSS] ⚠️ Could not write to {styles_path}: {e}")
 
     return fixes
 
@@ -638,19 +645,19 @@ def _build_axe_based_prompt_for_template(
         desc = violation.get("description", "")
         html_snippet = (node.get("html") or "").strip()
 
-        # Tag principal del snippet (para que el modelo sepa qué buscar)
+        # Main tag of the snippet (so the model knows what to look for)
         tag = "elemento"
         m = re.search(r"<(\w+)", html_snippet)
         if m:
             tag = m.group(1)
 
-        # Línea principal de la violación
+        # Main violation line
         line = f"- {v_id} ({impact}) en <{tag}>"
         if desc:
             line += f": {desc}"
         violations_lines.append(line)
 
-        # Añadir una sola línea de HTML para referencia
+        # Add a single HTML line for reference
         if html_snippet:
             first_line = html_snippet.splitlines()[0].strip()
             violations_lines.append(f"  HTML: {first_line[:200]}...")
@@ -658,33 +665,33 @@ def _build_axe_based_prompt_for_template(
     violations_text = "\n".join(violations_lines)
     total = len(issues)
 
-    prompt = f"""Corrige TODAS las {total} violaciones WCAG A/AA en este template Angular.
+    prompt = f"""Fix ALL {total} WCAG A/AA violations in this Angular template.
 
 TEMPLATE: {template_path}
 
-VIOLACIONES:
+VIOLATIONS:
 {violations_text}
 
-REGLAS RÁPIDAS:
-- button-name → añade texto visible o aria-label="..." a <button>
-- color-contrast → ajusta SOLO style="color:#000000" o "#FFFFFF" según el fondo
-- link-name → añade texto descriptivo o aria-label="..." a <a>
-- image-alt / role-img-alt → añade alt="..." o aria-label="..." al elemento visual
-- frame-title → añade title="..." a <iframe>
-- aria-* → añade/corrige atributos aria- (aria-label, aria-labelledby, etc.)
+QUICK RULES:
+- button-name → add visible text or aria-label="..." to <button>
+- color-contrast → adjust ONLY style="color:#000000" or "#FFFFFF" according to background
+- link-name → add descriptive text or aria-label="..." to <a>
+- image-alt / role-img-alt → add alt="..." or aria-label="..." to the visual element
+- frame-title → add title="..." to <iframe>
+- aria-* → add/fix aria attributes (aria-label, aria-labelledby, etc.)
 
-INSTRUCCIONES:
-- Corrige SOLO los elementos indicados en la lista de violaciones.
-- Mantén *ngIf, *ngFor, bindings y pipes sin romperlos.
-- No cambies el layout ni las clases de responsive (row, col-*, container, etc.).
-- No añadas elementos HTML nuevos innecesarios; prioriza atributos en elementos existentes.
+INSTRUCTIONS:
+- Fix ONLY the elements listed in the violations list.
+- Keep *ngIf, *ngFor, bindings and pipes intact.
+- Do not change layout or responsive classes (row, col-*, container, etc.).
+- Do not add unnecessary new HTML elements; prefer attributes on existing elements.
 
-TEMPLATE COMPLETO ACTUAL:
+FULL CURRENT TEMPLATE:
 ```html
 {template_content}
 ```
 
-Devuelve SOLO el template completo corregido, sin explicaciones."""
+Return ONLY the full corrected template, no explanations."""
 
     return prompt.strip()
 
@@ -693,27 +700,27 @@ def fix_templates_with_axe_violations(
     issues_by_template: Dict[str, List[Dict]], project_root: Path, client
 ) -> Dict[str, Dict[str, str]]:
     """
-    Usa la información de Axe ya mapeada a cada template para pedir al LLM que
-    corrija el HTML completo de cada *.component.html.
+    Use the Axe information already mapped to each template to ask the LLM to
+    fix the full HTML of each *.component.html.
 
-    Devuelve un dict con:
+    Returns a dict:
       { template_rel_path: { "original": ..., "corrected": ... }, ... }
     """
     import re
     fixes: Dict[str, Dict[str, str]] = {}
 
     if not issues_by_template:
-        print("[Angular + Axe] No hay violaciones mapeadas a templates.")
+        print("[Angular + Axe] No violations mapped to templates.")
         return fixes
 
     for rel_path, issues in issues_by_template.items():
         try:
-            # Soportar tanto templates en archivos HTML como templates INLINE en .ts
+            # Support both HTML file templates and INLINE templates in .ts
             ts_inline_suffix = "::inline_template_"
             is_inline = ts_inline_suffix in rel_path
 
             if is_inline:
-                # Ejemplo de rel_path:
+                # Example rel_path:
                 #   "src/app/components/ng-style/ng-style.component.ts::inline_template_1"
                 ts_rel, inline_id = rel_path.split(ts_inline_suffix, 1)
                 tpl_path = project_root / ts_rel
@@ -721,7 +728,7 @@ def fix_templates_with_axe_violations(
                     continue
                 ts_content = tpl_path.read_text(encoding="utf-8")
 
-                # Volver a localizar todas las ocurrencias de template: ` ... `
+                # Relocate all template: ` ... ` occurrences
                 inline_matches = list(
                     re.finditer(
                         r"template\s*:\s*`([\s\S]*?)`",
@@ -732,7 +739,7 @@ def fix_templates_with_axe_violations(
                 if not inline_matches:
                     continue
 
-                # Calcular índice de template inline (1-based en el nombre virtual)
+                # Compute inline template index (1-based in virtual name)
                 try:
                     target_idx = int(inline_id)
                 except ValueError:
@@ -753,8 +760,8 @@ def fix_templates_with_axe_violations(
             if not original_content.strip():
                 continue
 
-            # VALIDACIÓN CRÍTICA: Verificar que las violaciones realmente corresponden a este template
-            print(f"[Angular + Axe] 🔍 Validando mapeo de violaciones para {rel_path}...")
+            # CRITICAL VALIDATION: ensure violations actually belong to this template
+            print(f"[Angular + Axe] 🔍 Validating violation mapping for {rel_path}...")
             valid_issues = []
             invalid_issues = []
             
@@ -766,16 +773,16 @@ def fix_templates_with_axe_violations(
                 is_valid = True
                 
                 if html_snippet:
-                    # Extraer el tag principal del snippet
+                    # Extract snippet's main tag
                     snippet_tag_match = re.search(r'<(\w+)', html_snippet)
                     if snippet_tag_match:
                         snippet_tag = snippet_tag_match.group(1)
-                        # Verificar que el tag esté en el template
-                        if snippet_tag not in ['html', 'body', 'head']:  # Excluir tags raíz
+                        # Ensure the tag is in the template
+                        if snippet_tag not in ['html', 'body', 'head']:  # Exclude root tags
                             if f'<{snippet_tag}' not in original_content and f'<{snippet_tag} ' not in original_content:
-                                print(f"[Angular + Axe] ⚠️ Violación {violation_id} tiene elemento <{snippet_tag}> que NO está en este template")
+                                print(f"[Angular + Axe] ⚠️ Violation {violation_id} has element <{snippet_tag}> not in this template")
                                 print(f"  → HTML snippet: {html_snippet[:150]}...")
-                                print(f"  → Esta violación se OMITIRÁ porque el mapeo parece incorrecto")
+                                print(f"  → This violation will be SKIPPED because mapping looks incorrect")
                                 is_valid = False
                 
                 if is_valid:
@@ -784,36 +791,36 @@ def fix_templates_with_axe_violations(
                     invalid_issues.append(issue)
             
             if invalid_issues:
-                print(f"[Angular + Axe] ⚠️ Se omitieron {len(invalid_issues)} violación(es) con mapeo incorrecto")
+                print(f"[Angular + Axe] ⚠️ Skipped {len(invalid_issues)} violation(s) with incorrect mapping")
             
             if not valid_issues:
-                print(f"[Angular + Axe] ⚠️ No hay violaciones válidas para corregir en {rel_path}. Saltando...")
+                print(f"[Angular + Axe] ⚠️ No valid violations to fix in {rel_path}. Skipping...")
                 continue
             
-            # Usar solo las violaciones válidas
+            # Use only valid violations
             issues = valid_issues
-            print(f"[Angular + Axe] ✓ {len(issues)} violación(es) válida(s) para corregir en {rel_path}")
+            print(f"[Angular + Axe] ✓ {len(issues)} valid violation(s) to fix in {rel_path}")
             
             prompt = _build_axe_based_prompt_for_template(
                 rel_path, original_content, issues
             )
 
             system_message = (
-                "Eres un EXPERTO en accesibilidad web (WCAG 2.2 A+AA) y Angular. "
-                "Tu MISIÓN es corregir TODAS las violaciones de accesibilidad indicadas por Axe "
-                "modificando el template HTML completo. "
-                "🚨 CRÍTICO: DEBES hacer cambios reales al código. NO devuelvas el mismo código. "
-                "🚨 Si hay violaciones de contraste, DEBES añadir o modificar style=\"color: #XXXXXX;\" "
-                "🚨 Si hay violaciones de aria-label, button-name, link-name, etc., DEBES añadir los atributos necesarios. "
-                "🚨 Mantén la lógica Angular (bindings, *ngIf, *ngFor, pipes) sin romperla. "
-                "🚨 Si devuelves el mismo código sin cambios, la corrección FALLA completamente."
+                "You are an EXPERT in web accessibility (WCAG 2.2 A+AA) and Angular. "
+                "Your MISSION is to fix ALL accessibility violations reported by Axe "
+                "by modifying the full HTML template. "
+                "🚨 CRITICAL: You MUST make real changes to the code. Do NOT return the same code. "
+                "🚨 If there are contrast violations, you MUST add or modify style=\"color: #XXXXXX;\" "
+                "🚨 If there are aria-label, button-name, link-name violations, etc., you MUST add the required attributes. "
+                "🚨 Keep Angular logic (bindings, *ngIf, *ngFor, pipes) intact. "
+                "🚨 If you return the same code unchanged, the fix FAILS completely."
             )
 
-            print(f"[Angular + Axe] Corrigiendo template basado en Axe: {rel_path}")
+            print(f"[Angular + Axe] Fixing template based on Axe: {rel_path}")
             
-            # Log del prompt para debugging (primeros 1000 chars)
-            print(f"[Angular + Axe] 📝 Prompt (primeros 1000 chars): {prompt[:1000]}...")
-            print(f"[Angular + Axe] 📄 Código original (primeros 500 chars): {original_content[:500]}...")
+            # Log prompt for debugging (first 1000 chars)
+            print(f"[Angular + Axe] 📝 Prompt (first 1000 chars): {prompt[:1000]}...")
+            print(f"[Angular + Axe] 📄 Original code (first 500 chars): {original_content[:500]}...")
 
             response = client.chat.completions.create(
                 model="gpt-4o",
@@ -826,8 +833,8 @@ def fix_templates_with_axe_violations(
 
             corrected = response.choices[0].message.content or ""
             
-            # Log de la respuesta del LLM (primeros 500 chars)
-            print(f"[Angular + Axe] 📝 Respuesta LLM (primeros 500 chars): {corrected[:500]}...")
+            # Log LLM response (first 500 chars)
+            print(f"[Angular + Axe] 📝 LLM response (first 500 chars): {corrected[:500]}...")
             
             log_openai_call(
                 prompt=prompt,
@@ -836,56 +843,56 @@ def fix_templates_with_axe_violations(
                 call_type="angular_axe_template_fix",
             )
 
-            # Limpiar posibles marcas de bloque de código
+            # Strip possible code block markers
             corrected = corrected.strip()
             if corrected.startswith("```"):
                 parts = corrected.split("```")
                 if len(parts) >= 3:
                     code_block = parts[1]
-                    # Quitar posibles etiquetas de lenguaje
+                    # Remove possible language tags
                     if "\n" in code_block:
                         code_block = code_block.split("\n", 1)[1]
                     corrected = code_block.strip()
                 else:
                     corrected = corrected.replace("```html", "").replace("```", "").strip()
 
-            # Aplicar correcciones automáticas post-procesamiento
+            # Apply automatic post-processing fixes
             corrected = _apply_automatic_accessibility_fixes(corrected)
             
-            # Corregir errores básicos de sintaxis
+            # Fix basic syntax errors
             corrected = _fix_basic_syntax_errors(corrected)
             
-            # Corregir sintaxis Angular para atributos ARIA
+            # Fix Angular syntax for ARIA attributes
             corrected = _fix_angular_aria_syntax(corrected)
 
-            # VALIDACIÓN CRÍTICA: Verificar que el LLM devolvió HTML válido
+            # CRITICAL VALIDATION: ensure LLM returned valid HTML
             is_valid_response = True
-            
-            # 1. No debe ser un comentario o texto sin HTML
+
+            # 1. Must not be a comment or non-HTML text
             if corrected.strip().startswith("//") or corrected.strip().startswith("/*"):
-                print(f"[Angular + Axe] ⚠️ El LLM devolvió un comentario en lugar de HTML para {rel_path}")
+                print(f"[Angular + Axe] ⚠️ LLM returned a comment instead of HTML for {rel_path}")
                 is_valid_response = False
             
-            # 2. Debe contener al menos una etiqueta HTML
+            # 2. Must contain at least one HTML tag
             if is_valid_response and not re.search(r'<\w+', corrected):
-                print(f"[Angular + Axe] ⚠️ El LLM no devolvió HTML válido para {rel_path}")
+                print(f"[Angular + Axe] ⚠️ LLM did not return valid HTML for {rel_path}")
                 is_valid_response = False
             
-            # 3. No debe ser significativamente más corto que el original (más del 50% más corto)
+            # 3. Must not be significantly shorter than original (>50% shorter)
             if is_valid_response and len(corrected.strip()) < len(original_content.strip()) * 0.5:
-                print(f"[Angular + Axe] ⚠️ La respuesta del LLM es demasiado corta para {rel_path} ({len(corrected)} vs {len(original_content)} chars)")
+                print(f"[Angular + Axe] ⚠️ LLM response too short for {rel_path} ({len(corrected)} vs {len(original_content)} chars)")
                 is_valid_response = False
 
-            # Detectar diferencias más robustamente (incluyendo cambios de color)
+            # Detect differences more robustly (including color changes)
             orig_colors = re.findall(r'color\s*:\s*["\']?([^"\';]+)', original_content, re.IGNORECASE)
             corr_colors = re.findall(r'color\s*:\s*["\']?([^"\';]+)', corrected, re.IGNORECASE) if corrected else []
             has_color_diff = set(orig_colors) != set(corr_colors)
             
-            # Comparación más robusta: normalizar espacios pero detectar cambios reales
+            # More robust comparison: normalise spaces but detect real changes
             orig_normalized = re.sub(r'\s+', ' ', original_content.strip())
             corr_normalized = re.sub(r'\s+', ' ', corrected.strip()) if corrected else ""
             
-            # Detectar cambios en atributos ARIA, alt, aria-label, etc.
+            # Detect changes in ARIA attributes, alt, aria-label, etc.
             orig_aria = set(re.findall(r'aria-\w+="[^"]*"', original_content, re.IGNORECASE))
             corr_aria = set(re.findall(r'aria-\w+="[^"]*"', corrected, re.IGNORECASE)) if corrected else set()
             has_aria_diff = orig_aria != corr_aria
@@ -907,38 +914,38 @@ def fix_templates_with_axe_violations(
                 corrected.strip() != original_content.strip()
             )
             
-            # Debug: mostrar si hay cambios
-            print(f"[Angular + Axe] 🔍 Análisis de cambios:")
-            print(f"  - Código normalizado igual: {orig_normalized == corr_normalized}")
-            print(f"  - Diferencia de color: {has_color_diff} (orig: {orig_colors}, corr: {corr_colors})")
-            print(f"  - Diferencia de ARIA: {has_aria_diff} (orig: {len(orig_aria)}, corr: {len(corr_aria)})")
-            print(f"  - Diferencia de alt: {has_alt_diff} (orig: {len(orig_alt)}, corr: {len(corr_alt)})")
-            print(f"  - Diferencia de labels: {has_label_diff} (orig: {len(orig_labels)}, corr: {len(corr_labels)})")
-            print(f"  - Tiene cambios: {has_changes}")
+            # Debug: show whether there are changes
+            print(f"[Angular + Axe] 🔍 Change analysis:")
+            print(f"  - Normalised code equal: {orig_normalized == corr_normalized}")
+            print(f"  - Color diff: {has_color_diff} (orig: {orig_colors}, corr: {corr_colors})")
+            print(f"  - ARIA diff: {has_aria_diff} (orig: {len(orig_aria)}, corr: {len(corr_aria)})")
+            print(f"  - alt diff: {has_alt_diff} (orig: {len(orig_alt)}, corr: {len(corr_alt)})")
+            print(f"  - labels diff: {has_label_diff} (orig: {len(orig_labels)}, corr: {len(corr_labels)})")
+            print(f"  - Has changes: {has_changes}")
             
             if not has_changes:
-                print(f"[Angular + Axe] ⚠️ NO SE DETECTARON CAMBIOS - Comparación detallada:")
-                print(f"  - Original (primeros 300): {original_content[:300]}")
-                print(f"  - Corregido (primeros 300): {corrected[:300] if corrected else 'N/A'}")
-                print(f"  - Longitud original: {len(original_content)}")
-                print(f"  - Longitud corregido: {len(corrected) if corrected else 0}")
+                print(f"[Angular + Axe] ⚠️ NO CHANGES DETECTED - Detailed comparison:")
+                print(f"  - Original (first 300): {original_content[:300]}")
+                print(f"  - Corrected (first 300): {corrected[:300] if corrected else 'N/A'}")
+                print(f"  - Original length: {len(original_content)}")
+                print(f"  - Corrected length: {len(corrected) if corrected else 0}")
             
             if is_valid_response and corrected and has_changes:
                 if has_color_diff:
-                    print(f"[Angular + Axe] 🎨 Diferencia en colores detectada: {orig_colors} -> {corr_colors}")
+                    print(f"[Angular + Axe] 🎨 Color difference detected: {orig_colors} -> {corr_colors}")
                 if is_inline:
-                    # Reemplazar solo el contenido del template inline dentro del .ts
+                    # Replace only the inline template content inside the .ts file
                     before = ts_content[: match.start(1)]
                     after = ts_content[match.end(1) :]
 
-                    # Escapar backticks dentro del template corregido
+                    # Escape backticks inside the corrected template
                     safe_corrected = corrected.replace("`", "\\`")
 
                     new_ts_content = before + safe_corrected + after
                     if new_ts_content != ts_content:
                         try:
                             tpl_path.write_text(new_ts_content, encoding="utf-8")
-                            # Verificar que se escribió correctamente
+                            # Verify write succeeded
                             written_content = tpl_path.read_text(encoding="utf-8")
                             if written_content.strip() == new_ts_content.strip():
                                 fixes[rel_path] = {
@@ -946,52 +953,52 @@ def fix_templates_with_axe_violations(
                                     "corrected": corrected,
                                 }
                                 print(
-                                    f"[Angular + Axe] ✓ Cambios aplicados y verificados en template inline de {rel_path}"
+                                    f"[Angular + Axe] ✓ Changes applied and verified in inline template of {rel_path}"
                                 )
-                                print(f"  → Longitud original: {len(original_content)} chars")
-                                print(f"  → Longitud corregido: {len(corrected)} chars")
+                                print(f"  → Original length: {len(original_content)} chars")
+                                print(f"  → Corrected length: {len(corrected)} chars")
                             else:
                                 print(
-                                    f"[Angular + Axe] ⚠️ Error: El archivo no se escribió correctamente en template inline de {rel_path}"
+                                    f"[Angular + Axe] ⚠️ Error: File was not written correctly in inline template of {rel_path}"
                                 )
                         except Exception as e:
-                            print(f"[Angular + Axe] ⚠️ Error escribiendo archivo {rel_path}: {e}")
+                            print(f"[Angular + Axe] ⚠️ Error writing file {rel_path}: {e}")
                     else:
                         print(
                             f"[Angular + Axe] ⚠️ No se aplicaron cambios efectivos en template inline de {rel_path}"
                         )
-                        print(f"  → El contenido nuevo es idéntico al original")
+                        print(f"  → New content is identical to original")
                         print(f"  → Original (primeros 200): {original_content[:200]}")
                         print(f"  → Corregido (primeros 200): {corrected[:200]}")
                 else:
                     # Verificar que el archivo existe y es escribible
                     if not tpl_path.exists():
-                        print(f"[Angular + Axe] ⚠️ El archivo {tpl_path} no existe. No se pueden aplicar cambios.")
+                        print(f"[Angular + Axe] ⚠️ File {tpl_path} does not exist. Cannot apply changes.")
                         continue
                     
                     # Escribir el archivo
                     try:
                         tpl_path.write_text(corrected, encoding="utf-8")
-                        # Verificar que se escribió correctamente
+                        # Verify write succeeded
                         written_content = tpl_path.read_text(encoding="utf-8")
                         if written_content.strip() == corrected.strip():
                             fixes[rel_path] = {
                                 "original": original_content,
                                 "corrected": corrected,
                             }
-                            print(f"[Angular + Axe] ✓ Cambios aplicados y verificados en {rel_path}")
-                            print(f"  → Longitud original: {len(original_content)} chars")
-                            print(f"  → Longitud corregido: {len(corrected)} chars")
+                            print(f"[Angular + Axe] ✓ Changes applied and verified in {rel_path}")
+                            print(f"  → Original length: {len(original_content)} chars")
+                            print(f"  → Corrected length: {len(corrected)} chars")
                         else:
-                            print(f"[Angular + Axe] ⚠️ Error: El archivo no se escribió correctamente en {rel_path}")
+                            print(f"[Angular + Axe] ⚠️ Error: File was not written correctly in {rel_path}")
                     except Exception as e:
                         print(f"[Angular + Axe] ⚠️ Error escribiendo archivo {rel_path}: {e}")
             else:
-                print(f"[Angular + Axe] ⚠️ El LLM devolvió el mismo código para {rel_path}")
-                # Mostrar qué violaciones se intentaron corregir
+                print(f"[Angular + Axe] ⚠️ LLM returned the same code for {rel_path}")
+                # Show which violations were attempted
                 violation_ids = [issue.get("violation", {}).get("id", "unknown") for issue in issues]
-                print(f"  → Violaciones que se intentaron corregir: {', '.join(set(violation_ids))}")
-                print(f"  → Total de violaciones: {len(issues)}")
+                print(f"  → Violations that were attempted: {', '.join(set(violation_ids))}")
+                print(f"  → Total violations: {len(issues)}")
                 # Mostrar un ejemplo de HTML snippet para debugging
                 if issues:
                     for i, issue in enumerate(issues[:3], 1):
@@ -999,108 +1006,108 @@ def fix_templates_with_axe_violations(
                         node = issue.get("node", {})
                         html_snippet = (node.get("html") or "")[:200]
                         violation_id = violation.get("id", "unknown")
-                        print(f"  → Violación {i} ({violation_id}): {html_snippet}...")
+                        print(f"  → Violation {i} ({violation_id}): {html_snippet}...")
                 
-                # Mostrar qué debería haberse corregido
-                print(f"[Angular + Axe] 💡 Qué debería haberse corregido:")
+                # Show what should have been fixed
+                print(f"[Angular + Axe] 💡 What should have been fixed:")
                 for issue in issues:
                     violation = issue.get("violation", {})
                     violation_id = violation.get("id", "unknown")
                     if "button-name" in violation_id.lower():
-                        print(f"  - Añadir aria-label o texto visible a <button>")
+                        print(f"  - Add aria-label or visible text to <button>")
                     elif "color-contrast" in violation_id.lower():
-                        print(f"  - Añadir/modificar style=\"color: #XXXXXX;\"")
+                        print(f"  - Add/modify style=\"color: #XXXXXX;\"")
                     elif "link-name" in violation_id.lower():
-                        print(f"  - Añadir texto descriptivo o aria-label a <a>")
+                        print(f"  - Add descriptive text or aria-label to <a>")
                     elif "aria" in violation_id.lower():
-                        print(f"  - Añadir/modificar atributos aria-*")
+                        print(f"  - Add/modify aria-* attributes")
                     elif "alt" in violation_id.lower() or "image" in violation_id.lower():
-                        print(f"  - Añadir/modificar atributo alt en <img>")
+                        print(f"  - Add/modify alt attribute on <img>")
                 
-                print(f"[Angular + Axe] ⚠️ El LLM NO aplicó las correcciones. Posibles razones:")
-                print(f"  1. El elemento de la violación no está en el template (mapeo incorrecto)")
-                print(f"  2. El LLM no encontró el elemento correcto en el código")
-                print(f"  3. El prompt no fue lo suficientemente específico")
-                print(f"  4. El LLM decidió que no necesita cambios (incorrecto)")
+                print(f"[Angular + Axe] ⚠️ LLM did not apply fixes. Possible reasons:")
+                print(f"  1. Violation element is not in the template (wrong mapping)")
+                print(f"  2. LLM did not find the correct element in the code")
+                print(f"  3. Prompt was not specific enough")
+                print(f"  4. LLM decided no changes needed (incorrect)")
 
         except Exception as e:
-            print(f"[Angular + Axe] ⚠️ Error corrigiendo {rel_path}: {e}")
+            print(f"[Angular + Axe] ⚠️ Error fixing {rel_path}: {e}")
 
     return fixes
 
 
 def process_angular_project(project_path: str, client, run_path: str, serve_app: bool = False) -> List[str]:
     """
-    Procesa un proyecto Angular local, detecta componentes y aplica correcciones
-    de accesibilidad utilizando el LLM.
+    Process a local Angular project: detect components and apply accessibility
+    fixes using the LLM.
 
     Args:
-        project_path: Ruta absoluta al proyecto Angular.
-        client: Cliente OpenAI ya inicializado.
-        run_path: Ruta donde se guardarán reportes y artefactos.
+        project_path: Absolute path to the Angular project.
+        client: OpenAI client already initialised.
+        run_path: Path where reports and artifacts will be saved.
 
     Returns:
-        Lista de líneas de resumen para mostrar en consola.
+        List of summary lines to display in the console.
     """
     project_root = Path(project_path).resolve()
     if not project_root.exists():
-        raise FileNotFoundError(f"La ruta {project_root} no existe.")
+        raise FileNotFoundError(f"Path {project_root} does not exist.")
 
     angular_config = project_root / ANGULAR_CONFIG_FILE
     if not angular_config.exists():
-        raise ValueError("No se detectó angular.json en el proyecto. Asegúrate de seleccionar un proyecto Angular válido.")
+        raise ValueError("angular.json not found in project. Ensure you point to a valid Angular project.")
 
     config_data = _load_angular_config(angular_config)
     source_roots = _resolve_source_roots(project_root, config_data)
 
     if not source_roots:
-        raise ValueError("No se pudo determinar el directorio de código fuente en angular.json.")
+        raise ValueError("Could not determine source directory from angular.json.")
 
     templates = _discover_component_templates(source_roots)
 
     summary_lines: List[str] = []
     stats = {"templates": len(templates), "updated": 0, "errors": 0, "build_failures": 0, "compilation_fixes": 0}
     processed_components: List[Dict] = []
-    changes_map: List[Dict] = []  # Mapa de cambios para aplicar después
+    changes_map: List[Dict] = []  # Map of changes to apply later
 
-    # FASE 1: Compilar el proyecto y capturar errores de compilación
-    print("\n[Fase 1] Compilando proyecto Angular...")
+    # PHASE 1: Compile project and capture compilation errors
+    print("\n[Phase 1] Compiling Angular project...")
     build_result = _compile_and_get_errors(project_root)
     
     # Debug: mostrar errores si los hay
     if not build_result["success"] and build_result.get("errors"):
-        print(f"  → Errores detectados: {len(build_result.get('errors', []))}")
+        print(f"  → Errors detected: {len(build_result.get('errors', []))}")
         for i, error in enumerate(build_result.get("errors", [])[:3], 1):
             print(f"    Error {i}: {error[:200]}...")
     
     if not build_result["verification_available"]:
-        print("⚠️ No se pudo compilar el proyecto (ng no disponible).")
-        print("  Continuando con correcciones de accesibilidad...")
+        print("⚠️ Could not compile project (ng not available).")
+        print("  Continuing with accessibility fixes...")
     elif build_result["success"]:
-        print("✓ Proyecto compila correctamente.")
+        print("✓ Project compiles successfully.")
     else:
-        print(f"✗ El proyecto tiene {len(build_result.get('errors', []))} errores de compilación.")
-        print("  Corrigiendo errores de compilación con LLM...")
-        
-        # Corregir errores de compilación con LLM
+        print(f"✗ Project has {len(build_result.get('errors', []))} compilation errors.")
+        print("  Fixing compilation errors with LLM...")
+
+        # Fix compilation errors with LLM
         compilation_fixes = _fix_compilation_errors(build_result.get("errors", []), project_root, client)
         stats["compilation_fixes"] = len(compilation_fixes)
         
         if compilation_fixes:
-            print(f"  → Aplicando {len(compilation_fixes)} correcciones de compilación...")
+            print(f"  → Applying {len(compilation_fixes)} compilation fixes...")
             _apply_compilation_fixes(compilation_fixes, project_root)
             
             # Recompilar para verificar
-            print("  → Recompilando después de correcciones...")
+            print("  → Recompiling after fixes...")
             build_result = _compile_and_get_errors(project_root)
             if build_result["success"]:
-                print("  ✓ Errores de compilación corregidos exitosamente.")
+                print("  ✓ Compilation errors fixed successfully.")
             else:
-                print(f"  ⚠️ Aún hay {len(build_result.get('errors', []))} errores de compilación.")
-                summary_lines.append(f"⚠️ {len(build_result.get('errors', []))} errores de compilación pendientes")
+                print(f"  ⚠️ Still {len(build_result.get('errors', []))} compilation errors remaining.")
+                summary_lines.append(f"⚠️ {len(build_result.get('errors', []))} compilation errors pending")
 
     # FASE 2: Ejecutar Axe para obtener errores reales de accesibilidad
-    print(f"\n[Fase 2] Ejecutando análisis de Axe para detectar errores reales...")
+    print(f"\n[Phase 2] Running Axe analysis to detect real errors...")
     axe_results = None
     issues_by_template = {}
     dev_server_process = None
@@ -1115,27 +1122,27 @@ def process_angular_project(project_path: str, client, run_path: str, serve_app:
             
             base_url = "http://localhost:4200"
             
-            # Primero verificar si el servidor ya está corriendo
+            # First check if server is already running
             server_running = False
             try:
                 response = urlopen(base_url, timeout=2)
                 server_running = True
-                print(f"  → Servidor Angular ya está corriendo en {base_url}")
+                print(f"  → Angular server already running at {base_url}")
             except (URLError, socket.timeout):
-                print(f"  → Servidor Angular no está corriendo, iniciándolo...")
+                print(f"  → Angular server not running, starting it...")
                 # Iniciar el servidor Angular antes de ejecutar Axe
                 dev_server_process = _start_angular_dev_server(project_root, port=4200, wait_for_ready=True)
                 if dev_server_process:
-                    print(f"  → Esperando a que el servidor esté listo...")
-                    # Esperar hasta que el servidor esté listo
-                    max_wait = 120  # 2 minutos máximo
+                    print(f"  → Waiting for server to be ready...")
+                    # Wait until server is ready
+                    max_wait = 120  # 2 minutes max
                     wait_interval = 2
                     waited = 0
                     while waited < max_wait:
                         try:
                             response = urlopen(base_url, timeout=2)
                             server_running = True
-                            print(f"  ✓ Servidor Angular está listo en {base_url}")
+                            print(f"  ✓ Angular server ready at {base_url}")
                             break
                         except (URLError, socket.timeout):
                             time.sleep(wait_interval)
@@ -1143,19 +1150,19 @@ def process_angular_project(project_path: str, client, run_path: str, serve_app:
                             print(f"  → Esperando... ({waited}s)")
                     
                     if not server_running:
-                        print(f"  ⚠️ No se pudo conectar al servidor después de {max_wait}s")
-                        print("  → Continuando con análisis estático de código...")
+                        print(f"  ⚠️ Could not connect to server after {max_wait}s")
+                        print("  → Continuing with static code analysis...")
             
-            # Ejecutar Axe si el servidor está corriendo
+            # Run Axe if server is running
             if server_running:
-                print("  → Ejecutando Axe en aplicación Angular...")
+                print("  → Running Axe on Angular application...")
                 try:
                     driver = setup_driver()
                     driver.get(base_url)
-                    time.sleep(5)  # Esperar a que cargue completamente la página
+                    time.sleep(5)  # Wait for page to load fully
                     
-                    # TOMAR CAPTURAS DE PANTALLA AUTOMÁTICAS (antes de correcciones)
-                    print("  → Tomando capturas de pantalla en diferentes tamaños...")
+                    # Take screenshots automatically (before fixes)
+                    print("  → Taking screenshots at different sizes...")
                     screenshots_dir = Path(run_path) / "screenshots" / "before"
                     screenshot_paths = take_screenshots(
                         driver,
@@ -1169,19 +1176,19 @@ def process_angular_project(project_path: str, client, run_path: str, serve_app:
                         summary_path = screenshots_dir / "summary.html"
                         create_screenshot_summary(screenshot_paths, summary_path)
                         print(f"  ✓ Resumen visual guardado en: {summary_path}")
-                        print(f"  → Las capturas se incluirán en el prompt del LLM para mejor contexto visual")
+                        print(f"  → Screenshots will be included in the LLM prompt for better visual context")
                     else:
-                        screenshot_paths = []  # Asegurar que es una lista vacía
+                        screenshot_paths = []  # Ensure it's an empty list
                     
-                    # Ejecutar análisis de Axe
+                    # Run Axe analysis
                     axe_results = run_axe_analysis(driver, base_url, is_local_file=False)
                     driver.quit()
                     
                     # Guardar las rutas de capturas para usarlas en el procesamiento de componentes
-                    # (se guardará en una variable para pasar a los componentes)
+                    # (will be stored in a variable to pass to components)
                     
                     if axe_results and axe_results.get("violations"):
-                        print(f"  ✓ Axe detectó {len(axe_results['violations'])} violaciones")
+                        print(f"  ✓ Axe reported {len(axe_results['violations'])} violations")
                         issues_by_template = map_axe_violations_to_templates(axe_results, project_root, source_roots)
                         print(f"  ✓ Errores mapeados a {len(issues_by_template)} templates")
                         
@@ -1191,29 +1198,29 @@ def process_angular_project(project_path: str, client, run_path: str, serve_app:
                             json.dump(axe_results, f, indent=2, ensure_ascii=False)
                         print(f"  ✓ Reporte de Axe guardado en: {axe_report_path}")
                     else:
-                        print("  ⚠️ Axe no detectó violaciones (puede que no haya errores o la página no cargó)")
+                        print("  ⚠️ Axe reported no violations (may be no errors or page did not load)")
                 except Exception as e:
                     print(f"  ⚠️ No se pudo ejecutar Axe: {e}")
-                    print("  → Continuando con análisis estático de código...")
+                    print("  → Continuing with static code analysis...")
         except Exception as e:
             print(f"  ⚠️ Error al intentar ejecutar Axe: {e}")
-            print("  → Continuando con análisis estático de código...")
+            print("  → Continuing with static code analysis...")
     else:
-        print("  → Modo sin servidor: usando solo análisis estático de código")
+        print("  → No-server mode: using static code analysis only")
     
     # FASE 3: Procesar componentes y generar mapa de cambios de accesibilidad (sandbox)
     print(f"\n[Fase 3] Generando mapa de cambios de accesibilidad en sandbox...")
     for template_path in templates:
         try:
-            # Obtener errores de Axe para este template específico
+            # Get Axe errors for this specific template
             template_rel_path = str(template_path.relative_to(project_root))
             axe_errors_for_template = issues_by_template.get(template_rel_path, [])
             
-            # Obtener rutas de capturas de pantalla si están disponibles
+            # Get screenshot paths if available
             screenshot_paths_for_component = []
             if screenshot_paths:
                 # Por ahora, pasamos todas las capturas a cada componente
-                # En el futuro se podría filtrar por componente si fuera necesario
+                # Could filter by component in the future if needed
                 screenshot_paths_for_component = screenshot_paths
             
             component_result, changes = _process_single_component_sandbox(
@@ -1244,33 +1251,33 @@ def process_angular_project(project_path: str, client, run_path: str, serve_app:
                 }
             )
 
-    # FASE 4: Aplicar cambios de accesibilidad al código fuente real
-    print(f"\n[Fase 4] Aplicando {len(changes_map)} cambios de accesibilidad al código fuente...")
+    # PHASE 4: Apply accessibility changes to actual source code
+    print(f"\n[Phase 4] Applying {len(changes_map)} accessibility changes to source code...")
     applied_changes = _apply_changes_map(changes_map, project_root)
     
-    # Verificar compilación final después de aplicar cambios de accesibilidad
-    print(f"\n[Fase 5] Verificando compilación final...")
+    # Verify final build after applying accessibility changes
+    print(f"\n[Phase 5] Verifying final build...")
     final_build_result = _compile_and_get_errors(project_root)
     
     if not final_build_result["verification_available"]:
-        print("⚠️ No se pudo verificar la compilación final (ng no disponible).")
-        summary_lines.append("⚠️ Cambios aplicados pero no se pudo verificar compilación final")
+        print("⚠️ Could not verify final build (ng not available).")
+        summary_lines.append("⚠️ Changes applied but could not verify final build")
     elif not final_build_result["success"]:
         stats["build_failures"] = 1
-        print(f"✗ ERROR: El proyecto no compila después de aplicar los cambios ({len(final_build_result.get('errors', []))} errores).")
-        print("  ⚠️ Los cambios se mantienen para que puedas corregirlos manualmente.")
-        summary_lines.append(f"⚠️ Cambios aplicados pero hay {len(final_build_result.get('errors', []))} errores de compilación")
+        print(f"✗ ERROR: Project does not compile after applying changes ({len(final_build_result.get('errors', []))} errors).")
+        print("  ⚠️ Changes are kept so you can fix them manually.")
+        summary_lines.append(f"⚠️ Changes applied but {len(final_build_result.get('errors', []))} compilation errors remain")
     else:
-        print("✓ Proyecto compila correctamente después de todas las correcciones.")
-        summary_lines.append(f"✓ Compilación verificada: {applied_changes} cambios aplicados exitosamente")
+        print("✓ Project compiles successfully after all fixes.")
+        summary_lines.append(f"✓ Build verified: {applied_changes} changes applied successfully")
     
-    # Nota: Si serve_app=True, el servidor ya se inició en la Fase 2 (antes de ejecutar Axe)
+    # Note: If serve_app=True, server was already started in Phase 2 (before running Axe)
     # Solo mostramos un mensaje informativo si el servidor sigue corriendo
     if serve_app and dev_server_process:
-        print(f"\n[Info] El servidor Angular está corriendo en http://localhost:4200")
-        print(f"  → El servidor se mantendrá corriendo. Presiona Ctrl+C en la terminal donde se inició para detenerlo.")
+        print(f"\n[Info] Angular server is running at http://localhost:4200")
+        print(f"  → Server will keep running. Press Ctrl+C in the terminal where it was started to stop it.")
     elif serve_app:
-        print(f"\n[Info] Si el servidor Angular no está corriendo, puedes iniciarlo manualmente con: ng serve")
+        print(f"\n[Info] If the Angular server is not running, you can start it manually with: ng serve")
 
     report_payload = {
         "project_root": str(project_root),
@@ -1372,16 +1379,16 @@ def _process_single_component_sandbox(
     template_path: Path, client, project_root: Path, axe_errors: List[Dict] = None, screenshot_paths: List[str] = None
 ) -> Tuple[Dict, Optional[Dict]]:
     """
-    Procesa un componente en modo sandbox, generando un mapa de cambios sin modificar el código fuente.
-    
+    Process a component in sandbox mode, producing a change map without modifying source code.
+
     Args:
-        template_path: Ruta al template del componente
-        client: Cliente OpenAI
-        project_root: Ruta raíz del proyecto
-        axe_errors: Lista de errores de Axe mapeados a este template (opcional)
-    
+        template_path: Path to the component template
+        client: OpenAI client
+        project_root: Project root path
+        axe_errors: List of Axe errors mapped to this template (optional)
+
     Returns:
-        Tuple de (resultado del componente, mapa de cambios)
+        Tuple of (component result, change map)
     """
     base_component_name = template_path.stem.replace(".component", "")
     component_dir = template_path.parent
@@ -1398,36 +1405,36 @@ def _process_single_component_sandbox(
     ts_content = ts_path.read_text(encoding="utf-8") if ts_path.exists() else None
     style_content = style_path.read_text(encoding="utf-8") if style_path and style_path.exists() else None
 
-    # Analizar el template para detectar errores obvios antes de enviarlo al LLM
+    # Analyse template for obvious errors before sending to LLM
     detected_errors = _analyze_template_for_accessibility_errors(template_content, style_content)
     
-    # Convertir errores de Axe a formato legible para el prompt
+    # Convert Axe errors to a readable format for the prompt
     axe_errors_formatted = []
     if axe_errors:
         import re
-        print(f"  → {len(axe_errors)} errores de Axe detectados para este componente")
+        print(f"  → {len(axe_errors)} Axe errors detected for this component")
         for axe_error in axe_errors:
-            # Extraer información de la estructura correcta de Axe
+            # Extract info from Axe structure
             violation = axe_error.get("violation", {})
             node = axe_error.get("node", {})
             violation_id = axe_error.get("violation_id", violation.get("id", "unknown"))
             
-            # Selector CSS del nodo
+            # Node CSS selector
             targets = node.get("target", [])
             selector = targets[0] if targets and isinstance(targets[0], str) else "No selector"
             
-            # HTML del nodo afectado
+            # Affected node HTML
             html_snippet = (node.get("html") or "").strip()
-            html_display = html_snippet[:200] if html_snippet else ""  # Primeros 200 chars
-            
-            # Descripción de la violación
+            html_display = html_snippet[:200] if html_snippet else ""  # First 200 chars
+
+            # Violation description
             description = violation.get("description", "")
             help_text = violation.get("help", "")
             
-            # Datos específicos de contraste (si aplica)
+            # Contrast-specific data (if applicable)
             contrast_info = ""
             if violation_id == "color-contrast":
-                # Buscar datos de contraste en los checks de Axe
+                # Look for contrast data in Axe checks
                 all_checks = node.get("all", []) or []
                 any_checks = node.get("any", []) or []
                 checks = all_checks + any_checks
@@ -1440,15 +1447,15 @@ def _process_single_component_sandbox(
                     expected_ratio = check_data.get("expectedContrastRatio", "")
                     
                     if bg_color or fg_color or ratio:
-                        contrast_info = f" | Color texto: {fg_color}, Color fondo: {bg_color}, Ratio actual: {ratio}, Ratio requerido: {expected_ratio}"
+                        contrast_info = f" | Text color: {fg_color}, Background color: {bg_color}, Actual ratio: {ratio}, Required ratio: {expected_ratio}"
                         break
                 
-                # Si no encontramos datos en all/any, buscar en failureSummary o en el mensaje del check
+                # If not found in all/any, look in failureSummary or check message
                 if not contrast_info:
                     failure_summary = node.get("failureSummary", "")
                     if failure_summary:
                         import re
-                        # Extraer ratio del mensaje de error (formato: "contrast of 3.33")
+                        # Extract ratio from error message (format: "contrast of 3.33")
                         ratio_match = re.search(r'contrast of ([\d.]+)', failure_summary, re.IGNORECASE)
                         expected_match = re.search(r'Expected contrast ratio of ([\d.]+:?[\d]*)', failure_summary, re.IGNORECASE)
                         fg_match = re.search(r'foreground color: (#[0-9a-fA-F]+)', failure_summary, re.IGNORECASE)
@@ -1459,9 +1466,9 @@ def _process_single_component_sandbox(
                             expected_str = expected_match.group(1) if expected_match else "4.5:1"
                             fg_str = fg_match.group(1) if fg_match else "N/A"
                             bg_str = bg_match.group(1) if bg_match else "N/A"
-                            contrast_info = f" | Color texto: {fg_str}, Color fondo: {bg_str}, Ratio actual: {ratio_str}, Ratio requerido: {expected_str}"
-                    
-                    # Si aún no tenemos información, buscar en los mensajes de los checks
+                            contrast_info = f" | Text color: {fg_str}, Background color: {bg_str}, Actual ratio: {ratio_str}, Required ratio: {expected_str}"
+
+                    # If we still have no info, search in check messages
                     if not contrast_info:
                         for check in checks:
                             message = check.get("message", "")
@@ -1477,10 +1484,10 @@ def _process_single_component_sandbox(
                                     expected_str = expected_match.group(1) if expected_match else "4.5:1"
                                     fg_str = fg_match.group(1) if fg_match else "N/A"
                                     bg_str = bg_match.group(1) if bg_match else "N/A"
-                                    contrast_info = f" | Color texto: {fg_str}, Color fondo: {bg_str}, Ratio actual: {ratio_str}, Ratio requerido: {expected_str}"
+                                    contrast_info = f" | Text color: {fg_str}, Background color: {bg_str}, Actual ratio: {ratio_str}, Required ratio: {expected_str}"
                                     break
             
-            # Formatear error de Axe de forma muy específica y detallada
+            # Format Axe error in a very specific and detailed way
             error_parts = [f"ERROR AXE: {violation_id}"]
             
             if selector and selector != "No selector":
@@ -1490,27 +1497,27 @@ def _process_single_component_sandbox(
                 if ".mdc-button__label" in selector or ".mat-button-label" in selector or " > " in selector:
                     # Extraer el selector del padre (antes de " > ")
                     parent_selector = selector.split(" > ")[0] if " > " in selector else selector.replace(".mdc-button__label", "").strip()
-                    error_parts.append(f"⚠️ ATENCIÓN: Este selector apunta a un elemento interno generado por Angular Material. Busca el elemento PADRE en el template (ej: botón con {parent_selector}) y aplica el estilo allí.")
+                    error_parts.append(f"⚠️ NOTE: This selector targets an internal element generated by Angular Material. Find the PARENT element in the template (e.g. button with {parent_selector}) and apply the style there.")
             
             if description:
-                error_parts.append(f"Descripción: {description}")
+                error_parts.append(f"Description: {description}")
             
             if contrast_info:
                 error_parts.append(f"Datos contraste: {contrast_info.strip()}")
             
             if html_display:
-                # Limpiar atributos Angular dinámicos para mostrar
+                # Strip Angular runtime attributes for display
                 clean_html = re.sub(r'\s+_ngcontent-[^=]*="[^"]*"', '', html_display)
                 clean_html = re.sub(r'\s+_nghost-[^=]*="[^"]*"', '', clean_html)
                 error_parts.append(f"HTML afectado: {clean_html}")
                 
                 # Si el HTML es un span con clase mdc-button__label, advertir que es generado
                 if "mdc-button__label" in clean_html or "mat-button-label" in clean_html:
-                    # Intentar extraer el texto del botón para ayudar a localizarlo
+                    # Try to extract button text to help locate it
                     text_match = re.search(r'>\s*([^<]+)\s*<', clean_html)
                     if text_match:
                         button_text = text_match.group(1).strip()
-                        error_parts.append(f"⚠️ NOTA: Este span es generado por Angular Material. Busca el botón que contiene el texto '{button_text}' en el template.")
+                        error_parts.append(f"⚠️ NOTE: This span is generated by Angular Material. Find the button that contains the text '{button_text}' in the template.")
             
             if help_text:
                 error_parts.append(f"Ayuda: {help_text}")
@@ -1518,48 +1525,48 @@ def _process_single_component_sandbox(
             error_msg = " | ".join(error_parts)
             
             axe_errors_formatted.append(error_msg)
-            detected_errors.append(error_msg)  # Añadir también a detected_errors para que se incluyan en el prompt
+            detected_errors.append(error_msg)  # Also add to detected_errors so they are included in the prompt
     
     if detected_errors:
         print(f"  → Total de {len(detected_errors)} errores de accesibilidad detectados en {base_component_name}")
         for error in detected_errors[:5]:
             print(f"    - {error[:80]}")
     else:
-        print(f"  → No se detectaron errores obvios en {base_component_name} (el LLM debe buscar más profundamente)")
+        print(f"  → No obvious errors detected in {base_component_name} (LLM should look deeper)")
 
     system_message = (
-        "Eres un EXPERTO AUDITOR DE ACCESIBILIDAD WEB y Angular. Tu MISIÓN CRÍTICA es: "
-        "1) ANALIZAR EXHAUSTIVAMENTE cada línea del código para encontrar TODOS los errores de accesibilidad (WCAG 2.2 A+AA), "
-        "2) CORREGIR CADA ERROR encontrado SIN EXCEPCIÓN, incluso si requiere cambios significativos. "
-        "DEBES BUSCAR ACTIVAMENTE: botones/enlaces sin texto visible ni aria-label, inputs sin labels, imágenes sin alt, "
-        "problemas de contraste, falta de soporte de teclado, jerarquía de encabezados incorrecta, listas sin estructura, etc. "
-        "🚨🚨🚨 CRÍTICO SOBRE CONTRASTE: Si hay errores de contraste detectados o si encuentras elementos con texto que podría tener bajo contraste, "
-        "DEBES corregir TODOS los errores de contraste ajustando el color del texto y/o el fondo para que cumplan WCAG (4.5:1 para texto normal, 3:1 para texto grande). "
-        "En fondos claros, normalmente se usará un color de texto oscuro (#000000, #212121, etc.); en fondos oscuros, un color de texto claro (#FFFFFF, #F5F5F5, etc.). "
-        "NO corrijas solo uno, corrige TODOS. Si hay 3 errores de contraste, corrige los 3. "
-        "🚨🚨🚨 CRÍTICO SOBRE DISEÑO RESPONSIVE: "
-        "- PRESERVA TODOS los estilos responsive existentes (media queries, clases responsive, flexbox, grid, etc.) "
-        "- NO cambies display:none a display:block a menos que sea absolutamente necesario para accesibilidad "
-        "- Si un label tiene display:none, es porque está oculto visualmente pero accesible para lectores de pantalla - usa sr-only o aria-label en su lugar "
-        "- NO añadas estilos inline que rompan el diseño responsive (width fijo, height fijo, margin/padding excesivos, etc.) "
-        "- Mantén todas las clases de Bootstrap/CSS frameworks (col-sm-*, col-md-*, etc.) "
-        "- NO modifiques propiedades de layout como display, position, flex, grid, width, height, margin, padding a menos que sea crítico para accesibilidad "
-        "🚨🚨🚨 CRÍTICO SOBRE CAPTURAS DE PANTALLA (si están disponibles): "
-        "Si se proporcionan capturas de pantalla en el mensaje del usuario, DEBES examinarlas detalladamente. "
-        "Estas capturas muestran cómo se ve REALMENTE la aplicación en diferentes tamaños de pantalla. "
-        "TU OBJETIVO: Corregir TODOS los errores de accesibilidad PERO preservar EXACTAMENTE el diseño visual que ves en las capturas. "
-        "Las correcciones deben ser 'invisibles' visualmente - usa aria-label, roles, alt text, y ajustes mínimos de contraste. "
-        "El resultado final debe verse IDÉNTICO a las capturas, pero accesible. "
-        "IMPORTANTE: Si el código tiene CUALQUIER problema de accesibilidad, DEBES corregirlo. "
-        "NO devuelvas el código original sin cambios. SIEMPRE busca y corrige errores. "
-        "La accesibilidad ES IMPORTANTE Y DEBE CORREGIRSE, PERO si hay capturas, preserva el diseño visual que muestran. "
-        "NO añadas comentarios HTML ni atributos que muestren que fueron correcciones. El código debe verse como si fuera original."
+        "You are an EXPERT WEB ACCESSIBILITY AUDITOR and Angular developer. Your CRITICAL MISSION is: "
+        "1) THOROUGHLY ANALYSE every line of code to find ALL accessibility errors (WCAG 2.2 A+AA), "
+        "2) FIX EVERY ERROR found WITHOUT EXCEPTION, even if it requires significant changes. "
+        "You MUST ACTIVELY LOOK FOR: buttons/links without visible text or aria-label, inputs without labels, images without alt, "
+        "contrast issues, missing keyboard support, incorrect heading hierarchy, lists without structure, etc. "
+        "🚨🚨🚨 CRITICAL ON CONTRAST: If contrast errors are detected or you find elements with text that may have low contrast, "
+        "you MUST fix ALL contrast errors by adjusting text and/or background colour to meet WCAG (4.5:1 for normal text, 3:1 for large text). "
+        "On light backgrounds, use dark text colour (#000000, #212121, etc.); on dark backgrounds, use light text (#FFFFFF, #F5F5F5, etc.). "
+        "Do NOT fix just one, fix ALL. If there are 3 contrast errors, fix all 3. "
+        "🚨🚨🚨 CRITICAL ON RESPONSIVE DESIGN: "
+        "- PRESERVE ALL existing responsive styles (media queries, responsive classes, flexbox, grid, etc.) "
+        "- Do NOT change display:none to display:block unless absolutely necessary for accessibility "
+        "- If a label has display:none, it is visually hidden but accessible to screen readers - use sr-only or aria-label instead "
+        "- Do NOT add inline styles that break responsive design (fixed width, fixed height, excessive margin/padding, etc.) "
+        "- Keep all Bootstrap/CSS framework classes (col-sm-*, col-md-*, etc.) "
+        "- Do NOT modify layout properties like display, position, flex, grid, width, height, margin, padding unless critical for accessibility "
+        "🚨🚨🚨 CRITICAL ON SCREENSHOTS (if provided): "
+        "If screenshots are provided in the user message, you MUST examine them in detail. "
+        "These screenshots show how the application REALLY looks at different screen sizes. "
+        "YOUR GOAL: Fix ALL accessibility errors BUT preserve EXACTLY the visual design you see in the screenshots. "
+        "Fixes should be visually 'invisible' - use aria-label, roles, alt text, and minimal contrast adjustments. "
+        "The final result must look IDENTICAL to the screenshots, but accessible. "
+        "IMPORTANT: If the code has ANY accessibility issue, you MUST fix it. "
+        "Do NOT return the original code unchanged. ALWAYS look for and fix errors. "
+        "Accessibility IS IMPORTANT AND MUST BE FIXED, BUT if screenshots are provided, preserve the visual design they show. "
+        "Do NOT add HTML comments or attributes that show they were fixes. The code should look like original code."
     )
 
     # Contar errores de contraste detectados
     contrast_errors = [e for e in detected_errors if 'contraste' in e.lower() or 'contrast' in e.lower()]
     if contrast_errors:
-        print(f"  → {len(contrast_errors)} errores de contraste detectados - el LLM DEBE corregir TODOS")
+        print(f"  → {len(contrast_errors)} contrast errors detected - LLM MUST fix ALL")
 
     user_prompt = _build_component_prompt(
         component_name=base_component_name,
@@ -1573,53 +1580,53 @@ def _process_single_component_sandbox(
         contrast_errors_count=len(contrast_errors),
     )
 
-    # Preparar mensajes, incluyendo capturas de pantalla si están disponibles
+    # Prepare messages, including screenshots if available
     messages = [
         {"role": "system", "content": system_message},
     ]
     
-    # Si hay capturas de pantalla, incluirlas en el mensaje del usuario
+    # If screenshots are available, include them in the user message
     if screenshot_paths:
         import base64
         screenshot_instructions = """
-📸 CAPTURAS DE PANTALLA - CRÍTICO PARA PRESERVAR EL DISEÑO:
+📸 SCREENSHOTS - CRITICAL FOR PRESERVING DESIGN:
 
-He tomado capturas de la aplicación en diferentes tamaños de pantalla (mobile, tablet, desktop) que muestran cómo se ve REALMENTE la página antes de las correcciones.
+I have taken screenshots of the application at different screen sizes (mobile, tablet, desktop) that show how the page REALLY looks before the fixes.
 
-🚨 INSTRUCCIONES OBLIGATORIAS SOBRE LAS CAPTURAS:
-1. EXAMINA DETALLADAMENTE cada captura para entender:
-   - El diseño visual actual (layout, colores, espaciado, distribución)
-   - Cómo se adapta el contenido en diferentes tamaños de pantalla
-   - Qué elementos son visibles/ocultos en cada tamaño
-   - El estilo visual general de la aplicación
+🚨 MANDATORY INSTRUCTIONS ABOUT THE SCREENSHOTS:
+1. EXAMINE each screenshot in detail to understand:
+   - The current visual design (layout, colours, spacing, distribution)
+   - How content adapts at different screen sizes
+   - Which elements are visible/hidden at each size
+   - The application's overall visual style
 
-2. CORRIGE TODOS LOS ERRORES de accesibilidad listados arriba, PERO:
-   - MANTÉN el diseño visual que ves en las capturas
-   - NO cambies colores de fondo, tamaños de elementos, o distribución que se vea en las imágenes
-   - Para errores de contraste: ajusta SOLO el color del texto, manteniendo el fondo visible en las capturas
-   - NO añadas elementos visibles nuevos (usa aria-label o sr-only en su lugar)
-   - NO cambies display:none a display:block si en las capturas no se ve ese elemento
-   - Respeta el diseño responsive: si en mobile se ve de una forma, mantén esa forma
+2. FIX ALL accessibility errors listed above, BUT:
+   - KEEP the visual design you see in the screenshots
+   - Do NOT change background colours, element sizes, or distribution shown in the images
+   - For contrast errors: adjust ONLY the text colour, keeping the background visible in the screenshots
+   - Do NOT add new visible elements (use aria-label or sr-only instead)
+   - Do NOT change display:none to display:block if that element is not visible in the screenshots
+   - Respect the responsive design: if it looks a certain way on mobile, keep it that way
 
-3. TU OBJETIVO: Corregir TODOS los errores de accesibilidad SIN cambiar cómo se ve la página en las capturas.
-   - Las correcciones deben ser "invisibles" visualmente
-   - Usa aria-label, roles, alt text, y ajustes de contraste mínimos
-   - El diseño final debe verse IDÉNTICO a las capturas, pero accesible
+3. YOUR GOAL: Fix ALL accessibility errors WITHOUT changing how the page looks in the screenshots.
+   - Fixes should be visually "invisible"
+   - Use aria-label, roles, alt text, and minimal contrast adjustments
+   - The final design must look IDENTICAL to the screenshots, but accessible
 
-Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es hacerla accesible manteniendo exactamente ese aspecto visual.
+The screenshots show the application BEFORE the fixes. Your job is to make it accessible while keeping that exact visual appearance.
 """
         user_content = [
             {"type": "text", "text": user_prompt + screenshot_instructions}
         ]
-        # Añadir cada captura como imagen
+        # Add each screenshot as image
         for screenshot_path in screenshot_paths:
             try:
                 screenshot_file = Path(screenshot_path)
                 if screenshot_file.exists():
-                    # Leer y codificar la imagen en base64
+                    # Read and encode image as base64
                     with open(screenshot_file, "rb") as img_file:
                         image_base64 = base64.b64encode(img_file.read()).decode('utf-8')
-                        # Determinar el tipo MIME basado en la extensión
+                        # Determine MIME type from extension
                         mime_type = "image/png"  # Por defecto PNG
                         if screenshot_path.endswith('.jpg') or screenshot_path.endswith('.jpeg'):
                             mime_type = "image/jpeg"
@@ -1644,9 +1651,9 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
     response_text = response.choices[0].message.content or ""
     log_openai_call(prompt=user_prompt, response=response_text, model="gpt-4o", call_type="angular_component_fix")
 
-    print(f"  → LLM respondió con {len(response_text)} caracteres")
+    print(f"  → LLM responded with {len(response_text)} characters")
     
-    # Debug: mostrar primeros caracteres de la respuesta para ver qué está devolviendo
+    # Debug: show first characters of response to see what is being returned
     print(f"  → Primeros 200 caracteres de respuesta: {response_text[:200]}")
     
     try:
@@ -1660,7 +1667,7 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
         template_match = re.search(r'<<<TEMPLATE>>>\s*(.*?)\s*<<<END TEMPLATE>>>', response_text, re.DOTALL)
         if template_match:
             parsed_response = {"template": template_match.group(1).strip(), "typescript": None, "styles": None}
-            print(f"  → Template extraído usando regex alternativo")
+            print(f"  → Template extracted using alternative regex")
         else:
             print(f"  ✗ No se pudo extraer template de ninguna forma")
             return {
@@ -1676,10 +1683,10 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
     # Corregir sintaxis Angular para atributos ARIA con binding
     template_content_corrected = _fix_angular_aria_syntax(parsed_response.get("template"))
     
-    # Corregir errores de sintaxis básicos comunes (comillas mal cerradas, tags no cerrados, etc.)
+    # Fix common basic syntax errors (unclosed quotes, unclosed tags, etc.)
     template_content_corrected = _fix_basic_syntax_errors(template_content_corrected)
     
-    # Aplicar correcciones automáticas de accesibilidad (role="img" en iconos, lang en html, etc.)
+    # Apply automatic accessibility fixes (role="img" on icons, lang on html, etc.)
     template_content_corrected = _apply_automatic_accessibility_fixes(template_content_corrected)
     
     # Validar y corregir cambios que rompan el responsive
@@ -1697,89 +1704,89 @@ Las capturas muestran la aplicación ANTES de las correcciones. Tu trabajo es ha
             "changes": {}
         }, None
     
-    # Aplicar correcciones automáticas para errores de contraste detectados
-    # IMPORTANTE: estas correcciones automáticas se han desactivado por defecto
+    # Apply automatic fixes for detected contrast errors
+    # IMPORTANT: these automatic fixes are disabled by default
     # porque pueden elegir un color incorrecto cuando el fondo real es oscuro.
     # Preferimos que el LLM (con el contexto completo) y/o el desarrollador
-    # ajusten el contraste de forma explícita.
+    # adjust contrast explicitly.
     contrast_errors = [e for e in detected_errors if 'contraste' in e.lower() or 'contrast' in e.lower()]
     if contrast_errors and ENABLE_AUTOMATIC_CONTRAST_FIXES:
-        print(f"  → Aplicando correcciones automáticas para {len(contrast_errors)} errores de contraste detectados")
+        print(f"  → Applying automatic fixes for {len(contrast_errors)} detected contrast errors")
         template_content_corrected = _apply_automatic_contrast_fixes(template_content_corrected, contrast_errors)
     
     print(f"  → Template corregido: {len(template_content_corrected)} caracteres (original: {len(template_content)} caracteres)")
     
-    # Comparación más robusta - normalizar espacios pero mantener estructura
+    # More robust comparison - normalise spaces but keep structure
     original_clean = '\n'.join(line.rstrip() for line in template_content.split('\n'))
     corrected_clean = '\n'.join(line.rstrip() for line in template_content_corrected.split('\n'))
     
-    # Generar mapa de cambios sin aplicar todavía (sandbox)
+    # Build change map without applying yet (sandbox)
     changes = {}
     
-    # Comparar de múltiples formas
+    # Compare in multiple ways
     are_different = (
         original_clean.strip() != corrected_clean.strip() or
         len(original_clean.strip()) != len(corrected_clean.strip()) or
         template_content.strip() != template_content_corrected.strip()
     )
     
-    # Si hay errores detectados automáticamente, forzar que se consideren cambios
-    # incluso si la comparación no los detecta (el LLM puede haber hecho cambios sutiles)
+    # If there are automatically detected errors, force changes to be considered
+    # even when the comparison does not detect them (LLM may have made subtle changes)
     if detected_errors and not are_different:
-        print(f"  ⚠️ No se detectaron diferencias en la comparación, pero hay {len(detected_errors)} errores detectados automáticamente")
-        print(f"  → Forzando aplicación de cambios porque hay errores que deben corregirse")
+        print(f"  ⚠️ No differences detected in comparison, but there are {len(detected_errors)} automatically detected errors")
+        print(f"  → Forcing application of changes because there are errors that must be fixed")
         are_different = True
     
-    # Debug: mostrar diferencias específicas si no se detectan
+    # Debug: show specific differences when none are detected
     if not are_different:
-        print(f"  ⚠️ El template corregido parece IDÉNTICO al original")
-        print(f"  → Comparando líneas...")
+        print(f"  ⚠️ Corrected template appears IDENTICAL to original")
+        print(f"  → Comparing lines...")
         original_lines = template_content.strip().split('\n')
         corrected_lines = template_content_corrected.strip().split('\n')
         if len(original_lines) != len(corrected_lines):
-            print(f"    → Diferente número de líneas: {len(original_lines)} vs {len(corrected_lines)}")
+            print(f"    → Different line count: {len(original_lines)} vs {len(corrected_lines)}")
             are_different = True
         else:
-            print(f"    → Mismo número de líneas: {len(original_lines)}")
-            # Buscar diferencias línea por línea
+            print(f"    → Same line count: {len(original_lines)}")
+            # Look for line-by-line differences
             differences_found = False
             for i, (orig, corr) in enumerate(zip(original_lines, corrected_lines)):
                 if orig.strip() != corr.strip():
-                    print(f"    → Diferencia en línea {i+1}:")
+                    print(f"    → Difference at line {i+1}:")
                     print(f"      Original: {orig[:100]}")
-                    print(f"      Corregido: {corr[:100]}")
+                    print(f"      Corrected: {corr[:100]}")
                     differences_found = True
                     are_different = True
                     break
             if not differences_found:
-                print(f"    → No se encontraron diferencias línea por línea")
-                # Si hay errores detectados, forzar cambios de todas formas
+                print(f"    → No line-by-line differences found")
+                # If errors were detected, force changes anyway
                 if detected_errors:
-                    print(f"    → PERO hay {len(detected_errors)} errores detectados, forzando aplicación de cambios")
+                    print(f"    → BUT there are {len(detected_errors)} detected errors, forcing application of changes")
                     are_different = True
     
     if are_different:
-        print(f"  ✓ Cambios detectados en template de {base_component_name}")
-        print(f"    → Original: {len(original_clean.strip())} chars, Corregido: {len(corrected_clean.strip())} chars")
+        print(f"  ✓ Changes detected in template of {base_component_name}")
+        print(f"    → Original: {len(original_clean.strip())} chars, Corrected: {len(corrected_clean.strip())} chars")
         changes["template"] = {
             "path": str(template_path),
             "original": template_content,
             "corrected": template_content_corrected
         }
     else:
-        print(f"  ⚠️ No se detectaron cambios en template de {base_component_name}")
-        print(f"    → El LLM devolvió el mismo código. Esto indica que:")
-        print(f"      1. El LLM no detectó errores de accesibilidad")
-        print(f"      2. El LLM detectó errores pero no los corrigió")
-        print(f"      3. El template realmente no tiene errores (poco probable)")
+        print(f"  ⚠️ No changes detected in template of {base_component_name}")
+        print(f"    → LLM returned the same code. This indicates that:")
+        print(f"      1. The LLM did not detect accessibility errors")
+        print(f"      2. The LLM detected errors but did not fix them")
+        print(f"      3. The template really has no errors (unlikely)")
         
-        # Mostrar errores detectados automáticamente si los hay
+        # Show automatically detected errors if any
         if detected_errors:
-            print(f"    → Se detectaron {len(detected_errors)} errores automáticamente, pero el LLM no los corrigió")
+            print(f"    → {len(detected_errors)} errors were detected automatically, but the LLM did not fix them")
             for error in detected_errors[:5]:
                 print(f"      - {error[:80]}")
-            # Forzar cambios si hay errores detectados
-            print(f"    → FORZANDO aplicación de cambios porque hay errores detectados")
+            # Force changes if errors were detected
+            print(f"    → FORCING application of changes because errors were detected")
             changes["template"] = {
                 "path": str(template_path),
                 "original": template_content,
@@ -1834,11 +1841,11 @@ def _categorize_errors(detected_errors: List[str]) -> Dict[str, List[str]]:
     
     for error in detected_errors:
         error_lower = error.lower()
-        if "imagen sin alt" in error_lower or "sin alt" in error_lower:
+        if "imagen sin alt" in error_lower or "sin alt" in error_lower or "without alt" in error_lower:
             categories["missing_alt"].append(error)
-        elif "sin label" in error_lower or "input sin" in error_lower:
+        elif "sin label" in error_lower or "input sin" in error_lower or "without label" in error_lower:
             categories["missing_label"].append(error)
-        elif "botón sin" in error_lower or "enlace sin" in error_lower or "aria-label" in error_lower:
+        elif "button without" in error_lower or "link without" in error_lower or "aria-label" in error_lower:
             categories["missing_aria_label"].append(error)
         elif "contraste" in error_lower or "contrast" in error_lower:
             categories["contrast"].append(error)
@@ -1849,78 +1856,78 @@ def _categorize_errors(detected_errors: List[str]) -> Dict[str, List[str]]:
 
 
 def _build_error_specific_prompt(error_type: str, errors: List[str]) -> str:
-    """Construye un prompt específico y conciso para un tipo de error"""
+    """Build a specific, concise prompt for an error type"""
     if not errors:
         return ""
     
     if error_type == "missing_alt":
-        return f"""🔴 ERRORES DE IMÁGENES SIN ALT ({len(errors)} encontrados):
+        return f"""🔴 IMAGES WITHOUT ALT ERRORS ({len(errors)} found):
 {chr(10).join(f"- {e}" for e in errors)}
 
-ACCIÓN REQUERIDA: Añade el atributo alt a TODAS las imágenes mencionadas.
-- Si la imagen es informativa: alt="Descripción de la imagen"
-- Si la imagen es decorativa: alt=""
-- En Angular, usa [alt] para binding dinámico o alt="texto fijo" para estático
+ACTION REQUIRED: Add the alt attribute to ALL mentioned images.
+- If the image is informative: alt="Image description"
+- If the image is decorative: alt=""
+- In Angular, use [alt] for dynamic binding or alt="fixed text" for static
 
-CORRIGE TODAS las imágenes listadas arriba."""
+FIX ALL images listed above."""
     
     elif error_type == "missing_label":
-        return f"""🔴 ERRORES DE INPUTS SIN LABEL ({len(errors)} encontrados):
+        return f"""🔴 INPUTS WITHOUT LABEL ERRORS ({len(errors)} found):
 {chr(10).join(f"- {e}" for e in errors)}
 
-ACCIÓN REQUERIDA: Añade <label> asociado a TODOS los inputs mencionados.
-IMPORTANTE SOBRE RESPONSIVE:
-- Si el input ya tiene un label con display:none, NO lo cambies a display:block
-- En su lugar, añade aria-label al input: <input id="inputId" aria-label="Descripción" ... />
-- O usa una clase sr-only (screen-reader-only) para el label: <label for="inputId" class="sr-only">Texto</label>
-- Solo cambia display si el label NO existe y es necesario que sea visible
+ACTION REQUIRED: Add <label> associated with ALL mentioned inputs.
+IMPORTANT ON RESPONSIVE:
+- If the input already has a label with display:none, do NOT change it to display:block
+- Instead, add aria-label to the input: <input id="inputId" aria-label="Description" ... />
+- Or use an sr-only (screen-reader-only) class for the label: <label for="inputId" class="sr-only">Text</label>
+- Only change display if the label does NOT exist and needs to be visible
 
-Ejemplo correcto (preservando responsive):
-  <label for="inputId" class="sr-only">Texto del label</label>
+Correct example (preserving responsive):
+  <label for="inputId" class="sr-only">Label text</label>
   <input id="inputId" ... />
   
-O alternativamente:
-  <input id="inputId" aria-label="Texto del label" ... />
+Or alternatively:
+  <input id="inputId" aria-label="Label text" ... />
 
-CORRIGE TODOS los inputs listados arriba."""
+FIX ALL inputs listed above."""
     
     elif error_type == "missing_aria_label":
-        return f"""🔴 ERRORES DE BOTONES/ENLACES SIN ARIA-LABEL ({len(errors)} encontrados):
+        return f"""🔴 BUTTONS/LINKS WITHOUT ARIA-LABEL ERRORS ({len(errors)} found):
 {chr(10).join(f"- {e}" for e in errors)}
 
-ACCIÓN REQUERIDA: Añade aria-label descriptivo a TODOS los botones/enlaces mencionados.
-- Para valores estáticos: aria-label="Descripción"
-- Para binding dinámico en Angular: [attr.aria-label]="variable"
+ACTION REQUIRED: Add descriptive aria-label to ALL mentioned buttons/links.
+- For static values: aria-label="Description"
+- For dynamic binding in Angular: [attr.aria-label]="variable"
 
-CORRIGE TODOS los elementos listados arriba."""
+FIX ALL elements listed above."""
     
     elif error_type == "contrast":
-        return f"""🔴 ERRORES DE CONTRASTE ({len(errors)} encontrados):
+        return f"""🔴 CONTRAST ERRORS ({len(errors)} found):
 {chr(10).join(f"- {e}" for e in errors)}
 
-ACCIÓN REQUERIDA: Corrige el contraste de color de TODOS los elementos mencionados.
-- Ratio mínimo requerido: 4.5:1 para texto normal, 3:1 para texto grande
-- En fondos claros: usa style="color: #000000" o #212121
-- En fondos oscuros: usa style="color: #FFFFFF" o #F5F5F5
-- Busca TODOS los elementos similares y corrígelos también
+ACTION REQUIRED: Fix colour contrast for ALL mentioned elements.
+- Minimum ratio required: 4.5:1 for normal text, 3:1 for large text
+- On light backgrounds: use style="color: #000000" or #212121
+- On dark backgrounds: use style="color: #FFFFFF" or #F5F5F5
+- Find ALL similar elements and fix them too
 
-CORRIGE TODOS los elementos con bajo contraste listados arriba."""
+FIX ALL low-contrast elements listed above."""
     
     else:
-        return f"""🔴 OTROS ERRORES ({len(errors)} encontrados):
+        return f"""🔴 OTHER ERRORS ({len(errors)} found):
 {chr(10).join(f"- {e}" for e in errors)}
 
-ACCIÓN REQUERIDA: Corrige estos errores de accesibilidad."""
+ACTION REQUIRED: Fix these accessibility errors."""
     
     return ""
 
 
 def _format_detected_errors(detected_errors: List[str]) -> str:
-    """Formatea los errores detectados con prompts específicos por tipo"""
+    """Format detected errors with type-specific prompts"""
     if not detected_errors:
         return ""
     
-    # Separar errores de Axe de errores estáticos
+    # Separate Axe errors from static errors
     axe_errors = [e for e in detected_errors if e.startswith("ERROR AXE:")]
     static_errors = [e for e in detected_errors if not e.startswith("ERROR AXE:")]
     
@@ -1928,73 +1935,73 @@ def _format_detected_errors(detected_errors: List[str]) -> str:
     
     prompts = []
     
-    # Añadir errores de Axe primero (son más específicos)
+    # Add Axe errors first (they are more specific)
     if axe_errors:
         error_list = "\n".join([f"\n{i+1}. {e}" for i, e in enumerate(axe_errors)])
-        prompts.append(f"""🔴 ERRORES DE AXE DETECTADOS ({len(axe_errors)} encontrados):
-Estos son errores REALES detectados por la herramienta de accesibilidad Axe en la aplicación renderizada. DEBES corregirlos TODOS sin excepción.
+        prompts.append(f"""🔴 AXE ERRORS DETECTED ({len(axe_errors)} found):
+These are REAL errors detected by the Axe accessibility tool on the rendered application. You MUST fix ALL of them without exception.
 
 {error_list}
 
-ACCIÓN REQUERIDA PARA CADA ERROR:
-1. Localiza el elemento en el template usando:
-   - El selector CSS proporcionado (ej: "button[type=\"submit\"] > .mdc-button__label")
-     * Los selectores de Axe pueden tener clases CSS específicas - búscalas en el template
-     * Si el selector tiene ">" (hijo directo), busca la estructura padre > hijo en el template
-     * Si el selector tiene clases como ".mdc-button__label", busca elementos con class="..." que contengan esa clase
-   - O el fragmento HTML mostrado (puede tener atributos Angular dinámicos que debes ignorar)
-     * Ignora atributos Angular dinámicos como _ngcontent-* y _nghost-*
-     * Busca por el contenido del texto, los atributos estáticos, y la estructura
-   - IMPORTANTE: Si no encuentras el selector exacto, busca variaciones:
-     * Busca por el texto contenido (ej: "Login", "Save", etc.)
-     * Busca por clases CSS similares
-     * Busca por estructura HTML similar
+ACTION REQUIRED FOR EACH ERROR:
+1. Locate the element in the template using:
+   - The CSS selector provided (e.g. "button[type=\"submit\"] > .mdc-button__label")
+     * Axe selectors may have specific CSS classes - look for them in the template
+     * If the selector has ">" (direct child), look for the parent > child structure in the template
+     * If the selector has classes like ".mdc-button__label", look for elements with class="..." that contain that class
+   - Or the HTML fragment shown (it may have Angular dynamic attributes that you should ignore)
+     * Ignore Angular dynamic attributes like _ngcontent-* and _nghost-*
+     * Search by text content, static attributes, and structure
+   - IMPORTANT: If you don't find the exact selector, look for variations:
+     * Search by contained text (e.g. "Login", "Save", etc.)
+     * Search by similar CSS classes
+     * Search by similar HTML structure
 
-2. Corrige el error específico:
-   - Si es "color-contrast": 
-     * CRÍTICO: Estos son errores REALES detectados en la aplicación renderizada. DEBES corregirlos TODOS.
-     * Los datos de contraste muestran el color REAL en el HTML renderizado (después de aplicar CSS)
-     * Si el template ya tiene un style="color: ..." pero Axe detecta un color diferente, significa que el CSS lo está sobrescribiendo
-     * SOLUCIÓN OBLIGATORIA: Añade !important al estilo inline para que sobrescriba el CSS: style="color: #000000 !important;"
-     * Reglas de corrección:
-       - Si ratio actual < 4.5 (texto normal) o < 3.0 (texto grande), el contraste es INSUFICIENTE y DEBE corregirse
-       - En fondos CLAROS (blanco, gris claro, etc.): usa texto OSCURO (color="#000000" o color="#212121")
-       - En fondos OSCUROS (negro, gris oscuro, colores oscuros): usa texto CLARO (color="#FFFFFF" o color="#F5F5F5")
-       - Ejemplo: Si Axe detecta ratio 3.33 (insuficiente), y el fondo es #ff4081 (rosa), y el texto es #ffffff (blanco),
-         cambia el texto a color oscuro: style="color: #000000 !important;" o cambia el fondo a uno más claro
-       - SIEMPRE añade !important para asegurar que el estilo se aplique sobre el CSS existente
-     * LOCALIZACIÓN: Busca el elemento usando el selector CSS proporcionado (ej: "button[type=\"submit\"] > .mdc-button__label")
-       o busca el fragmento HTML mostrado en el template
-       * ⚠️ CRÍTICO - Elementos generados por Angular Material:
-         Si el selector apunta a ".mdc-button__label", ".mat-button-label", o cualquier elemento con " > " que apunte a un span/div interno,
-         ese elemento NO existe en tu template - Angular Material lo genera automáticamente en el DOM renderizado.
+2. Fix the specific error:
+   - If it's "color-contrast":
+     * CRITICAL: These are REAL errors detected on the rendered application. You MUST fix ALL of them.
+     * The contrast data shows the REAL colour in the rendered HTML (after CSS is applied)
+     * If the template already has style="color: ..." but Axe detects a different colour, the CSS is overriding it
+     * MANDATORY FIX: Add !important to the inline style so it overrides the CSS: style="color: #000000 !important;"
+     * Correction rules:
+       - If current ratio < 4.5 (normal text) or < 3.0 (large text), contrast is INSUFFICIENT and MUST be fixed
+       - On LIGHT backgrounds (white, light grey, etc.): use DARK text (color="#000000" or color="#212121")
+       - On DARK backgrounds (black, dark grey, dark colours): use LIGHT text (color="#FFFFFF" or color="#F5F5F5")
+       - Example: If Axe detects ratio 3.33 (insufficient), background is #ff4081 (pink), text is #ffffff (white),
+         change text to dark colour: style="color: #000000 !important;" or change background to a lighter one
+       - ALWAYS add !important to ensure the style applies over existing CSS
+     * LOCATION: Find the element using the CSS selector provided (e.g. "button[type=\"submit\"] > .mdc-button__label")
+       or find the HTML fragment shown in the template
+       * ⚠️ CRITICAL - Elements generated by Angular Material:
+         If the selector points to ".mdc-button__label", ".mat-button-label", or any element with " > " pointing to an internal span/div,
+         that element does NOT exist in your template - Angular Material generates it automatically in the rendered DOM.
          
-         EJEMPLO ESPECÍFICO:
-         - Error de Axe: Selector ".mat-warn > .mdc-button__label", HTML "<span class="mdc-button__label">Get Started</span>"
-         - En tu template encontrarás: <button mat-button color="warn">Get Started</button>
-         - SOLUCIÓN: Añade el estilo AL BOTÓN padre:
+         SPECIFIC EXAMPLE:
+         - Axe error: Selector ".mat-warn > .mdc-button__label", HTML "<span class="mdc-button__label">Get Started</span>"
+         - In your template you will find: <button mat-button color="warn">Get Started</button>
+         - FIX: Add the style to the PARENT BUTTON:
            <button mat-button color="warn" style="color: #000000 !important;">Get Started</button>
-         - El estilo con !important se aplicará al texto dentro del botón, incluyendo el span interno generado por Angular Material
+         - The style with !important will apply to the text inside the button, including the internal span generated by Angular Material
          
-         REGLA GENERAL:
-         - Si el selector tiene " > .mdc-button__label" o " > .mat-button-label", busca el botón padre en el template
-         - Extrae el selector del padre (la parte antes de " > ")
-         - Busca ese botón en el template (puede tener color="warn", class="mat-warn", o el texto del botón)
-         - Aplica style="color: [color-correcto] !important;" directamente al botón
-         - Si el ratio es insuficiente y el fondo es claro (#fafafa, blanco, etc.), usa color oscuro (#000000)
-         - Si el ratio es insuficiente y el fondo es oscuro, usa color claro (#FFFFFF)
-   - Si es "link-name" o "button-name": Añade aria-label descriptivo al enlace/botón
-   - Si es otro error: Sigue la descripción y ayuda proporcionadas
+         GENERAL RULE:
+         - If the selector has " > .mdc-button__label" or " > .mat-button-label", find the parent button in the template
+         - Extract the parent selector (the part before " > ")
+         - Find that button in the template (it may have color="warn", class="mat-warn", or the button text)
+         - Apply style="color: [correct-color] !important;" directly to the button
+         - If ratio is insufficient and background is light (#fafafa, white, etc.), use dark colour (#000000)
+         - If ratio is insufficient and background is dark, use light colour (#FFFFFF)
+   - If it's "link-name" or "button-name": Add descriptive aria-label to the link/button
+   - If it's another error: Follow the description and help provided
 
-3. Para errores de contraste: 
-   - Los datos muestran el color REAL detectado por Axe en el HTML renderizado
-   - Si el template tiene un color diferente, significa que el CSS lo está sobrescribiendo
-   - DEBES usar !important en el estilo inline para asegurar que se aplique: style="color: #000000 !important;"
-   - NO devuelvas el código sin corregir estos errores - son errores REALES que existen en la aplicación
+3. For contrast errors:
+   - The data shows the REAL colour detected by Axe in the rendered HTML
+   - If the template has a different colour, the CSS is overriding it
+   - You MUST use !important in the inline style to ensure it applies: style="color: #000000 !important;"
+   - Do NOT return the code without fixing these errors - they are REAL errors that exist in the application
 
-⚠️ CRÍTICO: Estos errores EXISTEN en la aplicación renderizada. NO devuelvas el mismo código. DEBES hacer cambios visibles.""")
+⚠️ CRITICAL: These errors EXIST in the rendered application. Do NOT return the same code. You MUST make visible changes.""")
     
-    # Añadir errores estáticos categorizados
+    # Add categorised static errors
     for error_type, errors in categories.items():
         if errors:
             prompts.append(_build_error_specific_prompt(error_type, errors))
@@ -2004,34 +2011,34 @@ ACCIÓN REQUERIDA PARA CADA ERROR:
     
     return f"""
 
-🚨 ERRORES DE ACCESIBILIDAD DETECTADOS - CORRIGE TODOS:
+🚨 ACCESSIBILITY ERRORS DETECTED - FIX ALL:
 
 {chr(10).join(prompts)}
 
-⚠️ CRÍTICO: DEBES corregir TODOS estos errores. NO devuelvas el código original sin cambios.
+⚠️ CRITICAL: You MUST fix ALL these errors. Do NOT return the original code unchanged.
 """
 
 
 def _analyze_template_for_accessibility_errors(template_content: str, style_content: Optional[str] = None) -> List[str]:
-    """Analiza el template y CSS para detectar errores obvios de accesibilidad usando análisis de texto crudo"""
+    """Analyse the template and CSS for obvious accessibility errors using raw text analysis"""
     errors = []
     import re
     
     try:
-        # Análisis basado en texto crudo para manejar mejor Angular
+        # Raw-text analysis to handle Angular better
         lines = template_content.split('\n')
         
-        # Buscar botones sin texto ni aria-label (buscar en HTML crudo)
+        # Look for buttons without text or aria-label (search in raw HTML)
         button_pattern = r'<button[^>]*>'
         for i, line in enumerate(lines, 1):
             if re.search(button_pattern, line, re.IGNORECASE):
-                # Verificar si tiene aria-label (estático o con binding)
+                # Check if it has aria-label (static or binding)
                 has_aria_label = (
                     'aria-label=' in line or 
                     '[attr.aria-label]' in line or
                     'aria-labelledby=' in line
                 )
-                # Extraer el contenido del botón (texto entre > y <)
+                # Extract button content (text between > and <)
                 button_match = re.search(r'<button[^>]*>(.*?)</button>', line, re.DOTALL | re.IGNORECASE)
                 if button_match:
                     button_content = button_match.group(1)
@@ -2039,10 +2046,10 @@ def _analyze_template_for_accessibility_errors(template_content: str, style_cont
                     button_text = re.sub(r'\{[^}]*\}|<[^>]+>|\*ng[A-Za-z]*="[^"]*"', '', button_content).strip()
                     # Si no tiene texto visible ni aria-label, es un error
                     if not button_text and not has_aria_label:
-                        errors.append(f"Línea {i}: Botón sin texto visible ni aria-label")
+                        errors.append(f"Line {i}: Button without visible text or aria-label")
                 elif not has_aria_label:
-                    # Botón que puede estar en múltiples líneas
-                    errors.append(f"Línea {i}: Botón posiblemente sin aria-label (verificar manualmente)")
+                    # Button may span multiple lines
+                    errors.append(f"Line {i}: Button possibly without aria-label (verify manually)")
         
         # Buscar enlaces sin texto descriptivo
         link_pattern = r'<a[^>]*>'
@@ -2056,9 +2063,9 @@ def _analyze_template_for_accessibility_errors(template_content: str, style_cont
                 if link_match:
                     link_text = re.sub(r'\{[^}]*\}|<[^>]+>', '', link_match.group(1)).strip()
                     if not link_text and not has_aria_label:
-                        errors.append(f"Línea {i}: Enlace sin texto ni aria-label")
-                    elif link_text.lower().strip() in ['click aquí', 'más', 'aquí', 'click here', 'más info', 'ver más']:
-                        errors.append(f"Línea {i}: Enlace con texto genérico '{link_text}' necesita aria-label descriptivo")
+                        errors.append(f"Line {i}: Link without text or aria-label")
+                    elif link_text.lower().strip() in ['click aquí', 'más', 'aquí', 'click here', 'more', 'here', 'more info', 'ver más', 'read more']:
+                        errors.append(f"Line {i}: Link with generic text '{link_text}' needs descriptive aria-label")
         
         # Buscar inputs sin label (buscar por id y for)
         input_pattern = r'<(input|select|textarea)[^>]*>'
@@ -2080,7 +2087,7 @@ def _analyze_template_for_accessibility_errors(template_content: str, style_cont
                         'aria-labelledby=' in line
                     )
                     if not has_aria_label:
-                        errors.append(f"Línea {i}: Input sin id ni aria-label (necesita label asociado)")
+                        errors.append(f"Line {i}: Input without id or aria-label (needs associated label)")
             
             # Buscar labels y sus atributos for
             label_match = re.search(r'<label[^>]*>', line, re.IGNORECASE)
@@ -2092,7 +2099,7 @@ def _analyze_template_for_accessibility_errors(template_content: str, style_cont
         # Verificar inputs sin label asociado
         for inp_id in input_ids:
             if inp_id not in label_fors:
-                # Verificar si el input tiene aria-label en alguna línea cercana
+                # Check if the input has aria-label on a nearby line
                 found_aria = False
                 for line in lines:
                     if inp_id in line and ('aria-label=' in line or '[attr.aria-label]' in line):
@@ -2101,15 +2108,15 @@ def _analyze_template_for_accessibility_errors(template_content: str, style_cont
                 if not found_aria:
                     errors.append(f"Input con id='{inp_id}' sin label asociado (usar <label for=\"{inp_id}\">)")
         
-        # Buscar imágenes sin alt
+        # Look for images without alt
         img_pattern = r'<img[^>]*>'
         for i, line in enumerate(lines, 1):
             if re.search(img_pattern, line, re.IGNORECASE):
                 if 'alt=' not in line:
-                    errors.append(f"Línea {i}: Imagen sin atributo alt")
+                    errors.append(f"Line {i}: Image without alt attribute")
         
-        # Buscar elementos con texto que podrían tener problemas de contraste
-        # Buscar <p>, <a>, <span>, <div>, <h1-h6> sin color explícito
+        # Look for elements with text that may have contrast issues
+        # Look for <p>, <a>, <span>, <div>, <h1-h6> without explicit colour
         text_elements_pattern = r'<(p|a|span|div|h[1-6]|label|button)[^>]*>'
         for i, line in enumerate(lines, 1):
             if re.search(text_elements_pattern, line, re.IGNORECASE):
@@ -2118,16 +2125,16 @@ def _analyze_template_for_accessibility_errors(template_content: str, style_cont
                 if element_match:
                     element_text = re.sub(r'\{[^}]*\}|<[^>]+>', '', element_match.group(2)).strip()
                     if element_text and len(element_text) > 10:  # Solo si tiene texto significativo
-                        # Verificar si tiene color explícito
+                        # Check if it has explicit colour
                         has_explicit_color = (
                             'style=' in line and ('color:' in line or 'color=' in line) or
                             '[style.color]' in line or
                             '[ngStyle]' in line
                         )
-                        # Verificar si tiene clases que podrían causar problemas
+                        # Check if it has classes that may cause issues
                         has_problematic_class = any(cls in line for cls in ['text-muted', 'text-secondary', 'text-light', 'text-gray', 'btn'])
                         if not has_explicit_color and (has_problematic_class or 'class=' in line):
-                            errors.append(f"Línea {i}: Posible error de contraste - {element_match.group(1)} con texto sin color explícito (añadir style='color: #000000')")
+                            errors.append(f"Line {i}: Possible contrast error - {element_match.group(1)} with text without explicit colour (add style='color: #000000')")
         
         # Analizar CSS para detectar posibles problemas de contraste
         if style_content:
@@ -2153,14 +2160,14 @@ def _analyze_css_for_contrast_issues(style_content: str, template_lines: List[st
         for j, template_line in enumerate(template_lines, 1):
             for problematic_class in problematic_classes:
                 if problematic_class in template_line:
-                    errors.append(f"Línea {j}: Posible error de contraste - clase '{problematic_class}' detectada (añadir style='color: #000000')")
+                    errors.append(f"Line {j}: Possible contrast error - class '{problematic_class}' detected (add style='color: #000000')")
         
         # Buscar colores claros en el CSS
         css_lines = style_content.split('\n')
         for i, css_line in enumerate(css_lines, 1):
             # Buscar reglas de color que puedan tener bajo contraste
             if re.search(r'color\s*:', css_line, re.IGNORECASE):
-                # Verificar si es un color claro (heurística simple)
+                # Check if it's a light colour (simple heuristic)
                 color_match = re.search(r'color\s*:\s*(#[a-f0-9]{3,6}|rgba?\([^)]+\))', css_line, re.IGNORECASE)
                 if color_match:
                     color_value = color_match.group(1).lower()
@@ -2175,7 +2182,7 @@ def _analyze_css_for_contrast_issues(style_content: str, template_lines: List[st
                             # Buscar si este selector se usa en el template
                             for j, template_line in enumerate(template_lines, 1):
                                 if selector.replace('.', '').replace('#', '') in template_line:
-                                    errors.append(f"Línea {j}: Posible error de contraste - color claro '{color_value}' detectado en CSS")
+                                    errors.append(f"Line {j}: Possible contrast error - light colour '{color_value}' detected in CSS")
                                     break
         
     except Exception as e:
@@ -2203,85 +2210,85 @@ def _build_component_prompt(
         else "\n---\nEstilos: (no proporcionados)"
     )
 
-    # Construir sección de errores específicos
+    # Build specific errors section
     errors_section = _format_detected_errors(detected_errors if detected_errors else [])
     
-    # Si no hay errores detectados, hacer un prompt más corto
+    # If no errors detected, use a shorter prompt
     if not detected_errors:
-        return f"""Componente Angular: {component_name}
+        return f"""Angular component: {component_name}
 Template: {template_path}
 
-TAREA: Revisa y corrige TODOS los errores de accesibilidad (WCAG 2.2 A+AA) que encuentres.
+TASK: Review and fix ALL accessibility errors (WCAG 2.2 A+AA) you find.
 
-Busca específicamente:
-- Botones/enlaces sin texto visible ni aria-label
-- Inputs sin <label> asociado
-- Imágenes sin atributo alt
-- Elementos con bajo contraste de color (ratio mínimo 4.5:1)
-- Elementos interactivos sin soporte de teclado
+Look specifically for:
+- Buttons/links without visible text or aria-label
+- Inputs without associated <label>
+- Images without alt attribute
+- Elements with low colour contrast (minimum ratio 4.5:1)
+- Interactive elements without keyboard support
 
-IMPORTANTE: Si encuentras errores, CORRÍGELOS. NO devuelvas el código sin cambios.
+IMPORTANT: If you find errors, FIX them. Do NOT return the code unchanged.
 
-Template actual:
+Current template:
 ```html
 {template_content}
 ```
 {ts_section}
 {style_section}
 
-Formato de respuesta:
+Response format:
 <<<TEMPLATE>>>
-...template HTML corregido...
+...corrected HTML template...
 <<<END TEMPLATE>>>
 <<<TYPESCRIPT>>>
-...TypeScript actualizado o original...
+...updated or original TypeScript...
 <<<END TYPESCRIPT>>>
 <<<STYLES>>>
-...Estilos actualizados o original...
+...updated or original styles...
 <<<END STYLES>>>
 """.strip()
     
-    # Si hay errores detectados, usar prompt más enfocado
-    return f"""Componente Angular: {component_name}
+    # If errors were detected, use a more focused prompt
+    return f"""Angular component: {component_name}
 Template: {template_path}
 
-TAREA: Corrige TODOS los errores de accesibilidad listados abajo.
+TASK: Fix ALL the accessibility errors listed below.
 
 {errors_section}
 
-REGLAS GENERALES:
-- Mantén toda la lógica Angular (bindings, *ngIf, *ngFor, pipes, etc.)
-- Para atributos ARIA con binding dinámico: usa [attr.aria-*] en lugar de aria-*
-- Para valores estáticos: usa aria-label="texto fijo"
-- NO añadas comentarios HTML ni metadatos sobre correcciones
+GENERAL RULES:
+- Keep all Angular logic (bindings, *ngIf, *ngFor, pipes, etc.)
+- For ARIA attributes with dynamic binding: use [attr.aria-*] instead of aria-*
+- For static values: use aria-label="fixed text"
+- Do NOT add HTML comments or metadata about fixes
 
-🚨 PRESERVA EL DISEÑO RESPONSIVE Y VISUAL (CRÍTICO):
-Si se proporcionaron CAPTURAS DE PANTALLA arriba, SON TU REFERENCIA VISUAL. El diseño final debe verse IDÉNTICO a las capturas.
+🚨 PRESERVE RESPONSIVE AND VISUAL DESIGN (CRITICAL):
+If SCREENSHOTS were provided above, they ARE your visual reference. The final design must look IDENTICAL to the screenshots.
 
-- NO cambies display:none a display:block - si un label está oculto visualmente, usa aria-label en el input o una clase sr-only para el label
-- NO añadas estilos inline que rompan el responsive (width fijo, margin/padding excesivos, etc.)
-- Mantén todas las clases responsive existentes (col-sm-*, col-md-*, etc.)
-- NO modifiques propiedades de layout (display, position, flex, grid, width, height, margin, padding) a menos que sea crítico para accesibilidad
-- Si un elemento tiene display:none por diseño responsive, NO lo cambies - usa aria-label en su lugar para accesibilidad
-- Para errores de contraste: SOLO ajusta el color del texto (usa !important si es necesario), NO cambies el fondo ni el layout
-- CORRIGE TODOS los errores de accesibilidad, pero hazlo de forma "invisible" - el resultado visual debe ser idéntico a las capturas
+- Do NOT change display:none to display:block - if a label is visually hidden, use aria-label on the input or an sr-only class for the label
+- Do NOT add inline styles that break responsive (fixed width, excessive margin/padding, etc.)
+- Keep all existing responsive classes (col-sm-*, col-md-*, etc.)
+- Do NOT modify layout properties (display, position, flex, grid, width, height, margin, padding) unless critical for accessibility
+- If an element has display:none for responsive design, do NOT change it - use aria-label for accessibility instead
+- For contrast errors: ONLY adjust text colour (use !important if needed), do NOT change background or layout
+- FIX ALL accessibility errors, but do it "invisibly" - the visual result must be identical to the screenshots
 
-Template actual:
+Current template:
 ```html
 {template_content}
 ```
 {ts_section}
 {style_section}
 
-Formato de respuesta:
+Response format:
 <<<TEMPLATE>>>
-...template HTML corregido...
+...corrected HTML template...
 <<<END TEMPLATE>>>
 <<<TYPESCRIPT>>>
-...TypeScript actualizado o original...
+...updated or original TypeScript...
 <<<END TYPESCRIPT>>>
 <<<STYLES>>>
-...Estilos actualizados o original...
+...updated or original styles...
 <<<END STYLES>>>
 """.strip()
 
@@ -2295,31 +2302,31 @@ def _parse_component_response(response_text: str) -> Dict[str, Optional[str]]:
 
     for key, value in sections.items():
         if value is not None:
-            # Limpiar markdown del código (```ts, ```typescript, ```css, ```scss, etc.)
+            # Strip markdown from code (```ts, ```typescript, ```css, ```scss, etc.)
             value = _clean_code_from_markdown(value)
             sections[key] = value.strip()
 
     if sections["template"] is None:
-        raise ValueError("La respuesta del modelo no contiene la sección <<<TEMPLATE>>> requerida.")
+        raise ValueError("Model response does not contain the required <<<TEMPLATE>>> section.")
 
     return sections
 
 
 def _clean_code_from_markdown(code: str) -> str:
     """
-    Limpia el código de cualquier markdown que pueda haber incluido el LLM.
-    Elimina bloques de código markdown (```ts, ```typescript, ```css, etc.)
+    Strip any markdown the LLM may have included from the code.
+    Removes markdown code blocks (```ts, ```typescript, ```css, etc.)
     """
     import re
     
-    # Eliminar bloques de código markdown al inicio
-    # Patrón: ```ts, ```typescript, ```css, ```scss, ```html, etc.
+    # Remove markdown code blocks at the start
+    # Pattern: ```ts, ```typescript, ```css, ```scss, ```html, etc.
     code = re.sub(r'^```[a-z]*\s*\n?', '', code, flags=re.MULTILINE)
     
     # Eliminar cierre de bloques markdown al final
     code = re.sub(r'\n?```\s*$', '', code, flags=re.MULTILINE)
     
-    # Eliminar cualquier ``` que quede en el código
+    # Remove any remaining ``` in the code
     code = re.sub(r'```[a-z]*', '', code)
     code = re.sub(r'```', '', code)
     
@@ -2335,7 +2342,7 @@ def _extract_between_markers(text: str, start_marker: str, end_marker: str) -> O
 
 
 def _apply_automatic_contrast_fixes(template_content: str, contrast_errors: List[str]) -> str:
-    """Aplica correcciones automáticas de contraste a los elementos detectados"""
+    """Apply automatic contrast fixes to detected elements"""
     import re
     
     lines = template_content.split('\n')
@@ -2344,15 +2351,15 @@ def _apply_automatic_contrast_fixes(template_content: str, contrast_errors: List
     for i, line in enumerate(lines, 1):
         corrected_line = line
         
-        # Buscar errores de contraste que mencionen esta línea
+        # Look for contrast errors that mention this line
         for error in contrast_errors:
-            if f"Línea {i}:" in error:
+            if f"Line {i}:" in error:
                 # Extraer el tipo de elemento del error
-                element_match = re.search(r'Línea \d+: Posible error de contraste - (\w+)', error)
+                element_match = re.search(r'Line \d+: Possible contrast error - (\w+)', error)
                 if element_match:
                     element_type = element_match.group(1)
                     
-                    # Buscar el elemento en la línea
+                    # Find the element on the line
                     element_pattern = rf'<{element_type}[^>]*>'
                     element_match_in_line = re.search(element_pattern, line, re.IGNORECASE)
                     
@@ -2361,12 +2368,12 @@ def _apply_automatic_contrast_fixes(template_content: str, contrast_errors: List
                         
                         # Verificar si ya tiene style
                         if 'style=' not in element_tag:
-                            # Añadir style="color: #000000"
+                            # Add style="color: #000000"
                             corrected_tag = element_tag.rstrip('>') + ' style="color: #000000">'
                             corrected_line = line.replace(element_tag, corrected_tag)
-                            print(f"    → Línea {i}: Añadido style='color: #000000' a <{element_type}>")
+                            print(f"    → Line {i}: Added style='color: #000000' to <{element_type}>")
                         elif 'color:' not in element_tag and 'color=' not in element_tag:
-                            # Tiene style pero no color, añadir color
+                            # Has style but no colour, add colour
                             if 'style="' in element_tag:
                                 corrected_tag = element_tag.replace('style="', 'style="color: #000000; ')
                             elif "style='" in element_tag:
@@ -2375,7 +2382,7 @@ def _apply_automatic_contrast_fixes(template_content: str, contrast_errors: List
                                 # style sin comillas (raro pero posible)
                                 corrected_tag = element_tag.rstrip('>') + ' style="color: #000000">'
                             corrected_line = line.replace(element_tag, corrected_tag)
-                            print(f"    → Línea {i}: Añadido color: #000000 al style existente de <{element_type}>")
+                            print(f"    → Line {i}: Added colour: #000000 to existing style of <{element_type}>")
         
         corrected_lines.append(corrected_line)
     
@@ -2384,8 +2391,8 @@ def _apply_automatic_contrast_fixes(template_content: str, contrast_errors: List
 
 def _fix_responsive_breaking_changes(original: str, corrected: str) -> str:
     """
-    Detecta y corrige cambios que rompen el diseño responsive.
-    Específicamente revierte cambios de display:none a display:block en labels.
+    Detect and fix changes that break responsive design.
+    Specifically reverts display:none to display:block changes on labels.
     """
     if not original or not corrected:
         return corrected
@@ -2399,7 +2406,7 @@ def _fix_responsive_breaking_changes(original: str, corrected: str) -> str:
         re.DOTALL | re.IGNORECASE
     )
     
-    # También buscar labels con hidden attribute
+    # Also look for labels with hidden attribute
     original_hidden_labels = re.findall(
         r'<label[^>]*hidden[^>]*>.*?</label>',
         original,
@@ -2411,7 +2418,7 @@ def _fix_responsive_breaking_changes(original: str, corrected: str) -> str:
     if not all_original_labels:
         return corrected
     
-    # Para cada label oculto en el original, verificar si se cambió en el corregido
+    # For each hidden label in the original, check if it was changed in the corrected one
     for original_label in all_original_labels:
         # Extraer el contenido del label (texto entre > y <)
         label_match = re.search(r'<label[^>]*>(.*?)</label>', original_label, re.DOTALL)
@@ -2426,9 +2433,9 @@ def _fix_responsive_breaking_changes(original: str, corrected: str) -> str:
         
         for_value = for_attr_match.group(1)
         
-        # Buscar en el corregido si ese label cambió a display:block
+        # Check in the corrected version if that label was changed to display:block
         pattern_block = rf'<label[^>]*for="{re.escape(for_value)}"[^>]*style="[^"]*display\s*:\s*block[^"]*"[^>]*>'
-        # También buscar si se eliminó el hidden o display:none
+        # Also check if hidden or display:none was removed
         pattern_no_hidden = rf'<label[^>]*for="{re.escape(for_value)}"[^>]*(?!style="[^"]*display\s*:\s*none)(?!class="[^"]*visually-hidden)(?!hidden)[^>]*>'
         
         needs_fix = False
@@ -2447,7 +2454,7 @@ def _fix_responsive_breaking_changes(original: str, corrected: str) -> str:
                     needs_fix = True
         
         if needs_fix:
-            # El LLM cambió display:none/hidden a visible - revertirlo
+            # LLM changed display:none/hidden to visible - revert it
             corrected_label_match = re.search(
                 rf'<label[^>]*for="{re.escape(for_value)}"[^>]*>.*?</label>',
                 corrected,
@@ -2469,12 +2476,12 @@ def _fix_responsive_breaking_changes(original: str, corrected: str) -> str:
 
 def _apply_automatic_accessibility_fixes(template_content: Optional[str]) -> Optional[str]:
     """
-    Aplica correcciones automáticas de accesibilidad comunes que el LLM podría no hacer sistemáticamente.
-    
-    Correcciones aplicadas:
-    1. Añade role="img" a elementos <i> y <nb-icon> que tienen aria-label pero no tienen role
-    2. Añade lang attribute a <html> si falta
-    3. Añade aria-label a elementos role="progressbar" que no lo tienen
+    Apply common automatic accessibility fixes that the LLM may not do consistently.
+
+    Fixes applied:
+    1. Add role="img" to <i> and <nb-icon> elements that have aria-label but no role
+    2. Add lang attribute to <html> if missing
+    3. Add aria-label to role="progressbar" elements that don't have it
     """
     if not template_content:
         return template_content
@@ -2482,15 +2489,15 @@ def _apply_automatic_accessibility_fixes(template_content: Optional[str]) -> Opt
     import re
     corrected = template_content
     
-    # 1. Añadir role="img" a <i> con aria-label pero sin role
-    # Patrón: <i ... aria-label="..." ...> (sin role)
+    # 1. Add role="img" to <i> with aria-label but no role
+    # Pattern: <i ... aria-label="..." ...> (no role)
     pattern_i_with_aria = r'(<i\s+[^>]*aria-label="[^"]*"[^>]*?)(?<!role="[^"]*")(?<!role=\'[^\']*\')([^>]*>)'
     def add_role_to_i(match):
         full_tag = match.group(0)
         # Si ya tiene role, no hacer nada
         if 'role=' in full_tag:
             return full_tag
-        # Añadir role="img" antes del cierre >
+        # Add role="img" before closing >
         return full_tag[:-1] + ' role="img">'
     
     # Buscar <i> con aria-label sin role
@@ -2500,7 +2507,7 @@ def _apply_automatic_accessibility_fixes(template_content: Optional[str]) -> Opt
         if 'role=' not in tag:
             corrected = corrected.replace(tag, tag[:-1] + ' role="img">', 1)
     
-    # 2. Añadir role="img" a <nb-icon> con aria-label pero sin role
+    # 2. Add role="img" to <nb-icon> with aria-label but no role
     # Buscar <nb-icon ... aria-label="..." ...> (sin role)
     nb_icon_tags = re.finditer(r'<nb-icon\s+[^>]*aria-label="[^"]*"[^>]*>', corrected)
     for match in list(nb_icon_tags):
@@ -2508,18 +2515,18 @@ def _apply_automatic_accessibility_fixes(template_content: Optional[str]) -> Opt
         if 'role=' not in tag:
             corrected = corrected.replace(tag, tag[:-1] + ' role="img">', 1)
     
-    # También manejar [attr.aria-label] (binding dinámico)
+    # Also handle [attr.aria-label] (dynamic binding)
     nb_icon_tags_dynamic = re.finditer(r'<nb-icon\s+[^>]*\[attr\.aria-label\]="[^"]*"[^>]*>', corrected)
     for match in list(nb_icon_tags_dynamic):
         tag = match.group(0)
         if 'role=' not in tag:
             corrected = corrected.replace(tag, tag[:-1] + ' role="img">', 1)
     
-    # 3. Añadir lang attribute a <html> si falta
+    # 3. Add lang attribute to <html> if missing
     if '<html' in corrected and 'lang=' not in corrected.split('<html')[1].split('>')[0]:
         corrected = re.sub(r'(<html)([^>]*>)', r'\1 lang="en"\2', corrected, count=1)
     
-    # 4. Añadir aria-label a elementos con role="progressbar" que no lo tienen
+    # 4. Add aria-label to elements with role="progressbar" that don't have it
     progressbar_pattern = r'(<[^>]*\s+role="progressbar"[^>]*?)(?<!aria-label="[^"]*")(?<!aria-labelledby="[^"]*")([^>]*>)'
     def add_aria_to_progressbar(match):
         full_tag = match.group(0)
@@ -2530,7 +2537,7 @@ def _apply_automatic_accessibility_fixes(template_content: Optional[str]) -> Opt
         valuenow_match = re.search(r'aria-valuenow="([^"]*)"', full_tag)
         valuenow = valuenow_match.group(1) if valuenow_match else ""
         label_text = f"Progress: {valuenow}%" if valuenow else "Progress indicator"
-        # Añadir aria-label antes del cierre >
+        # Add aria-label before closing >
         return full_tag[:-1] + f' aria-label="{label_text}">'
     
     progressbar_tags = re.finditer(r'<[^>]*\s+role="progressbar"[^>]*>', corrected)
@@ -2548,8 +2555,8 @@ def _apply_automatic_accessibility_fixes(template_content: Optional[str]) -> Opt
 
 def _fix_basic_syntax_errors(template_content: Optional[str]) -> Optional[str]:
     """
-    Corrige errores básicos de sintaxis HTML comunes que pueden introducirse por el LLM.
-    Específicamente corrige atributos sin comillas de cierre: attr="value> -> attr="value">
+    Fix common basic HTML syntax errors that the LLM may introduce.
+    Specifically fixes attributes without closing quotes: attr="value> -> attr="value">
     """
     if not template_content:
         return template_content
@@ -2558,7 +2565,7 @@ def _fix_basic_syntax_errors(template_content: Optional[str]) -> Optional[str]:
     
     corrected = template_content
     
-    # Estrategia: procesar línea por línea y corregir atributos mal cerrados
+    # Strategy: process line by line and fix unclosed attributes
     lines = corrected.split('\n')
     fixed_lines = []
     
@@ -2571,29 +2578,29 @@ def _fix_basic_syntax_errors(template_content: Optional[str]) -> Optional[str]:
         #   style="color: #000000 !important;>  -> style="color: #000000 !important;">
         #   for="email>  -> for="email">
         
-        # Buscar todos los atributos en la línea: attr="valor>
-        # Patrón: palabra-attr="cualquier-cosa-que-no-contenga-comillas>
-        # Pero excluir template references (#ref) que no usan comillas
-        
-        # Enfoque: buscar patrones específicos de atributos mal cerrados
-        # Caso 1: attr="texto> donde texto no contiene comillas
-        # Usar un patrón que capture el atributo, el =", el valor, y el >
-        # y luego añadir la comilla antes del >
-        
+        # Find all attributes on the line: attr="value>
+        # Pattern: word-attr="anything-without-quotes>
+        # But exclude template references (#ref) that don't use quotes
+
+        # Approach: look for specific unclosed-attribute patterns
+        # Case 1: attr="text> where text doesn't contain quotes
+        # Use a pattern that captures attribute, =", value, and >
+        # then add the quote before >
+
         def fix_unclosed_attr_in_line(text):
-            """Corrige atributos sin comilla de cierre en una línea"""
+            """Fix attributes missing closing quote on a line"""
             result = text
-            
-            # Buscar patrones: attr="valor> donde el > está inmediatamente después del valor
-            # Esto incluye tanto atributos normales como bindings de Angular
-            
-            # Patrón 1: Atributos normales: attr="valor>
-            # También captura bindings de Angular: [attr]="expresion>, (event)="handler()>, etc.
-            # El patrón debe capturar: nombre-attr="valor-contenido>
-            # Donde valor-contenido puede tener espacios, caracteres especiales, expresiones de Angular, etc.
-            
-            # Patrón mejorado que captura también bindings de Angular
-            # Busca: (event)="...>, [attr]="...>, *directiva="...>, etc.
+
+            # Look for patterns: attr="value> where > is immediately after the value
+            # This includes both normal attributes and Angular bindings
+
+            # Pattern 1: Normal attributes: attr="value>
+            # Also captures Angular bindings: [attr]="expression>, (event)="handler()>, etc.
+            # Pattern must capture: name-attr="value-content>
+            # Where value-content can have spaces, special chars, Angular expressions, etc.
+
+            # Improved pattern that also captures Angular bindings
+            # Looks for: (event)="...>, [attr]="...>, *directive="...>, etc.
             pattern = r'([(\[\*#]?[\w-]+(?:\([^)]*\))?[\]\)]?)="([^"]*?)([^">])\s*>'
             
             def replace_attr(match):
@@ -2601,23 +2608,23 @@ def _fix_basic_syntax_errors(template_content: Optional[str]) -> Optional[str]:
                 attr_value = match.group(2)
                 last_char = match.group(3)
                 
-                # Verificar que no sea un template reference (#ref)
+                # Ensure it's not a template reference (#ref)
                 if attr_name.startswith('#'):
                     return match.group(0)
                 
-                # Si el valor no está vacío, añadir comilla antes del >
+                # If value is not empty, add quote before >
                 return f'{attr_name}="{attr_value}{last_char}">'
             
             result = re.sub(pattern, replace_attr, result)
             
-            # Casos específicos más comunes
+            # Most common specific cases
             # Corregir: style="...!important;> -> style="...!important;">
             result = re.sub(r'(style="[^"]*?)\s*!important\s*;>', r'\1 !important;">', result)
             # Corregir: style="color: #000000> -> style="color: #000000;">
             result = re.sub(r'(style="[^"]*?[^";])\s*>', r'\1;">', result)
             
             # Corregir atributos data-*: data-bs-target="#modal>texto -> data-bs-target="#modal">texto
-            # Este patrón captura atributos que terminan justo antes de una palabra (no antes de >)
+            # This pattern captures attributes that end just before a word (not before >)
             result = re.sub(r'(data-[\w-]+="[^"]*?)>([A-Za-z])', r'\1">\2', result)
             
             # Corregir otros atributos: attr="valor> -> attr="valor">
@@ -2633,7 +2640,7 @@ def _fix_basic_syntax_errors(template_content: Optional[str]) -> Optional[str]:
         fixed_line = re.sub(r'#(\w+)">', r'#\1>', fixed_line)
         fixed_line = re.sub(r'#(\w+)\s*">', r'#\1>', fixed_line)
         
-        # 3. Casos específicos conocidos
+        # 3. Known specific cases
         fixed_line = fixed_line.replace('#stepper">', '#stepper>')
         fixed_line = fixed_line.replace('#picker">', '#picker>')
         fixed_line = fixed_line.replace('#drawer">', '#drawer>')
@@ -2652,7 +2659,7 @@ def _fix_angular_aria_syntax(template_content: Optional[str]) -> Optional[str]:
     
     import re
     
-    # Patrón para encontrar aria-* con binding de interpolación {{ }}
+    # Pattern to find aria-* with interpolation binding {{ }}
     # Ejemplo: aria-pressed="{{condicion}}" -> [attr.aria-pressed]="condicion"
     pattern_interpolation = r'aria-([a-z-]+)="{{([^}]+)}}"'
     def replace_interpolation(match):
@@ -2662,7 +2669,7 @@ def _fix_angular_aria_syntax(template_content: Optional[str]) -> Optional[str]:
     
     corrected = re.sub(pattern_interpolation, replace_interpolation, template_content)
     
-    # Patrón para encontrar aria-* con interpolación en strings
+    # Pattern to find aria-* with interpolation in strings
     # Ejemplo: aria-label="Texto {{variable}}" -> [attr.aria-label]="'Texto ' + variable"
     pattern_string_interpolation = r'aria-([a-z-]+)="([^"]*)\{\{([^}]+)\}\}([^"]*)"'
     def replace_string_interpolation(match):
@@ -2670,7 +2677,7 @@ def _fix_angular_aria_syntax(template_content: Optional[str]) -> Optional[str]:
         before = match.group(2)
         expression = match.group(3).strip()
         after = match.group(4)
-        # Construir expresión concatenada
+        # Build concatenated expression
         parts = []
         if before:
             parts.append(f"'{before}'")
@@ -2685,7 +2692,7 @@ def _fix_angular_aria_syntax(template_content: Optional[str]) -> Optional[str]:
 
 
 def _apply_changes_map(changes_map: List[Dict], project_root: Path) -> int:
-    """Aplica el mapa de cambios al código fuente real"""
+    """Apply the change map to the actual source code"""
     applied_count = 0
     for change_entry in changes_map:
         changes = change_entry.get("changes", {})
@@ -2716,8 +2723,8 @@ def _verify_angular_build(project_root: Path) -> Tuple[bool, bool]:
     Verifica que el proyecto Angular compile correctamente ejecutando ng build.
     
     Returns:
-        Tuple de (éxito de compilación, disponibilidad de verificación)
-        Si la verificación no está disponible (ng no encontrado), retorna (True, False)
+        Tuple of (compilation success, verification available).
+        If verification is not available (ng not found), returns (True, False).
         para no bloquear el proceso.
     """
     # Detectar si es un workspace multi-proyecto
@@ -2726,7 +2733,7 @@ def _verify_angular_build(project_root: Path) -> Tuple[bool, bool]:
     if default_project:
         print(f"  → Workspace multi-proyecto detectado, compilando: {default_project}")
     
-    # Estrategia 1: Intentar con npm run build (más común en proyectos Angular)
+    # Strategy 1: Try npm run build (most common in Angular projects)
     package_json = project_root / "package.json"
     if package_json.exists():
         try:
@@ -2734,7 +2741,7 @@ def _verify_angular_build(project_root: Path) -> Tuple[bool, bool]:
                 package_data = json.load(f)
                 scripts = package_data.get("scripts", {})
                 if "build" in scripts:
-                    print("  → Usando 'npm run build' para verificar compilación...")
+                    print("  → Using 'npm run build' to verify compilation...")
                     result = subprocess.run(
                         ["npm", "run", "build"],
                         cwd=str(project_root),
@@ -2747,9 +2754,9 @@ def _verify_angular_build(project_root: Path) -> Tuple[bool, bool]:
                     if result.returncode == 0:
                         return True, True
                     else:
-                        # Mostrar errores de compilación si hay
+                        # Show compilation errors if any
                         if result.stderr:
-                            print(f"  Errores de compilación:\n{result.stderr[:500]}")
+                            print(f"  Compilation errors:\n{result.stderr[:500]}")
                         return False, True
         except Exception as e:
             pass
@@ -2770,7 +2777,7 @@ def _verify_angular_build(project_root: Path) -> Tuple[bool, bool]:
             return True, True
         else:
             if result.stderr:
-                print(f"  Errores de compilación:\n{result.stderr[:500]}")
+                print(f"  Compilation errors:\n{result.stderr[:500]}")
             return False, True
     except FileNotFoundError:
         pass
@@ -2796,7 +2803,7 @@ def _verify_angular_build(project_root: Path) -> Tuple[bool, bool]:
             return True, True
         else:
             if result.stderr:
-                print(f"  Errores de compilación:\n{result.stderr[:500]}")
+                print(f"  Compilation errors:\n{result.stderr[:500]}")
             return False, True
     except FileNotFoundError:
         pass
@@ -2829,27 +2836,27 @@ def _verify_angular_build(project_root: Path) -> Tuple[bool, bool]:
                 return True, True
             else:
                 if result.stderr:
-                    print(f"  Errores de compilación:\n{result.stderr[:500]}")
+                    print(f"  Compilation errors:\n{result.stderr[:500]}")
                 return False, True
         except Exception as e:
-            print(f"  ⚠️ Error ejecutando ng desde node_modules: {e}")
-    
-    # Si ninguna estrategia funciona, asumir que no se puede verificar
-    print("  ⚠️ No se pudo ejecutar ng build (ng no encontrado en PATH, npx no disponible, o node_modules no encontrado)")
-    print("  → Continuando sin verificación de compilación")
-    return True, False  # Retornar (True, False) para indicar que no se pudo verificar pero no bloquear
+            print(f"  ⚠️ Error running ng from node_modules: {e}")
+
+    # If no strategy works, assume verification is not possible
+    print("  ⚠️ Could not run ng build (ng not found in PATH, npx not available, or node_modules not found)")
+    print("  → Continuing without compilation verification")
+    return True, False  # Return (True, False) to indicate verification was not possible but do not block
 
 
 def _compile_and_get_errors(project_root: Path) -> Dict:
     """
-    Compila el proyecto Angular y retorna los errores de compilación si los hay.
-    
+    Compile the Angular project and return compilation errors if any.
+
     Returns:
-        Dict con:
-        - success: bool - Si la compilación fue exitosa
-        - verification_available: bool - Si se pudo verificar la compilación
-        - errors: List[str] - Lista de errores de compilación
-        - output: str - Salida completa de la compilación
+        Dict with:
+        - success: bool - Whether compilation succeeded
+        - verification_available: bool - Whether verification was possible
+        - errors: List[str] - List of compilation errors
+        - output: str - Full compilation output
     """
     errors = []
     output = ""
@@ -2879,10 +2886,10 @@ def _compile_and_get_errors(project_root: Path) -> Dict:
                         errors = _parse_angular_errors(output)
                         if errors:
                             success = False
-                            print(f"  → Build completó pero se encontraron {len(errors)} errores, parseando...")
+                            print(f"  → Build completed but {len(errors)} errors found, parsing...")
                         elif result.returncode != 0:
                             success = False
-                            print(f"  → Build falló, parseando errores...")
+                            print(f"  → Build failed, parsing errors...")
             except Exception as e:
                 print(f"  ⚠️ Error ejecutando npm run build: {e}")
         
@@ -2912,10 +2919,10 @@ def _compile_and_get_errors(project_root: Path) -> Dict:
                     errors = _parse_angular_errors(output)
                     if errors:
                         success = False
-                        print(f"  → Build completó pero se encontraron {len(errors)} errores, parseando...")
+                        print(f"  → Build completed but {len(errors)} errors found, parsing...")
                     elif result.returncode != 0:
                         success = False
-                        print(f"  → Build falló, parseando errores...")
+                        print(f"  → Build failed, parsing errors...")
             except Exception as e:
                 print(f"  ⚠️ Error ejecutando ng build: {e}")
     except Exception as e:
@@ -2935,18 +2942,18 @@ def _compile_and_get_errors(project_root: Path) -> Dict:
 
 
 def _parse_angular_errors(build_output: str) -> List[str]:
-    """Parsea los errores de compilación de Angular del output"""
+    """Parse Angular compilation errors from the output"""
     errors = []
     lines = build_output.split('\n')
     
     current_error = []
     in_error_block = False
     
-    # Primero, buscar errores específicos de TypeScript/Angular que pueden aparecer incluso cuando el build "completa"
+    # First, look for specific TypeScript/Angular errors that can appear even when the build "completes"
     for i, line in enumerate(lines):
-        # Buscar líneas que indican errores (más específico)
+        # Look for lines that indicate errors (more specific)
         # Incluir errores que empiezan con ./src/ (webpack errors)
-        # También buscar "Module not found" o "Can't resolve" directamente
+        # Also look for "Module not found" or "Can't resolve" directly
         # Buscar patrones de error TS y NG incluso sin el prefijo "ERROR"
         is_error_line = (
             'ERROR' in line.upper() or 
@@ -2968,9 +2975,9 @@ def _parse_angular_errors(build_output: str) -> List[str]:
             current_error.append(line)
             in_error_block = True
         elif in_error_block:
-            # Continuar agregando líneas del error hasta encontrar una línea vacía o un nuevo error
+            # Keep adding error lines until we find a blank line or a new error
             if line.strip() == '' and current_error:
-                # Línea vacía puede indicar fin del error, pero continuar si hay contexto
+                # Blank line may indicate end of error, but continue if there is context
                 if len(current_error) > 1:
                     current_error.append(line)
                 else:
@@ -2985,7 +2992,7 @@ def _parse_angular_errors(build_output: str) -> List[str]:
                   'imports:' in line or 'import {' in line):
                 current_error.append(line)
             elif current_error and (line.strip() or 'at ' in line or '^' in line):
-                # Líneas de contexto del error (stack trace, ubicación, etc.)
+                # Error context lines (stack trace, location, etc.)
                 current_error.append(line)
             else:
                 # Fin del bloque de error
@@ -2997,7 +3004,7 @@ def _parse_angular_errors(build_output: str) -> List[str]:
     if current_error:
         errors.append('\n'.join(current_error))
     
-    # Filtrar errores vacíos
+    # Filter empty errors
     errors = [e for e in errors if e.strip()]
     
     return errors[:20]  # Limitar a 20 errores
@@ -3005,7 +3012,7 @@ def _parse_angular_errors(build_output: str) -> List[str]:
 
 def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> List[Dict]:
     """
-    Corrige errores de compilación usando LLM y correcciones automáticas.
+    Fix compilation errors using LLM and automatic fixes.
     
     Returns:
         Lista de correcciones a aplicar
@@ -3015,24 +3022,24 @@ def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> Li
     
     fixes = []
     
-    # Primero, aplicar correcciones automáticas para errores comunes de módulos faltantes
+    # First, apply automatic fixes for common missing-module errors
     import re
-    print(f"  → Analizando {len(errors)} errores para correcciones automáticas...")
+    print(f"  → Analysing {len(errors)} errors for automatic fixes...")
     for i, error in enumerate(errors):
         # Buscar errores de "Module not found" o "Cannot find module"
         if 'Module not found' in error or 'Cannot find module' in error or "Can't resolve" in error:
-            print(f"    Error {i+1}: Detectado error de módulo faltante")
-            print(f"      Primeras líneas: {error.split(chr(10))[0][:150]}...")
+            print(f"    Error {i+1}: Missing module error detected")
+            print(f"      First lines: {error.split(chr(10))[0][:150]}...")
             
-            # Extraer el nombre del módulo y la ruta del archivo
+            # Extract module name and file path
             module_match = re.search(r"Can't resolve '([^']+)'|Cannot find module '([^']+)'|Module not found.*?'([^']+)'", error)
             file_match = re.search(r'(?:\./)?src/([^\s:]+\.(?:ts|html|scss|css|sass))', error)
             
             if module_match:
                 module_name = module_match.group(1) or module_match.group(2) or module_match.group(3)
-                print(f"      Módulo detectado: {module_name}")
+                print(f"      Module detected: {module_name}")
             else:
-                print(f"      ⚠️ No se pudo extraer el nombre del módulo")
+                print(f"      ⚠️ Could not extract module name")
                 module_name = None
             
             if file_match:
@@ -3046,7 +3053,7 @@ def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> Li
                 full_path = project_root / file_path
                 
                 if full_path.exists():
-                    print(f"  → Aplicando corrección automática para módulo faltante: {module_name} en {file_path}")
+                    print(f"  → Applying automatic fix for missing module: {module_name} in {file_path}")
                     try:
                         content = full_path.read_text(encoding='utf-8')
                         corrected_content = _auto_fix_missing_module(content, module_name)
@@ -3059,33 +3066,33 @@ def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> Li
                                 "original": content,
                                 "corrected": corrected_content
                             })
-                            print(f"    ✓ Corrección automática aplicada y guardada en {file_path}")
+                            print(f"    ✓ Automatic fix applied and saved to {file_path}")
                         else:
                             print(f"    ⚠️ No se detectaron cambios en {file_path}")
                     except Exception as e:
-                        print(f"    ⚠️ Error en corrección automática: {e}")
+                        print(f"    ⚠️ Error in automatic fix: {e}")
                         import traceback
                         traceback.print_exc()
                 else:
                     print(f"    ⚠️ Archivo no existe: {full_path}")
             else:
-                print(f"    ⚠️ No se pudo extraer módulo o archivo del error")
+                print(f"    ⚠️ Could not extract module or file from error")
     
-    # Primero, intentar instalar módulos faltantes automáticamente
+    # First, try to install missing modules automatically
     missing_modules = []
     for error in errors:
         # Buscar errores de "Module not found" o "Cannot find module"
         if 'Module not found' in error or 'Cannot find module' in error or "Can't resolve" in error:
-            # Extraer el nombre del módulo
+            # Extract the module name
             module_match = re.search(r"Can't resolve '([^']+)'|Cannot find module '([^']+)'", error)
             if module_match:
                 module_name = module_match.group(1) or module_match.group(2)
                 if module_name and module_name not in missing_modules:
                     missing_modules.append(module_name)
     
-    # Intentar instalar módulos faltantes
+    # Try to install missing modules
     if missing_modules:
-        print(f"  → Detectados {len(missing_modules)} módulos faltantes, intentando instalar...")
+        print(f"  → {len(missing_modules)} missing modules detected, attempting to install...")
         for module in missing_modules:
             try:
                 print(f"    → Instalando {module}...")
@@ -3136,7 +3143,7 @@ def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> Li
                 errors_by_file[file_path] = []
             errors_by_file[file_path].append(error)
         else:
-            # Si no se encontró archivo, agregar a "unknown" para debugging
+            # If no file found, add to "unknown" for debugging
             if "unknown" not in errors_by_file:
                 errors_by_file["unknown"] = []
             errors_by_file["unknown"].append(error)
@@ -3144,7 +3151,7 @@ def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> Li
     # Corregir errores archivo por archivo
     print(f"  → Encontrados errores en {len([f for f in errors_by_file.keys() if f != 'unknown'])} archivo(s)")
     if "unknown" in errors_by_file:
-        print(f"  ⚠️ {len(errors_by_file['unknown'])} error(es) no se pudieron asociar a un archivo específico")
+        print(f"  ⚠️ {len(errors_by_file['unknown'])} error(s) could not be associated with a specific file")
     
     for file_path, file_errors in list(errors_by_file.items())[:10]:  # Limitar a 10 archivos
         if file_path == "unknown":
@@ -3160,13 +3167,13 @@ def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> Li
             errors_text = '\n\n'.join(file_errors[:3])  # Limitar a 3 errores por archivo
             
             # Usar LLM para corregir errores
-            system_message = "Eres un experto en Angular y TypeScript. Corrige los errores de compilación sin cambiar la funcionalidad."
+            system_message = "You are an expert in Angular and TypeScript. Fix the compilation errors without changing functionality."
             
-            # Detectar si hay errores de módulos faltantes
+            # Detect if there are missing module errors
             has_missing_module = 'Module not found' in errors_text or 'Cannot find module' in errors_text or "Can't resolve" in errors_text
             
             if has_missing_module:
-                # Extraer el nombre del módulo faltante del error
+                # Extract the missing module name from the error
                 import re
                 module_name = None
                 module_match = re.search(r"Can't resolve '([^']+)'|Cannot find module '([^']+)'|Module not found.*'([^']+)'", errors_text)
@@ -3174,45 +3181,45 @@ def _fix_compilation_errors(errors: List[str], project_root: Path, client) -> Li
                     module_name = module_match.group(1) or module_match.group(2) or module_match.group(3)
                 
                 prompt = f"""
-Corrige los siguientes errores de compilación de Angular en el archivo {file_path}:
+Fix the following Angular compilation errors in the file {file_path}:
 
-Errores:
+Errors:
 {errors_text}
 
-IMPORTANTE: El módulo '{module_name if module_name else "desconocido"}' no se puede encontrar o no existe en npm.
-DEBES hacer lo siguiente:
-1. COMENTAR o ELIMINAR el import del módulo faltante
-2. COMENTAR o ELIMINAR todos los usos del módulo en el código (en imports del @Component, en el código, etc.)
-3. Si el módulo se usa en el array de imports del @Component, ELIMÍNALO de ese array
-4. Añade un comentario explicativo: // Módulo no disponible: {module_name if module_name else "módulo faltante"}
+IMPORTANT: The module '{module_name if module_name else "unknown"}' cannot be found or does not exist in npm.
+You MUST do the following:
+1. COMMENT OUT or REMOVE the import of the missing module
+2. COMMENT OUT or REMOVE all uses of the module in the code (in @Component imports, in code, etc.)
+3. If the module is used in the @Component imports array, REMOVE it from that array
+4. Add an explanatory comment: // Module not available: {module_name if module_name else "missing module"}
 
-Ejemplo:
-- Si hay: import {{CKEditorModule}} from "@angular/ckeditor5-angular";
-- Cambia a: // import {{CKEditorModule}} from "@angular/ckeditor5-angular"; // Módulo no disponible
-- Y elimina CKEditorModule del array de imports del @Component
+Example:
+- If you have: import {{CKEditorModule}} from "@angular/ckeditor5-angular";
+- Change to: // import {{CKEditorModule}} from "@angular/ckeditor5-angular"; // Module not available
+- And remove CKEditorModule from the @Component imports array
 
-Contenido actual del archivo:
+Current file content:
 ```typescript
 {original_content[:3000]}
 ```
 
-Corrige SOLO los errores de compilación. COMENTA o ELIMINA el import y TODOS sus usos.
-Retorna el código corregido completo sin el módulo faltante.
+Fix ONLY the compilation errors. COMMENT OUT or REMOVE the import and ALL its uses.
+Return the full corrected code without the missing module.
 """
             else:
                 prompt = f"""
-Corrige los siguientes errores de compilación de Angular en el archivo {file_path}:
+Fix the following Angular compilation errors in the file {file_path}:
 
-Errores:
+Errors:
 {errors_text}
 
-Contenido actual del archivo:
+Current file content:
 ```typescript
 {original_content[:3000]}
 ```
 
-Corrige SOLO los errores de compilación. Mantén toda la funcionalidad y lógica existente.
-Retorna el código corregido completo.
+Fix ONLY the compilation errors. Keep all existing functionality and logic.
+Return the full corrected code.
 """
             
             response = client.chat.completions.create(
@@ -3227,11 +3234,11 @@ Retorna el código corregido completo.
             corrected_content = response.choices[0].message.content.strip()
             log_openai_call(prompt=prompt, response=corrected_content, model="gpt-4o", call_type="angular_compilation_fix")
             
-            # Limpiar el código corregido (remover markdown si existe)
+            # Clean the corrected code (remove markdown if present)
             if corrected_content.startswith('```'):
                 parts = corrected_content.split('```')
                 if len(parts) >= 3:
-                    # Extraer el contenido entre los bloques de código
+                    # Extract content between code blocks
                     code_block = parts[1]
                     if code_block.startswith('typescript') or code_block.startswith('ts') or code_block.startswith('html'):
                         code_block = code_block.split('\n', 1)[1] if '\n' in code_block else ''
@@ -3243,7 +3250,7 @@ Retorna el código corregido completo.
             corrected_content = corrected_content.strip()
             
             if corrected_content and corrected_content != original_content.strip():
-                print(f"    ✓ Corrección generada para {file_path}")
+                print(f"    ✓ Fix generated for {file_path}")
                 fixes.append({
                     "path": str(full_path),
                     "original": original_content,
@@ -3251,7 +3258,7 @@ Retorna el código corregido completo.
                     "errors": file_errors
                 })
             else:
-                print(f"    ⚠️ No se generó corrección válida para {file_path}")
+                print(f"    ⚠️ No valid fix generated for {file_path}")
         except Exception as e:
             print(f"  ⚠️ Error corrigiendo {file_path}: {e}")
             import traceback
@@ -3261,23 +3268,23 @@ Retorna el código corregido completo.
 
 
 def _auto_fix_missing_module(content: str, module_name: str) -> str:
-    """Corrige automáticamente un módulo faltante comentando el import y eliminando sus usos"""
+    """Automatically fix a missing module by commenting out the import and removing its uses"""
     import re
     
     lines = content.split('\n')
     corrected_lines = []
     module_short_names = []
     
-    # Extraer el nombre corto del módulo (ej: CKEditorModule de @angular/ckeditor5-angular)
+    # Extract short module name (e.g. CKEditorModule from @angular/ckeditor5-angular)
     import_pattern = rf'import\s+\{{([^}}]+)\}}\s+from\s+["\']{re.escape(module_name)}["\']'
     import_match = re.search(import_pattern, content)
     if import_match:
         imports_str = import_match.group(1)
-        # Puede haber múltiples imports separados por comas
+        # There may be multiple imports separated by commas
         module_short_names = [name.strip() for name in imports_str.split(',')]
-        print(f"      → Módulos detectados en import: {module_short_names}")
+        print(f"      → Modules detected in import: {module_short_names}")
     else:
-        print(f"      ⚠️ No se encontró el import de {module_name}")
+        print(f"      ⚠️ Import for {module_name} not found")
     
     import_commented = False
     imports_removed = False
@@ -3285,33 +3292,33 @@ def _auto_fix_missing_module(content: str, module_name: str) -> str:
     for i, line in enumerate(lines):
         original_line = line
         
-        # Comentar el import del módulo faltante
+        # Comment out the missing module import
         if module_name in line and 'import' in line and 'from' in line:
-            # Comentar la línea completa
+            # Comment out the full line
             if not line.strip().startswith('//'):
-                # Preservar la indentación
+                # Preserve indentation
                 indent = len(line) - len(line.lstrip())
-                corrected_lines.append(' ' * indent + f"// {line.strip()} // Módulo no disponible: {module_name}")
+                corrected_lines.append(' ' * indent + f"// {line.strip()} // Module not available: {module_name}")
                 import_commented = True
                 print(f"      → Import comentado: {line.strip()[:60]}...")
             else:
                 corrected_lines.append(line)
-        # Eliminar el módulo del array de imports del @Component
+        # Remove the module from the @Component imports array
         elif module_short_names and any(name in line for name in module_short_names):
-            # Buscar si esta línea contiene el array de imports
+            # Check if this line contains the imports array
             if 'imports:' in line or ('imports' in line and '[' in line):
-                # Eliminar cada módulo del array
+                # Remove each module from the array
                 original_line_for_log = line
                 for module_short_name in module_short_names:
                     if module_short_name in line:
-                        # Eliminar el módulo del array con diferentes patrones
-                        # Patrón 1: , ModuleName,
+                        # Remove the module from the array with different patterns
+                        # Pattern 1: , ModuleName,
                         line = re.sub(rf',\s*{re.escape(module_short_name)}\s*,', ',', line)
-                        # Patrón 2: , ModuleName]
+                        # Pattern 2: , ModuleName]
                         line = re.sub(rf',\s*{re.escape(module_short_name)}\s*\]', ']', line)
-                        # Patrón 3: [ModuleName,
+                        # Pattern 3: [ModuleName,
                         line = re.sub(rf'\[\s*{re.escape(module_short_name)}\s*,', '[', line)
-                        # Patrón 4: [ModuleName]
+                        # Pattern 4: [ModuleName]
                         line = re.sub(rf'\[\s*{re.escape(module_short_name)}\s*\]', '[]', line)
                         # Limpiar comas dobles
                         line = re.sub(r',\s*,', ',', line)
@@ -3319,7 +3326,7 @@ def _auto_fix_missing_module(content: str, module_name: str) -> str:
                         line = re.sub(r',\s+', ', ', line)
                 if line != original_line_for_log:
                     imports_removed = True
-                    print(f"      → Módulo eliminado del array imports: {original_line_for_log.strip()[:60]}...")
+                    print(f"      → Module removed from imports array: {original_line_for_log.strip()[:60]}...")
                 corrected_lines.append(line)
             else:
                 corrected_lines.append(line)
@@ -3327,21 +3334,21 @@ def _auto_fix_missing_module(content: str, module_name: str) -> str:
             corrected_lines.append(line)
     
     if not import_commented:
-        print(f"      ⚠️ No se comentó ningún import")
+        print(f"      ⚠️ No import was commented out")
     if not imports_removed:
-        print(f"      ⚠️ No se eliminó ningún módulo del array imports")
+        print(f"      ⚠️ No module was removed from the imports array")
     
     return '\n'.join(corrected_lines)
 
 
 def _apply_compilation_fixes(fixes: List[Dict], project_root: Path) -> None:
-    """Aplica las correcciones de compilación"""
+    """Apply the compilation fixes"""
     for fix in fixes:
         try:
             target_path = Path(fix["path"])
             target_path.write_text(fix["corrected"], encoding="utf-8")
         except Exception as e:
-            print(f"  ⚠️ Error aplicando corrección en {fix['path']}: {e}")
+            print(f"  ⚠️ Error applying fix to {fix['path']}: {e}")
 
 
 def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_ready: bool = False):
@@ -3357,7 +3364,7 @@ def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_rea
     """
     import socket
     
-    # Verificar si el puerto está disponible
+    # Check if the port is available
     def is_port_available(port_num: int) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
@@ -3368,7 +3375,7 @@ def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_rea
     
     # Verificar puerto 4200
     if not is_port_available(port):
-        print(f"  ⚠️ El puerto {port} está ocupado.")
+        print(f"  ⚠️ Port {port} is in use.")
         response = input(f"  ¿Deseas usar otro puerto? (s/n): ")
         if response.lower() == 's':
             # Buscar puerto disponible
@@ -3378,12 +3385,12 @@ def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_rea
                     print(f"  → Usando puerto {port}")
                     break
             else:
-                print("  ⚠️ No se encontró un puerto disponible. Usando puerto por defecto.")
+                print("  ⚠️ No available port found. Using default port.")
                 port = 4200
         else:
             print("  → Intentando usar el puerto 4200 de todas formas...")
     
-    # Función auxiliar para verificar si un comando existe
+    # Helper to check if a command exists
     def command_exists(cmd):
         try:
             result = subprocess.run(
@@ -3395,7 +3402,7 @@ def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_rea
                 timeout=2,
                 check=False
             )
-            # Si el comando existe, retornará 0 o 1 (no FileNotFoundError)
+            # If the command exists, it will return 0 or 1 (not FileNotFoundError)
             return True
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
@@ -3415,7 +3422,7 @@ def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_rea
                         print(f"  → Iniciando servidor con 'npm start' en puerto {port}...")
                         print("  Presiona Ctrl+C para detener el servidor.")
                         try:
-                            # Modificar el script start para usar el puerto específico si es necesario
+                            # Modify the start script to use the specific port if needed
                             subprocess.run(
                                 ["npm", "start", "--", "--port", str(port)],
                                 cwd=str(project_root),
@@ -3508,13 +3515,13 @@ def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_rea
                 # Si no existe .cmd, intentar ejecutar el script directamente con node
                 ng_script = project_root / "node_modules" / ".bin" / "ng"
                 if ng_script.exists():
-                    # Leer el shebang para ver cómo ejecutarlo
+                    # Read the shebang to see how to run it
                     try:
                         with open(ng_script, 'r', encoding='utf-8') as f:
                             first_line = f.readline()
                             if first_line.startswith('#!'):
                                 # Es un script, necesitamos ejecutarlo con node
-                                ng_cmd_path = None  # Se manejará diferente
+                                ng_cmd_path = None  # Will be handled differently
                     except Exception:
                         pass
     
@@ -3534,7 +3541,7 @@ def _start_angular_dev_server(project_root: Path, port: int = 4200, wait_for_rea
         except Exception as e:
             print(f"  ⚠️ Error ejecutando ng desde node_modules: {e}")
     
-    print("  ⚠️ No se pudo iniciar el servidor (ng no encontrado en ninguna ubicación)")
+    print("  ⚠️ Could not start the server (ng not found in any location)")
     print(f"  → Puedes iniciarlo manualmente con: ng serve --port {port}")
 
 

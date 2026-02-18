@@ -1,13 +1,14 @@
 """
-Utilidades para manipulación de HTML.
+Utilities for HTML manipulation.
 
-Este módulo proporciona funciones para convertir rutas relativas a absolutas
-y otras operaciones de manipulación de HTML.
+This module provides functions to convert relative paths to absolute
+and other HTML manipulation operations.
 """
 
+from typing import Any
 from urllib.parse import urljoin
 
-# Mapeo de etiquetas HTML a sus atributos de ruta
+# Map of HTML tags to their path attributes
 _TAG_PATH_ATTRIBUTES = {
     'a': 'href',
     'link': 'href',
@@ -22,7 +23,7 @@ _TAG_PATH_ATTRIBUTES = {
 _ABSOLUTE_PATH_PREFIXES = ('http://', 'https://', '#', 'data:', 'mailto:', 'tel:')
 
 
-def convert_paths_to_absolute(soup, base_url):
+def convert_paths_to_absolute(soup: Any, base_url: str) -> Any:
     """
     Convierte todas las rutas relativas a absolutas en el HTML.
     

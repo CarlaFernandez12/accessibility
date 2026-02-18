@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "accessibility-ai-assistant"
+version = "0.1.0"
+description = "AI-assisted web accessibility analysis and remediation tool"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Carla Fernández" }
+]
+dependencies = [
+    "selenium",
+    "openai",
+    "requests",
+    "webdriver-manager",
+    "python-dotenv",
+    "beautifulsoup4",
+    "lxml",
+    "jinja2",
+]
+
+[project.scripts]
+accessibility-cli = "main:main"
+

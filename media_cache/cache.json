@@ -4830,5 +4830,641 @@
     "https://icwe2026.webengineering.org/wp-content/uploads/elementor/thumbs/WhatsApp-Image-2025-10-06-at-16.48.51-rctassnwxo0lft3plyrjsn15i1p6mb4boo1h5c2hcg.jpeg": {
         "local_path": "media_cache\\226fbbf37fdf082ead266f6aa97ddd553fddd6026d4431b36650da8c80950cf7.jpeg",
         "description": "Descripci\u00f3n no disponible."
+    },
+    "https://c.statcounter.com/t.php?sc_project=2293416&u1=C20E74AF5DF744C98F9ADE83970CC7B2&java=1&security=6a48b980&sc_snum=1&sess=ce99ee&sc_rum_e_s=53&sc_rum_e_e=56&sc_rum_f_s=0&sc_rum_f_e=50&p=0&pv=15.6&rcat=d&bb=0&rdomo=d&rdomg=431&jg=431&rr=1.1.1.1.1.1.1.1.1&sc_bot=1&sc_bot_type=selenium&resolution=800&h=600&camefrom=&u=https%3A//oplink.lcc.uma.es/&t=OPLINK%3A%3AUMA&sc_random=0.2296144932828128": {
+        "local_path": "media_cache/d6454c1bdf930ca4fa1d8a68bea59f6aaa3b1c4df0f8c62e4a2b77de695ecc23.png",
+        "description": "N\u00fameros blancos \"00016204\" sobre un fondo naranja."
+    },
+    "https://c.statcounter.com/t.php?sc_project=2293416&u1=62438B3A9E8B49FE9BEE6F50FD3D4D19&java=1&security=6a48b980&sc_snum=1&sess=ce99ee&sc_rum_e_s=61&sc_rum_e_e=64&sc_rum_f_s=0&sc_rum_f_e=58&p=0&pv=15.6&rcat=d&bb=0&rdomo=d&rdomg=431&jg=431&rr=1.1.1.1.1.1.1.1.1&sc_bot=1&sc_bot_type=selenium&resolution=800&h=600&camefrom=&u=https%3A//oplink.lcc.uma.es/&t=OPLINK%3A%3AUMA&sc_random=0.4822446961242176": {
+        "local_path": "media_cache/0490174e74ae127d05325bd83e5c55b68411483f91097920b2e48be62140609d.png",
+        "description": "Texto en blanco sobre fondo naranja que dice \"00016205\"."
+    },
+    "https://vithas.es/wp-content/uploads/flags/spain.png": {
+        "local_path": "media_cache/06a5e3581a7677c1188e59d0842be2c58ce5f851180cc763d7c6ba7c8acfeb69.png",
+        "description": "La imagen muestra la bandera de Espa\u00f1a, compuesta por tres franjas horizontales: roja (superior e inferior) y amarilla (central)."
+    },
+    "https://vithas.es/wp-content/uploads/flags/ingles.png": {
+        "local_path": "media_cache/991fb286115e1eedc5baedadac40a7e65f6cce800f9c415aecb116b0a7ed9a20.png",
+        "description": "Lo siento, no puedo ver la imagen. \u00bfPodr\u00edas describirla para que pueda ayudarte a elaborar un texto alternativo adecuado?"
+    },
+    "https://vithas.es/wp-content/plugins/sitepress-multilingual-cms/res/flags/ca.svg": {
+        "local_path": "media_cache/7c46bd719610ad765fbba1bd38d7b3c6373e981f2cd905d420400f4d7cd23754.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://vithas.es/wp-content/uploads/2021/07/logoVithas-1.svg": {
+        "local_path": "media_cache/b67d9d95cea0f63ccee42c953afb4406e171ff77c96651790c5b6679f296644c.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://vithas.es/wp-content/uploads/2021/12/Vithas-edificio-9-840x588.jpg": {
+        "local_path": "media_cache/1147d1e9a21e09e4cb205a962a4af782efa9af85ae6d6af2ed2db30115e7ac37.jpeg",
+        "description": "Fachada del Hospital Vithas, con un moderno dise\u00f1o de vidrio y metal. La entrada principal tiene escaleras y rampa accesible. El cielo est\u00e1 despejado y azul."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/1-Alergologia-500x336.jpg": {
+        "local_path": "media_cache/98c9b386490932dd20bda6a0e57d82da5b1baad774bb8efa2b8d4fa7dee19c61.jpeg",
+        "description": "Persona somenti\u00e9ndose a una prueba de alergias en el brazo, con gotas de l\u00edquido aplicadas sobre una cuadr\u00edcula dibujada en la piel y un profesional usando guantes azules."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/4-anestesiologia-y-reanimacion-500x336.jpg": {
+        "local_path": "media_cache/a4afdf6211c353ee049805151598b8e47b92f30da1a78e3c67b6a3fe0d030a57.jpeg",
+        "description": "Manos con guantes quir\u00fargicos verdes sostienen suavemente la mano de una persona."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/5-Angiologia-y-cirugia-vascular-500x336.jpg": {
+        "local_path": "media_cache/6e91b14ff4e51d9662ba415c1941954b50af129380518e5962de8dcdf27cab5d.jpeg",
+        "description": "Persona sentada en una cama, con una bata rosa y piernas cruzadas, sosteniendo una taza de caf\u00e9 negro."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/6-Aparato-digestivo-500x336.jpg": {
+        "local_path": "media_cache/70c65c0d55f37483299ec0b1c43daf68685bdeb0959405ceaf145365fbbc3393.jpeg",
+        "description": "M\u00e9dico en bata blanca sosteniendo un endoscopio con guantes azules en una sala m\u00e9dica."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/8-Cardiologia-500x336.jpg": {
+        "local_path": "media_cache/ee0fbed447f229d021f529ea53a31b642dd642fae8fa981a61ac150b30718a8b.jpeg",
+        "description": "Hombre mayor con barba consulta su reloj mientras sostiene una botella de agua en un parque durante el oto\u00f1o. Lleva una camiseta de manga larga roja y gris."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/9-Cirugia-cardiovascular-A_opt-500x336.jpg": {
+        "local_path": "media_cache/4882d5d4225f8991e606a80b14b844067988e95d4db276540a46e658a36d2835.jpeg",
+        "description": "Primer plano de instrumentos quir\u00fargicos sobre una mesa cubierta con un pa\u00f1o azul. En el fondo, se observa a cirujanos desenfocados trabajando."
+    },
+    "https://vithas.es/wp-content/uploads/2025/08/17-3-25-SHOOTING-MIGUEL-CARRATO-LOW-8-500x336.jpg": {
+        "local_path": "media_cache/d659cef0b207b86b97283c395fdc8cd9081d2b8c142f965c4b20055124e2b693.jpeg",
+        "description": "Cirujanos en un quir\u00f3fano realizando una operaci\u00f3n. Usan mascarillas, gorros quir\u00fargicos y batas azules, con luces brillantes sobre ellos."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/10-Cirugia-general-y-del-aparato-digestivo-500x336.jpg": {
+        "local_path": "media_cache/0d846ea6ffd8509822b9b19d5fbedd5feff680825332365ebd3e076d8b4dd923.jpeg",
+        "description": "Monitores de signos vitales muestran frecuencias card\u00edaca y otras mediciones durante una cirug\u00eda. Al fondo, dos cirujanos trabajan en un paciente."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/12-Cirugia-Ortopedica-y-traumatologia-500x336.jpg": {
+        "local_path": "media_cache/372ba3d1691ffca7fe48cae4c7f64f693521111dbfeabd537a28a88d5cfd5a01.jpeg",
+        "description": "Persona en casa haciendo estiramientos, con rodilla al suelo y manos sobre la otra rodilla, vistiendo pantalones oscuros y camiseta clara."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/13-Cirugia-Pediatrica-500x336.jpg": {
+        "local_path": "media_cache/afeb24e616138fdbdf456fd3264fe2f56503e9295b7cd289b01b3bfa2eb79b85.jpeg",
+        "description": "Un m\u00e9dico con bata blanca y estetoscopio sostiene un oso de peluche blanco."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/14-Cirugia-plastica-estetica-y-reparadora-500x336.jpg": {
+        "local_path": "media_cache/af65b5952f7370ab9badab7f78121f0ffba0c676950b8edefe5042427cb27cc2.jpeg",
+        "description": "Mujer pelirroja sonriendo, con su\u00e9ter amarillo, sentada en una playa. El mar est\u00e1 de fondo."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/15-Cirugia-toracica-500x336.jpg": {
+        "local_path": "media_cache/b4eacd6e4cb8579603acb291947fc6d7cf4dc40d424867c5003d11d894ebba7d.jpeg",
+        "description": "Profesional de salud con uniforme azul, cubrebocas y gorro quir\u00fargico, lav\u00e1ndose las manos con jab\u00f3n en un entorno cl\u00ednico."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/17-Endocrinologia-y-nutricion-500x336.jpg": {
+        "local_path": "media_cache/1db9474b784d0f678185ec9681e50deb9efed43c415881483666d077dc9a58c0.jpeg",
+        "description": "Mujer cortando frutas en una cocina, con una licuadora en primer plano. Frutas como naranjas, kiwis, fresas y ar\u00e1ndanos est\u00e1n sobre la mesa."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/20-Enfermeria-Obstetro-ginecologica-500x336.jpg": {
+        "local_path": "media_cache/2d288889099dba1f41296aa5d898eeaa8a44c0ba90ea8007aa238be7105028dd.jpeg",
+        "description": "Una barriga de mujer embarazada en primer plano, con una mano acarici\u00e1ndola suavemente desde la derecha."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/49-Obstetricia-y-ginecologia-500x336.jpg": {
+        "local_path": "media_cache/9e5bc39f78ba259d5062f930a7e3442c7b16ffa7b2eaa52439555006fdf90a7d.jpeg",
+        "description": "Mujer sonriente de cabello casta\u00f1o y corto, vestida con camisa amarilla, con brazos cruzados, en una oficina moderna y luminosa."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/26-Hematologia-y-hemoterapia-500x336.jpg": {
+        "local_path": "media_cache/9950475f9ab480eff0cfacdde417f9fe9f2776e10e26fba1c626d0cf9e6a398e.jpeg",
+        "description": "Un cient\u00edfico con bata blanca y guantes azules sostiene una portaobjetos de microscopio y toma notas en un cuaderno."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/30-Medicina-de-la-educacion-fisica-y-del-deporte-500x336.jpg": {
+        "local_path": "media_cache/ac7499e2f3fc441c00d6a38c9beb0771ffe5ab7fa77be9b7e11d2b5fa644759d.jpeg",
+        "description": "Mujer joven estirando en un gimnasio, tocando el pie mientras lleva ropa deportiva y auriculares."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/62-Medicina-Fisica-y-Rehabilitacion-500x336.jpg": {
+        "local_path": "media_cache/d256d9d3b18921d630acb6b2cbe54d412ae37f1582d5447927295e02f176cee3.jpeg",
+        "description": "Dos mujeres en una sala de estar. Una mujer lleva bata y usa un andador, sonriendo mientras otra mujer con uniforme m\u00e9dico sostiene una tableta electr\u00f3nicamente. La luz natural ilumina la habitaci\u00f3n."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/35-Medicina-General-500x336.jpg": {
+        "local_path": "media_cache/1a17f2ab46077baf774dd5385c65870f65519d118c41176afb697daad3e36335.jpeg",
+        "description": "Una profesional de la salud sonriente, con bata blanca y estetoscopio, mira hacia un lado en un ambiente de oficina."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/38-Medicina-Interna-500x336.jpg": {
+        "local_path": "media_cache/a729411d7b9819dc04561233b5f679f7c8e829a25179d07fc77dd0014e8c3487.jpeg",
+        "description": "M\u00e9dica sonriente con mascarilla y gorro quir\u00fargico, en un entorno hospitalario."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/40-medicina-nucelar-500x336.jpg": {
+        "local_path": "media_cache/c381ecb7e90f5bc746235212f0bbb4997bebdfd1ca61175c23583c346cd497ba.jpeg",
+        "description": "Persona acostada boca arriba en una camilla ingresando a una m\u00e1quina de resonancia magn\u00e9tica."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/43-Nefrologia-500x336.jpg": {
+        "local_path": "media_cache/1e706c51d9ff1ca79102a8969aaed8d10aff6825636542ac32ac1f158ee1842a.jpeg",
+        "description": "Pareja de personas mayores caminando juntas y sonriendo cerca de la playa. Est\u00e1n vestidos con chaquetas, y el mar se ve de fondo."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/44-Neumologia-500x336.jpg": {
+        "local_path": "media_cache/d453c1bdbbc69c634e42c12d957b123ba63d6f37820b85fcf19d41b8cfc8989d.jpeg",
+        "description": "Hombre con barba, cabello canoso y sudadera gris, de pie en un parque oto\u00f1al con \u00e1rboles y hojas ca\u00eddas."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/45-neurocirugia-500x336.jpg": {
+        "local_path": "media_cache/2bd6905106bba6e486788cc9d7b8e54842ab1d8dfb401274ea1ca165a0674c0c.jpeg",
+        "description": "Profesional de la salud en uniforme quir\u00fargico, con mascarilla y gorro, sonriendo a la c\u00e1mara; en el fondo, otros m\u00e9dicos desenfocados en un ambiente hospitalario."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/46-Neurofisiologia-clinica-500x336.jpg": {
+        "local_path": "media_cache/78a2b4896bb8a33d327177496beace84f080b7f1dbb372cd7d9dd896a7e61b7b.jpeg",
+        "description": "Persona aplicando una banda de terapia de electroestimulaci\u00f3n en la rodilla de otra persona."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/47-neurologia-1-500x336.jpg": {
+        "local_path": "media_cache/52ade729804548006a0ba6cd6540754f1910a7c40636630192e32cb9ceacabfa.jpeg",
+        "description": "Un m\u00e9dico observa y se\u00f1ala im\u00e1genes de resonancias magn\u00e9ticas cerebrales en dos monitores."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/50-Odontoestomatol-500x336.jpg": {
+        "local_path": "media_cache/b44ca0a98a2613168388c8a8f0ded7ea21cbe658ef0383ff1d5a2b1e5ff8b801.jpeg",
+        "description": "Una persona sonr\u00ede ampliamente, mostrando sus dientes blancos. Tiene el cabello rubio suelto y sus ojos est\u00e1n enfocados hacia la c\u00e1mara."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/51-oftalmologia-500x336.jpg": {
+        "local_path": "media_cache/7e000aee532806067393e7753850c6cf80fc147928cb7720969eb88a30543010.jpeg",
+        "description": "Primer plano de una parte del rostro de una persona mayor, enfocando en su ojo derecho. Se observan arrugas alrededor del ojo y cejas pobladas. El fondo es difuso y claro."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/52-oncologia-medica-500x336.jpg": {
+        "local_path": "media_cache/1169ce5bd9b445bba0781cfcb49eff0c8c63af93bdce6e426483029426beb901.jpeg",
+        "description": "Una m\u00e9dica mayor con gafas sostiene una radiograf\u00eda, mientras otros dos profesionales en segundo plano, tambi\u00e9n con batas blancas, observan y discuten los resultados."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/54-Otorrinolaringologia-500x336.jpg": {
+        "local_path": "media_cache/d902616b9bf13a8378b4ee5337b618d75226ef4a0199632d4d93b5511ac1cac7.jpeg",
+        "description": "Un ni\u00f1o sonriente est\u00e1 recibiendo un examen del o\u00eddo con un otoscopio por parte de un profesional de la salud."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/55-Pediatria-500x336.jpg": {
+        "local_path": "media_cache/adfdc5db7de1015bc8898707c2f2e4275d080e06dc4365cd7a393525b7f79776.jpeg",
+        "description": "Ni\u00f1a peque\u00f1a recostada sobre el suelo, sonriendo y apoyando su cara en una mano. Al fondo, se ve una figura desenfocada en un sof\u00e1."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/57-Psicologia-clinica-500x336.jpg": {
+        "local_path": "media_cache/0947c6cc443ebd6eaccea18f4003b1a754b5c4188d2d08d8f1cc6bfa2417969f.jpeg",
+        "description": "Mujer sonriente con gafas y blusa blanca, sostiene un l\u00e1piz y parece entusiasmada frente a una pantalla de computadora."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/58-Psiquiatria-500x336.jpg": {
+        "local_path": "media_cache/811d7e09ebfc6cb102011886ed0092bdd6256bf22db44b586d3d408341d40675.jpeg",
+        "description": "Manos de una persona entrelazadas sobre una rodilla, usando un su\u00e9ter rosa y pantal\u00f3n de mezclilla."
+    },
+    "https://vithas.es/wp-content/uploads/2021/07/13-Cirugia-Pediatrica-500x336.jpg": {
+        "local_path": "media_cache/8d0aee9dda9991787292e3da7455d5e08b8a34dfa05aba5228a2de55697a7296.jpeg",
+        "description": "Persona con bata m\u00e9dica sosteniendo un oso de peluche blanco."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/59-Radiodiagnostico-500x336.jpg": {
+        "local_path": "media_cache/454803bb17b45c0404521a1ad3b0794afef565a3a3dd9834c4bcef7a544b99dc.jpeg",
+        "description": "M\u00e9dica sonriendo con brazos cruzados frente a una m\u00e1quina de resonancia magn\u00e9tica, paciente acostado dentro del esc\u00e1ner al fondo."
+    },
+    "https://vithas.es/wp-content/uploads/2023/02/image-5-500x336.jpg": {
+        "local_path": "media_cache/a31dcc21a14af617d52a37df47425f77aa4db6738154a092af535cbc9fcb7f0c.jpeg",
+        "description": "La imagen muestra una representaci\u00f3n de una c\u00e9lula siendo fertilizada por una t\u00e9cnica de inyecci\u00f3n de esperma, con una aguja inyectando material en el \u00f3vulo, sobre un fondo azul claro."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/65-Tratamiento-del-dolor-500x336.jpg": {
+        "local_path": "media_cache/53239e922edde077b0bf55c6109da41aeebb89852c392dea2d9abbb9c3bd5bff.jpeg",
+        "description": "Mujer mayor con gafas y cabello rubio, mirando pensativa por una ventana. El fondo muestra edificios y cielo azul."
+    },
+    "https://vithas.es/wp-content/uploads/2021/08/66-Urologia-500x336.jpg": {
+        "local_path": "media_cache/9a12b01bf30da8f434811d00af549e04ca526b30b246375caf7bf3e702b9d497.jpeg",
+        "description": "Un hombre de mediana edad con barba canosa y cabello corto est\u00e1 de pie con los brazos cruzados, mirando hacia la c\u00e1mara. Lleva una camisa blanca y se encuentra en un ambiente interior con amplias ventanas al fondo que permiten la entrada de luz natural."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/vithas-logo-footer-1.svg": {
+        "local_path": "media_cache/c6878f1c0b31cae4b0c5ae3dd1a8c3bfd4c93e4dc87013d9e02c8103e80ff5e1.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://vithas.es/wp-content/uploads/2022/09/Sello-JCI-e1662547360163.webp": {
+        "local_path": "media_cache/577e2150ae2764c4fa29e51c9c5a0bd75188296778e986af037386ea248bfb08.webp",
+        "description": "Sello dorado de aprobaci\u00f3n de la Comisi\u00f3n Conjunta Internacional con texto \"Joint Commission International Quality Approval\"."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/iso14001-logo.webp": {
+        "local_path": "media_cache/0b003db5f97b7781fb0505ad945faf7ea257ad8ea16dff77b7d77818ce5172db.webp",
+        "description": "Logotipo de DNV-GL con dos bandas horizontales."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/iso9001-logo.webp": {
+        "local_path": "media_cache/5640b809bb2850a2b4e4cbfda8cd802bd6a60c6e8d9f7a38a28587dece238682.webp",
+        "description": "Logotipo de certificaci\u00f3n de calidad DNV-GL, con texto \"Quality System Certification ISO 9001\"."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/seedo-logo.webp": {
+        "local_path": "media_cache/b53a846815f5a980952c11b9980212a515db403e3a42b271431aecb2658e7b19.webp",
+        "description": "Logotipo de Sprout Social con c\u00edrculos verdes formando un dise\u00f1o abstracto."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/bsha-logo.webp": {
+        "local_path": "media_cache/ed6197272d72e69d58a8e07bbb11a053e8f2ca9eed8eb243e5aded922bd4afbb.webp",
+        "description": "Lo siento, no puedo distinguir el contenido espec\u00edfico de marcas o dise\u00f1os en esta imagen. Parece que contiene gr\u00e1ficos y texto, posiblemente relacionado con un logotipo o esquema."
+    },
+    "https://vithas.es/wp-content/uploads/2025/06/easocom-logo-1.webp": {
+        "local_path": "media_cache/3ec6fafc4e58bef1d068cee0122415f3ed982ad75be050870620d14585baeab8.webp",
+        "description": "Logotipo de EASCOM con texto \"ESO's Collaborating Centre for Coating Research\" en negro y azul."
+    },
+    "https://vithas.es/wp-content/uploads/2021/07/googleplay.svg": {
+        "local_path": "media_cache/00e258d7e9810d9d604df6b8133602642de93118569fde6a040c74cc82fe1fbc.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://vithas.es/wp-content/uploads/2021/07/appstore.svg": {
+        "local_path": "media_cache/8cc9310f1a3b01f66155d80fb877bb3ddcb5163e7122f07dcf218de0d44f6a2b.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://cdn.cookielaw.org/logos/bc5bd603-50ee-47b0-9da6-981cc5abd85a/15480263-8dac-4281-a560-5f8bda005a47/8a63737b-c5bf-4c26-a9ec-0496a7dc564b/life.png": {
+        "local_path": "media_cache/99354daf091168502b825b3693d1ff59bd321cc924e306044b8b9d41e3a7154f.png",
+        "description": "Logotipo de Vithas, con un dise\u00f1o azul que incluye un coraz\u00f3n estilizado seguido del nombre \"vithas\"."
+    },
+    "https://fundaciondelcorazon.com/images/banners/Banner_para_slider_home/BannerRevistaInvierno25.png#joomlaImage://local-images/banners/Banner_para_slider_home/BannerRevistaInvierno25.png?width=1140&height=400": {
+        "local_path": "media_cache/7869533a4c3538f502ebb20a40a409e621f3cac2197ac148dd532576c5c6e77e.png",
+        "description": "Portada de la revista \"Invierno 2025\" de la Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n. Muestra a cuatro personas de espaldas, levantando bastones de senderismo sobre un paisaje monta\u00f1oso."
+    },
+    "https://fundaciondelcorazon.com/images/banners/Banner_para_slider_home/Banner%201140%20x%20400%20px.jpg#joomlaImage://local-images/banners/Banner_para_slider_home/Banner%201140%20x%20400%20px.jpg?width=1140&height=400": {
+        "local_path": "media_cache/e32d190458867a89e3a1863607bc717aaf3a9927d19ff823c913fa7705b9cb6f.jpeg",
+        "description": "Banner promocional con la palabra \"REBAJAS\" en el centro, seguido de \"hasta el 28 de febrero\". Alrededor, varias fotos de productos como tazas, bolsas, abanicos, botellas y pulseras con un dise\u00f1o colorido. El fondo es color crema."
+    },
+    "https://fundaciondelcorazon.com/images/Actualidad/ariadna_rcp.jpg#joomlaImage://local-images/Actualidad/ariadna_rcp.jpg?width=600&height=336": {
+        "local_path": "media_cache/4fc4a58366de603788d629b5b585a00cc030adb55bb25a3317766d3f67b0c690.jpeg",
+        "description": "Partido de baloncesto entre R\u00edo Breog\u00e1n y Real Madrid, empate 19 a 19. Jugadores en el campo y \u00e1rbitro corriendo. Marcas publicitarias visibles en el \u00e1rea de juego y la grada est\u00e1 llena de espectadores."
+    },
+    "https://fundaciondelcorazon.com/images/Actualidad/Ministerio.jpg#joomlaImage://local-images/Actualidad/Ministerio.jpg?width=600&height=336": {
+        "local_path": "media_cache/d4c298d12cc25c3767d0c61b9ba8781746b8a8570e8021b8b790bbb0dd3c248a.jpeg",
+        "description": "Edificio alto de ladrillo rojo junto a otro de fachada gris, ambos con filas de ventanas. Se observa un farol de calle y un cielo despejado."
+    },
+    "https://fundaciondelcorazon.com/images/Actualidad/SEC-FEC%20medios%202025.png#joomlaImage://local-images/Actualidad/SEC-FEC%20medios%202025.png?width=1536&height=1024": {
+        "local_path": "media_cache/f82a63e9162b114c7d7d19f00f336581f5f1576f99a684d750e2dc7347e980bf.png",
+        "description": "Gr\u00e1fico circular mostrando 5,700 apariciones en medios: 89% digitales, 8% en prensa escrita, 2% en radio y 1% en televisi\u00f3n."
+    },
+    "https://fundaciondelcorazon.com/images/Blog/ergometria.jpg#joomlaImage://local-images/Blog/ergometria.jpg?width=957&height=639": {
+        "local_path": "media_cache/cd4452d2cd4c0e1cce8ae92ed0b6a36779d76a3d51352a0fcf79a01be4a569cd.jpeg",
+        "description": "Hombre corriendo en una cinta de correr, con electrodos en el pecho y cables conectados a un monitor, en un entorno de gimnasio o cl\u00ednica."
+    },
+    "https://fundaciondelcorazon.com/images/Blog/ejercicio-ideas.jpg#joomlaImage://local-images/Blog/ejercicio-ideas.jpg?width=957&height=638": {
+        "local_path": "media_cache/bf8cedf2fca9a775fbef44a41cc0b0592f8914e94f13fe31c2628b9dee19d00f.jpeg",
+        "description": "Dos zapatillas rojas sobre un fondo rojo. Sus cordones blancos est\u00e1n dispuestos en forma de coraz\u00f3n."
+    },
+    "https://fundaciondelcorazon.com/images/Blog/Frecuencia-cardiaca.jpg#joomlaImage://local-images/Blog/Frecuencia-cardiaca.jpg?width=850&height=567": {
+        "local_path": "media_cache/e5330c7d4baf110b0a504a570194678c95b746f69eb5d5f82d953a3613c84a91.jpeg",
+        "description": "Ilustraci\u00f3n de un coraz\u00f3n rojo tejido conectado a una l\u00ednea de pulso card\u00edaco roja sobre fondo blanco."
+    },
+    "https://fundaciondelcorazon.com/images/revista/FUNDACION%20DEL%20CORAZON%20158_Portada.jpg#joomlaImage://local-images/revista/FUNDACION%20DEL%20CORAZON%20158_Portada.jpg?width=1191&height=1684": {
+        "local_path": "media_cache/115d0f21ee1c3950912055fd9aa543349aa1e8e83585e3604a1f5cf4d0b8bf61.jpeg",
+        "description": "Un grupo de cinco personas con mochilas, de espaldas, levanta bastones de senderismo en un paisaje monta\u00f1oso. El cielo est\u00e1 despejado. Texto: \"Revista Invierno 2025, Fundaci\u00f3n Espa\u00f1ola del Coraz\u00f3n\"."
+    },
+    "https://sanidad.castillalamancha.es/sites/sescam.castillalamancha.es/files/imagenes_galerias/banner_app_sescam_3688x1132px.png": {
+        "local_path": "media_cache/28062de6574e6582c10d6729e0f8f0dc57d05aac676c95b9ef61c12b9225e9c8.png",
+        "description": "Persona sosteniendo un smartphone que muestra la pantalla de inicio de una app de salud con iconos como alergias, informes, medicaci\u00f3n y citas. A la derecha, texto que promociona la nueva app del SESCAM."
+    },
+    "https://sanidad.castillalamancha.es/sites/sescam.castillalamancha.es/files/mediateca/portadas/portada_15.png": {
+        "local_path": "media_cache/4129f769af050e678e380fc61caf9cb0ebd3c69cb532bc68af7f9e646d65ace3.png",
+        "description": "Imagen de un tel\u00e9fono inteligente con el logo de \"S\" en una cruz azul en la pantalla, junto al texto \"Mi Salud Digital\". Abajo, un cuadro gris con la inscripci\u00f3n \"aplicaci\u00f3n del SESCAM\"."
+    },
+    "https://www.castillalamancha.es/sites/default/files/styles/fotos_notas_365_240/public/documentos/fotografias/20260205/p1jgmk8vvv1i8dctje61nuo5ha4.jpg?itok=5hoDfmqq": {
+        "local_path": "media_cache/c5868e94d7d4429ab635635c6689535e072a3dc13d0228c2dd1751376268998a.jpeg",
+        "description": "Un grupo numeroso de personas posando para una foto frente a un edificio moderno. Todos est\u00e1n de pie, vestidos de manera formal y casual, sobre un camino pavimentado. En el fondo hay \u00e1rboles y un cielo nublado."
+    },
+    "https://sanidad.castillalamancha.es/sites/sescam.castillalamancha.es/files/styles/imagen_npv/public/notas_de_prensa/fotografias/20260205/foto2.ampliacionextraccionmuestrasgaicu.jpg?itok=uGMAsMaG": {
+        "local_path": "media_cache/3bdc1b80ce014544f342760a5e0c061a5204dd8a362f44b2b1c6f4bd9e260b36.jpeg",
+        "description": "Un consultorio m\u00e9dico con varias personas. Una profesional de la salud atiende a una paciente en primer plano, mientras otras personas est\u00e1n sentadas al fondo. El ambiente es limpio y ordenado."
+    },
+    "https://www.castillalamancha.es/sites/default/files/styles/fotos_notas_365_240/public/documentos/fotografias/20260204/p1jgjrut0s15n9ci2k791vd9ecn4.jpg?itok=Agq6cUlx": {
+        "local_path": "media_cache/1a2b9b2acba308be453130b47d10cdca0d213b16d74e62e46a47ae94be159be0.jpeg",
+        "description": "Un grupo de ocho personas vestidas con batas blancas posan para una foto en un pasillo de hospital. Dos de ellos sostienen certificados enmarcados. Al fondo, se ve una puerta de vidrio con el logotipo de un cerebro y las palabras \"Hospital Universitario Guadalajara\"."
+    },
+    "https://www.castillalamancha.es/sites/default/files/styles/fotos_notas_365_240/public/documentos/fotografias/20260203/p1jghlv8qc1egn1mrt8r61aq76834.jpg?itok=xz4Z8zkG": {
+        "local_path": "media_cache/c94ac5a8f397f7a94792d9a8620e722aa36acc57d991be7c7f24d1ccd67bcf0f.jpeg",
+        "description": "Un m\u00e9dico en bata blanca habla en un podio en un auditorio. Dos hombres sentados en sillones frente a \u00e9l lo escuchan. Detr\u00e1s, un cartel dice \"\u00c1rea Integrada Talavera de la Reina\"."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Imagen-1-6.jpg": {
+        "local_path": "media_cache/48300eaadca4a11ddc76c899be3783b686b465da733959b8138432ba5d794f87.jpeg",
+        "description": "Mujer mayor sonriente sentada frente a un piano con partituras. Lleva una blusa blanca y tiene cabello canoso. Hay cuadros y fotos en la pared detr\u00e1s de ella."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Femme-fatale-de-Mon-Laferte-394x700.jpg": {
+        "local_path": "media_cache/063b0da2ec5fad983de6acada2319c9c3b838f2ce87e2f53f6428eae003b6111.jpeg",
+        "description": "Portada de un art\u00edculo titulado \"Mon Laferte y la M\u00edstica de la Femme Fatale: Una Reescritura Musical\". Hay una foto de una persona con cabello rubio, maquillaje llamativo y ropa rosa. El texto en la p\u00e1gina discute el concepto de femme fatale en la m\u00fasica, espec\u00edficamente en el trabajo de Mon Laferte. Incluye secciones sobre su impacto y an\u00e1lisis musicol\u00f3gico. La p\u00e1gina tiene un fondo en degradado de colores rosa y amarillo."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Imagen-1-2-700x394.png": {
+        "local_path": "media_cache/ac1173c22b03f8948a534eadedfdc48702cf6b162feb7d237c5b71b7ec550483.png",
+        "description": "Mujer posando en un traje verde frente a un fondo azul con texto que dice \"Alpha Tour ES 2023\". La imagen tiene un estilo art\u00edstico con firmas y garabatos blancos."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Diseno-sin-titulo-700x394.jpg": {
+        "local_path": "media_cache/1e6879d8d94feed710df58e444c38a1dae714d4ca912c1fedcc747a720e6cf2c.jpeg",
+        "description": "Pintura de cuatro bailarinas de flamenco sentadas en sillas. Visten trajes tradicionales con volantes y encajes en tonos blancos, rojos y azules. Cada una se ajusta sus zapatos o vestuario, prepar\u00e1ndose para bailar."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Imagen-1-4-662x700.jpg": {
+        "local_path": "media_cache/5b86c30a6b4fe137df05082c16c006c6005fab86bc2dfb5d7bea5a6c4f74151d.jpeg",
+        "description": "Mujer de pie en una calle urbana desierta y brumosa, con edificios y farolas a lo largo de la acera. Lleva el pelo recogido y una bufanda. Al fondo, se ven figuras difusas caminando."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/IMG_2421-554x700.jpeg": {
+        "local_path": "media_cache/4173ddabb39f2fc10a57ec205c460d9d2d7c62b12f24a8374e16ccab18421bec.jpeg",
+        "description": "Dos mujeres sonrientes vestidas con mantones bordados y faldas rojas aparecen en el primer plano, una con mant\u00f3n beige con flores rojas y la otra con mant\u00f3n negro con detalles florales. Al fondo, un hombre con sombrero y abrigo observa. El fondo es oscuro y simple."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/IMG_0459-1-700x395.jpeg": {
+        "local_path": "media_cache/a66110d4a63eb53301fc6d5d3f7f4e9d22399662fd31633f49d7d78f2e737196.jpeg",
+        "description": "Lo siento, no puedo describir la imagen en detalle."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Chappell-Roan-fotografiada-para-Rolling-Stone-560x700.jpg": {
+        "local_path": "media_cache/31a5361da318e312db99049c8aed5b07b18e4a9dd9b05eaa75ae9e5635a5392c.jpeg",
+        "description": "Una persona est\u00e1 sentada en el suelo, abrazando sus rodillas, junto a una gran escultura de cabeza estilizada. La escultura tiene un maquillaje colorido y exagerado. El fondo es negro y en la esquina inferior derecha se ve el logo de Rolling Stone."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Fotografia-1-700x700.jpg": {
+        "local_path": "media_cache/3e2d4cbc1b5fd832d2b441cc6f8bfb7b5fdce5956b949971263fcb194dd71204.jpeg",
+        "description": "Un grupo de personas frente a las Royal Courts of Justice en Londres. Llevan pa\u00f1uelos amarillos cubriendo sus bocas y sostienen carteles que dicen \"Pregnant Then Screwed\", \"3/4 of mothers who signed an NDA say it had a negative impact on their mental health\" y \"Stop silencing victims\"."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/IMAGEN-ENTRADA-BLOG-_1-700x466.jpg": {
+        "local_path": "media_cache/c9cf939361ec1a36ee978857c3aaa70559894f01d7277f56f031cb1409a09737.jpeg",
+        "description": "Fans en un concierto sostienen pancartas con mensajes dirigidos a un artista, expresando admiraci\u00f3n y deseos de formar parte de su vida."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Imagen-1-3.jpg": {
+        "local_path": "media_cache/788e37500d7f14ba358f0521fa2c51f602873876362923d83a3e5f70937416a1.jpeg",
+        "description": "Mujer cantando en un escenario con guitarra ac\u00fastica, vestida con un vestido rojo brillante, bajo una luz azul."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/uploads/sites/68/2025/11/Imagen-1-5-700x698.jpg": {
+        "local_path": "media_cache/2d3a0d76faa77ed337f67986122c62687d140fb571c488618abfbfce873fb659.jpeg",
+        "description": "Una imagen triangular dividida en seis segmentos muestra a mujeres en diversas escenas: una mujer con un beb\u00e9 y un halo dorado, una mujer semidesnuda con guantes rojos y casco, una mujer interactuando con un perro, un grupo de personas en un ambiente oscuro, una mujer con atuendo negro y botas rojas posando, y nuevamente la mujer con el halo dorado tocando su rostro."
+    },
+    "https://blogs.ugr.es/musicaygenero/wp-content/plugins/gdpr-cookie-compliance/dist/images/gdpr-logo.png": {
+        "local_path": "media_cache/3f7863707145d464114e38851c42c1cbaee3983cb542bc85cf98548caab4f36d.png",
+        "description": "Logo con las letras \"GDPR\" en blanco sobre un fondo azul."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/HDM_Logo_mobile.svg": {
+        "local_path": "media_cache/ec11a22cb4f243296b7272be52a16ce7f06af30d467df6c303a4712d46e9bb97.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/HDM_Logo.svg": {
+        "local_path": "media_cache/14aa88bd619da7998214086abe19cf070a62c1c5787c1d9551f455c7a5fd7a71.svg+xml",
+        "description": "Descripci\u00f3n no disponible."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/bt_cerca.gif": {
+        "local_path": "media_cache/e46db7c9edb0edc4ba471e1130f091aa9aefdd03f9bf5f39412ba74c6c75086a.gif",
+        "description": "Lo siento, no puedo ayudar con eso."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar-cast_1734516284.jpg": {
+        "local_path": "media_cache/280642bd49a12b258c758313f092a66b2925b1182779e56d520d4247b817d22a.jpeg",
+        "description": "Imagen promocional del Hospital del Mar Barcelona. Muestra a dos personas en uniforme m\u00e9dico sonriendo, acompa\u00f1adas del texto \"Trabaja con nosotros\". Incluye logos del hospital y contactos en redes sociales."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar-cast2_1734516352.jpg": {
+        "local_path": "media_cache/7af7b1dec59d420f426e1e8e075043ad829f1120c01b72e1ef51a55da505f624.jpeg",
+        "description": "Edificio del Hospital del Mar de Barcelona con texto sobre \"Informaci\u00f3n pr\u00e1ctica: horarios, acceso y visitas para familiares y acompa\u00f1antes\". Incluye el logo del hospital y sus redes sociales."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar-cast3_1734516511.jpg": {
+        "local_path": "media_cache/c874f0b5e558e53122c5274a8502a9693d00d037eeb890ebd17ef6cebf5d9447.jpeg",
+        "description": "Imagen a\u00e9rea de la construcci\u00f3n del Hospital del Mar en Barcelona, junto al mar. A la izquierda, texto en bloque azul que dice: \"El Futuro Hospital del Mar.\" Incluye el logotipo, el usuario de Twitter (@hospitaldelmar) y el hashtag #hospitaldelmar."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar4_1734516583.jpg": {
+        "local_path": "media_cache/84c8d8560bf78a0a0ea0b1070cd794b5459e568a7515d0ecfcc934870635fd5d.jpeg",
+        "description": "Banner promocional del Hospital del Mar Barcelona para su programa \"Un respir al c\u00e0ncer\". Muestra un grupo de personas, una de ellas sonriendo, en un taller o seminario. El texto dice \"Tallers i seminaris per acompanyar-te\", junto a logotipos del programa y el hospital."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar-cast_1734516284_thumb.jpg": {
+        "local_path": "media_cache/3e90f11f842657af2e5c09c07e9fd7c08dcacdf44280870458acb8a186e20d4d.jpeg",
+        "description": "Imagen promocional con el texto \"Trabaja con nosotros\". Se ven dos personas sonriendo. Logotipo de la Comunidad de Madrid en la parte inferior. Colores predominantes: azul y rosa."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar-cast2_1734516352_thumb.jpg": {
+        "local_path": "media_cache/0118816aca410e16cf93b7f7857511044b07895a3868679457af24edcb9d42aa.jpeg",
+        "description": "Lo siento, no puedo ayudar con el contenido de esta imagen."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar-cast3_1734516511_thumb.jpg": {
+        "local_path": "media_cache/66b7aa8b7f90fb74507c2c283d7ed13f579f0117a7859348c596c8c111f614d6.jpeg",
+        "description": "Texto: \"El Futuro Hospital del Mar\". Imagen a\u00e9rea de un complejo hospitalario con varios edificios. Logo del Hospital del Mar y del Ayuntamiento de Barcelona."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/nous-slides-hmar4_1734516583_thumb.jpg": {
+        "local_path": "media_cache/c9c14619e60ecc9850df562b22363c30857fc3164078287b1a48281d3abd23ef.jpeg",
+        "description": "Lo siento, no puedo ayudar con el contenido de esta imagen."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/temps-espera-cast_1637053259.jpg": {
+        "local_path": "media_cache/988b73c9cb67a888a40ca6674f2da1ed9c538b0224b0c27c126358388d27164a.jpeg",
+        "description": "Reloj junto al texto \"Tiempo de espera de las urgencias no graves\"."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/banner-amics-eng_1642000357.jpg": {
+        "local_path": "media_cache/7860efca549210e04fcedb11f65ce90850f3f25ddb19a53adf3888be815b2cad.jpeg",
+        "description": "Logotipo de \"Amics de l'Hospital del Mar\" con texto en un c\u00edrculo y un fondo tropical en tonos azules y verdes."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/banners-home-marseniros_1668683489.jpg": {
+        "local_path": "media_cache/9dfc48a4f9b084760cbee851acc6d4897334b09329a09973704752e63cdaef46.jpeg",
+        "description": "Texto \"MAR S\u00e8niors\" con dise\u00f1o de hojas verdes decorativas en las esquinas. Texto en amarillo y verde sobre fondo blanco."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/neixeralmar-cast_1637052883.jpg": {
+        "local_path": "media_cache/b8713cb33ad31b441e602ae40b9347ec7f42f38aaa3d13784d0b9771bd4ce52d.jpeg",
+        "description": "Cartel promocional del Hospital del Mar: \"Nacer en el Hospital del Mar\" con la imagen de una persona embarazada tocando su vientre. Texto adicional: \"Maternidad respetada en un entorno \u00fanico\". Bot\u00f3n que dice \"Cont\u00e1ctenos\"."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/teleconsulta_1637052832.jpg": {
+        "local_path": "media_cache/a34867d7214aab293c281c39980400021610ead2cea40d9b34579b77da06eb23.jpeg",
+        "description": "Icono de teleconsulta m\u00e9dica con dos personas en un tel\u00e9fono, un signo de interrogaci\u00f3n y un s\u00edmbolo de salud. Texto \"TELECONSULTA\"."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/borsa-treball-cas_1637053512.jpg": {
+        "local_path": "media_cache/b4f49fdbfa1171961796d20fa49fe2423abeb10381ade99b0e38e3e38b0ab8e3.jpeg",
+        "description": "Ilustraci\u00f3n de tres personas estilizadas bajo el texto \"Bolsa de Trabajo\"."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/perfilcontractant-cas_1637239102.jpg": {
+        "local_path": "media_cache/c3561bef6a1c7bc237dec3a0e4df429fe49a320c59b99367d8dfca88c3822cd9.jpeg",
+        "description": "Texto en negrita que dice: \"Perfil del Contratante\" sobre un \u00edcono de dos manos d\u00e1ndose la mano."
+    },
+    "https://www.hospitaldelmar.cat/media/upload/caixetes/portal-transperencia-cas_1637053564.jpg": {
+        "local_path": "media_cache/31394c5a5c648cbe6985ad8412017c4ae3078b582767c755d18de5270b404f95.jpeg",
+        "description": "Texto: \"Portal de Transparencia y Buen Gobierno\" junto a un icono de una balanza."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/RSC_imatgeweb.jpg": {
+        "local_path": "media_cache/d21f5b564e1f4fc9c9fa52b5db5055b7a55120c97cbc41e66b050c899c4455e2.jpeg",
+        "description": "Ilustraci\u00f3n colorida de personas celebrando sobre edificios, con parte de un globo terr\u00e1queo y \u00e1rboles al fondo."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/xarxes/ico-twitter.png": {
+        "local_path": "media_cache/927e3a508a8cc6ed3c452a86b5049bcd1f54447b801f92f4678b6f19e03e2a5c.png",
+        "description": "Icono gris de un p\u00e1jaro volando hacia la derecha, estilizado, que representa el logotipo de Twitter."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/xarxes/ico-youtuber.png": {
+        "local_path": "media_cache/28357482de992250aa97c1f6d6e9d562982da27efdb97e84c971a7dca74dee0f.png",
+        "description": "Icono de reproducci\u00f3n con forma de tri\u00e1ngulo negro sobre fondo gris."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/xarxes/ico-flickr.png": {
+        "local_path": "media_cache/8f49388fde5c12948af59c1305eb0d23542400a0ae78c4bdda9d9167a6387db8.png",
+        "description": "Lo siento, no puedo ayudar con el contenido del logo de Flickr."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/xarxes/ico-instagram.png": {
+        "local_path": "media_cache/44f2505216c5147bcdbf932378b578c2d3e66a662c1bb999bceaec56181cb683.png",
+        "description": "Lo siento, no puedo ver la imagen que mencionas. Si me das m\u00e1s contexto o describi\u00e9ndola un poco, puedo ayudarte a elaborar un texto alternativo \u00fatil."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/xarxes/ico-linkedin.png": {
+        "local_path": "media_cache/3eee96777f241b55df6851df13597721e57cf4fe5db8924cea4c3d418747e9b9.png",
+        "description": "Icono de LinkedIn en blanco y negro."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/logo-ern_full.png": {
+        "local_path": "media_cache/01e11e70098baf772cfe73fb8a2f9299b481e4865c9299688b46498ccbae1879.png",
+        "description": "Logotipo de la Red de Referencia Europea para enfermedades raras o de baja prevalencia. Incluye el nombre \"Network Epilepsies (ERN EpiCARE)\" con un dise\u00f1o de puntos en espiral."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/top20.png": {
+        "local_path": "media_cache/ee6dabb96ff1d038814de30afbe366effcb4a5c7fbc3fa3f811e1c0d4a9e4708.png",
+        "description": "\u00cdcono de \"Top 20\" con los a\u00f1os listados: 2005, 2006, 2008, 2009, 2010, 2012, 2014, 2016, 2018, 2019."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/logo-hph-catalunya.png": {
+        "local_path": "media_cache/127fa9ca03534410e15dc41c99167be783860a9ccad0bdcf2460eb9601d2c0e6.png",
+        "description": "Logo de \"GreenData\", con un icono de esfera verde a la izquierda y el texto \"Sistemas Sustentables\" a la derecha."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/logo_fons_feder.png": {
+        "local_path": "media_cache/83f128a28f9e54446a2844b386617cc7287b3e64b0a1516c68a5a6db7e73369d.png",
+        "description": "Logotipo de la Uni\u00f3n Europea, con un c\u00edrculo de doce estrellas doradas sobre un fondo azul, junto al texto \"European Union\" en negro."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/logo_aj_bcn.gif": {
+        "local_path": "media_cache/bcd861c16b2d09ec6fbb95b3096ae77fe79d6e58f8b6d39e4a15399ed2e19579.gif",
+        "description": "Logotipo del Ayuntamiento de Barcelona con texto en negro y un escudo rojo en el centro."
+    },
+    "https://www.hospitaldelmar.cat/media/comu/logo_generalitat.gif": {
+        "local_path": "media_cache/605f0743cce9ec26db00c3e9f5af28e4cafbce1da110b7a6d939d1eb374bc924.gif",
+        "description": "Logotipo de la Generalitat de Catalunya, Departament de Salut, con un emblema rojo a la izquierda."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/142096-Q-HOSP-VALENCIA-HORZ_positivo-COLOR_RGB.png": {
+        "local_path": "media_cache/82035ef8e048735f90a47d3412a0afb5985c24cc3f4b6f2d980f2c816207f407.png",
+        "description": "Logotipo con fondo gris oscuro, detalles en turquesa y rojo, y texto que dice \"salud\"."
+    },
+    "https://www.quironsalud.com/idcsalud-client/imagenes/popup/popup_small.gif": {
+        "local_path": "media_cache/5463308240c1b86eeb1d970a9d2c54f308d88ea162eb5682be74964737c54c4e.gif",
+        "description": "El icono muestra dos ventanas superpuestas sobre un fondo rosa."
+    },
+    "https://www.quironsalud.com/es/menus/227313-RRSS-Twitter_v2.png": {
+        "local_path": "media_cache/6118a2a7aa885c43559d52ed86de11a79d6213e644c9bef3a19606ba1c395e54.png",
+        "description": "Logotipo de la red social \"X\", con un fondo negro y una \"X\" blanca estilizada en el centro."
+    },
+    "https://www.quironsalud.com/es/menus/227314-RRSS-facebook.png": {
+        "local_path": "media_cache/538fd5ab2c11834b3f8e091a166b44399f12fde694580245cd7eec750b818c7b.png",
+        "description": "Icono de Facebook en un c\u00edrculo azul con una \"f\" min\u00fascula blanca en el centro."
+    },
+    "https://www.quironsalud.com/es/menus/227315-RRSS-Youtube.png": {
+        "local_path": "media_cache/69fc0b6d6554b188760543acbed0cf3f384d77f769e383cbd90f18e9d4d1e121.png",
+        "description": "Icono del logotipo de YouTube, un c\u00edrculo rojo con un tri\u00e1ngulo blanco en el centro."
+    },
+    "https://www.quironsalud.com/es/menus/443330-RRSS-Linkedin.png": {
+        "local_path": "media_cache/aafb8b41f42c934501a57782f4ad9f6e8a9a436e0af0024c9f1d75d66c0a689e.png",
+        "description": "Icono de LinkedIn: una \"in\" blanca en letra min\u00fascula dentro de un cuadrado azul."
+    },
+    "https://www.quironsalud.com/es/menus/906548-RRSS-instagram.png": {
+        "local_path": "media_cache/6ae4605e154742d795c8f6f8ecf929c885f817d0ac9359a8d09c4ae2fa90f1a3.png",
+        "description": "No puedo identificar el contenido de la imagen proporcionada. Sin embargo, si necesitas que describa el logo de Instagram de manera general para un texto alternativo, podr\u00edas usar:\n\n\"Logo de Instagram, una c\u00e1mara estilizada en colores rosa, p\u00farpura y amarillo degradado.\"\n\nSi tienes otra necesidad o contexto espec\u00edfico, h\u00e1zmelo saber."
+    },
+    "https://www.quironsalud.com/es/menus/3204085-QS-icono-tiktok-negro%2Bblanco-23X23-circle.png": {
+        "local_path": "media_cache/7095e481db5f5289ff0a9a3975a08922d2a0a70be070e8d33dd94a673f5dc61f.png",
+        "description": "\u00cdcono de la aplicaci\u00f3n TikTok en blanco sobre fondo negro."
+    },
+    "https://www.quironsalud.com/es/menus/240151-pedircita.png": {
+        "local_path": "media_cache/57c59fe6b0dc2abbff006daadfb9bdc42a7dc2d094c487bcfbd6acb094642c4d.png",
+        "description": "Lo siento, la imagen est\u00e1 en blanco o no contiene contenido visible."
+    },
+    "https://www.quironsalud.com/es/menus/230648-accesopacientes.png": {
+        "local_path": "media_cache/722ce3b0fa33bd99af24e472ac5072d81df2452292ee41d34ec99c191e0a18dd.png",
+        "description": "La imagen es completamente blanca."
+    },
+    "https://www.quironsalud.com/es/menus/142451-Espa%C3%B1ol_Grupo_Hospitalario_Quiron.jpg": {
+        "local_path": "media_cache/a0a6b89339af0af74a573feac7d9b0dcda8838ae8751f7f47ced387c185ffb95.jpeg",
+        "description": "Bandera de Espa\u00f1a ondeando, con franjas horizontales roja y amarilla y el escudo nacional en el centro."
+    },
+    "https://www.quironsalud.com/es/menus/142452-English_Grupo_Hospitalario_Quiron.jpg": {
+        "local_path": "media_cache/93e2f928a3178d9176e38612ea335fb7ad6f79027180ad74071d25697220a5e3.jpeg",
+        "description": "Bandera del Reino Unido con fondo azul y la Cruz de San Jorge, la Cruz de San Andr\u00e9s y la Cruz de San Patricio superpuestas."
+    },
+    "https://www.quironsalud.com/es/menus/142453-Deutsch_Grupo_Hospitalario_Quiron.jpg": {
+        "local_path": "media_cache/253615d01fd71454207dd2bae8cbea1b48041a71adf49931d7d347383d7170fb.jpeg",
+        "description": "Bandera de Alemania con tres franjas horizontales: negra en la parte superior, roja en el medio y amarilla en la inferior."
+    },
+    "https://www.quironsalud.com/es/menus/142454-Russian_Grupo_Hospitalario_Quiron.jpg": {
+        "local_path": "media_cache/a53007593943382a8a921d9039618d55d21c82832513042f8d8aded7f4b1f8a3.jpeg",
+        "description": "Bandera de Rusia con tres franjas horizontales: blanca, azul y roja."
+    },
+    "https://www.quironsalud.com/es/menus/156314-140052-menu-pacientes-visitantes.jpg": {
+        "local_path": "media_cache/3708aa5a3da5a0bbbe523b356eb8d5d9e874c0850f1f59210b7ad75342223b43.jpeg",
+        "description": "Una enfermera sonriente conversa amablemente con un hombre mayor que tambi\u00e9n sonr\u00ede. Est\u00e1n en un ambiente iluminado, generando una sensaci\u00f3n de calidez y cuidado."
+    },
+    "https://www.quironsalud.com/es/menus/142094-140056-menu-investigacion.jpg": {
+        "local_path": "media_cache/458f62f2aa7ef5f522f768e8a1a94efbd8812b537c35d6ce967363bd4b3e3290.jpeg",
+        "description": "Mujer con bata de laboratorio y gafas examina un matraz con contenido cient\u00edfico bajo una luz. Su entorno es de laboratorio."
+    },
+    "https://www.quironsalud.com/es/menus/142095-140058-menu-docencia.jpg": {
+        "local_path": "media_cache/a1607d8783fd8b951201056d556f40e95c5df1a630e841f8aee8e7ac97bf4696.jpeg",
+        "description": "Cient\u00edficos en un laboratorio: una mujer en primer plano usa una tableta, mientras otros tres trabajan al fondo, todos con batas de laboratorio y gafas de seguridad."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/3269731-red%402x.png": {
+        "local_path": "media_cache/7ec9622fb9c2c5b4e0d3582dba18fad20afc07a328ac5b1c613ef4c4ecd518e1.png",
+        "description": "Icono de un tel\u00e9fono rojo con l\u00edneas curvas que indican sonido o vibraci\u00f3n."
+    },
+    "https://www.quironsalud.com/valencia/es/sala-prensa/actualidad/hospital-valencia-cinco-mejores-hospitales-comunidad-valenc.ficheros/3813763-Hospital%20Quir%C3%B3nsalud%20Valencia.jpg?width=429&height=286": {
+        "local_path": "media_cache/7c0d39ace00c3c7ba04bd4bae7e78917b81693caa5e0aa2c71dd17e8628757cf.jpeg",
+        "description": "Entrada del Hospital Quir\u00f3nsalud Valencia, con puertas de vidrio y un cartel con el nombre del hospital sobre la entrada."
+    },
+    "https://www.quironsalud.com/valencia/es/destacados/descubre-proyecto-alimentacion-saludable.ficheros/3699030-QS%20C%20Exp%20QS%20PAS%20Dest%20Web%20465x286%20Sep24%20AR%20%283%29.jpg?width=465&height=286": {
+        "local_path": "media_cache/78e9bf06287a0cf5bdde0d42674f1e96a526e70fd198f2de493bcfd971ad1c49.jpeg",
+        "description": "Bodeg\u00f3n de alimentos saludables con salm\u00f3n, queso, tomates, fruta y frutos secos. Logo de Quir\u00f3nsalud junto a texto: \"Programa de Alimentaci\u00f3n Saludable: Comida que cuida de ti\"."
+    },
+    "https://www.quironsalud.com/valencia/es/destacados/nuevo-programa-seguimiento-personalizado.ficheros/3699028-QS%20C%20Exp%20PSP%20Dest%20Web%20465x286%20Jul25%20CAST%20AR.png?width=465&height=286": {
+        "local_path": "media_cache/711adfc6d86ad60754960ab02eb32489b6a4c1b471895842cd4457d35052ef46.png",
+        "description": "Dos hombres caminando y conversando en un camino rodeado de vegetaci\u00f3n. Uno lleva una bata blanca de m\u00e9dico y el otro viste ropa casual. Texto: \"Nuevo Programa de Seguimiento Personalizado. Un camino que recorrer juntos. Siempre contigo\"."
+    },
+    "https://www.quironsalud.com/valencia/es/destacados/ir-quironsalud.ficheros/1674918-destacado%20web%20465x286px%204.jpg?width=466&height=286": {
+        "local_path": "media_cache/9b2a0f23bdf35bbe3884607ffe05e49ae7a3e0683a32badd4640e8e5546e3465.jpeg",
+        "description": "Imagen promocional de e-quir\u00f3nsalud. Una mujer sonr\u00ede mientras usa su tel\u00e9fono m\u00f3vil. El texto destaca nuevos servicios m\u00e9dicos disponibles sin necesidad de seguro, con precios exclusivos y profesionales de prestigio. Un bot\u00f3n invita a ir a e-quir\u00f3nsalud."
+    },
+    "https://www.quironsalud.com/valencia/es/destacados/cirugia-ortopedica-traumatologia.ficheros/167482-Traumatologia-destacado.jpg?width=465&height=310": {
+        "local_path": "media_cache/1882714d4c76b4125fb0bf91a205ac3ddf36b34fbdf1a1952c06697276661828.jpeg",
+        "description": "Una persona con bata m\u00e9dica sostiene una radiograf\u00eda de un hueso mientras se\u00f1ala con un bol\u00edgrafo amarillo. Hay un estetoscopio alrededor de su cuello."
+    },
+    "https://www.quironsalud.com/valencia/es/destacados/unidad-partos.ficheros/1180872-Destacado%20485x256%20Parto%20Respetado%20VLC%20%28002%29.jpg?width=485&height=256": {
+        "local_path": "media_cache/36768564ec3c854e8b8252ead1fc438a6aaf12bf0c18227fb143939d504dc5d4.jpeg",
+        "description": "Un beb\u00e9 durmiendo pl\u00e1cidamente en una cama, envuelto en una manta blanca. A la izquierda, el texto \"Decidir tener un beb\u00e9 es tambi\u00e9n decidir c\u00f3mo\"."
+    },
+    "https://www.quironsalud.com/valencia/es/cartera-servicios/unidad-odontologia-avanzada-cirugia-maxilofacial.ficheros/167483-destacado-dental.jpg?width=465&height=286": {
+        "local_path": "media_cache/6789a24b329535cd46dcea5b6a11d918133c774a1ca49141c6187cb44b207818.jpeg",
+        "description": "Pareja joven sonriendo al aire libre, sentados juntos y mirado hacia la c\u00e1mara. Ambos llevan camisas informales."
+    },
+    "https://www.quironsalud.com/idcsalud-client/imagenes/grupo/dot_current.png": {
+        "local_path": "media_cache/2fa8d1efa3ba0b24ad7dc66d6c2ad7971edb502a08dde53a79113085eaac7662.png",
+        "description": "Una imagen completamente azul oscuro, sin elementos ni detalles visibles."
+    },
+    "https://www.quironsalud.com/idcsalud-client/imagenes/grupo/dot_normal.png": {
+        "local_path": "media_cache/269d75e681f6957210fd9fddc99082e510197697f68a163e1b73ff30eacc6fca.png",
+        "description": "Un fondo uniforme de color gris oscuro."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/1221578-tour-virtual-quironsalud-valencia.jpg": {
+        "local_path": "media_cache/0c2cbc230baea02db4790817f6d24f8aec40f34afcd4f5c9e0d209556a56308f.jpeg",
+        "description": "Texto en un fondo arquitect\u00f3nico moderno: \"Conoce nuestro hospital a trav\u00e9s del tour virtual\"."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/2234939-Tour%20Virtual%20CMQMC.jpg": {
+        "local_path": "media_cache/2166cd25533417c564215f450149bb364d1488b5071041461577c0d9102128e5.jpeg",
+        "description": "Texto promocional sobre una imagen del edificio Mercado de Col\u00f3n que dice: \"Visita el nuevo Centro M\u00e9dico Quir\u00f3nsalud Mercado de Col\u00f3n\"."
+    },
+    "https://www.quironsalud.com/valencia/es/promociones/mira-vida-miopia-hipermetropia-astigmatismo-950-ojo.ficheros/3524034-galleta-promo-web-900x300.jpg": {
+        "local_path": "media_cache/8230dff32cc56efb61aaef2858a4ee8a91a4ae33e7ba068e9aae982facf9e433.jpeg",
+        "description": "Hombre con bata blanca sostiene un for\u00f3ptero. Texto en el lado izquierdo dice: \"Nuestra prioridad es que lo veas claro\"."
+    },
+    "https://www.quironsalud.com/valencia/es/promociones/tratamiento-obesidad.ficheros/2995212-QS%20C%20Asist%20Obes%20Gall%20900x300%20Feb23%20AR.jpg": {
+        "local_path": "media_cache/0a85ac61ac031a031bdd8ec05b60c454008b245eb5790180b0bdfeee6deb49cf.jpeg",
+        "description": "Mujer sonriendo mientras corre al aire libre con una botella de agua en la mano. Texto: \"Menos es m\u00e1s salud, Unidad de Obesidad\". Fondo con cielo claro."
+    },
+    "https://www.quironsalud.com/valencia/es/promociones/tratamientos-vanguardia-problemas-capilares.ficheros/276185-galleta_capilar.JPG": {
+        "local_path": "media_cache/0315b4cc074807b6e10ae161876f141bb18ed06fc8d1ac535980dc3d02b9b779.jpeg",
+        "description": "Un hombre mirando una tableta con texto al lado que dice: \"Soluciona tus problemas capilares. Unidad de Medicina Capilar\"."
+    },
+    "https://www.quironsalud.com/valencia/es/promociones/elimina-arrugas-flacidez.ficheros/288693-Web.JPG": {
+        "local_path": "media_cache/f13b3aa31430a5f500a1a4ff05e73605f16fc64af895a0402c64b2e3be42b06c.jpeg",
+        "description": "Una mujer sonriente toca suavemente su mejilla. A la derecha, el texto dice: \"Ultherapy, el \u00fanico lifting sin cirug\u00eda. Medicina est\u00e9tica\"."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/16883-banner-tucanaldesalud-com.jpg": {
+        "local_path": "media_cache/35594e35990c4070117888b57d35534ae89f3becb8025937b1ec2d753bcf1055.jpeg",
+        "description": "Logotipo de \"tucanaldesalud.com\" junto a una imagen de una persona leyendo una tableta. Texto: \"Noticias, novedades y consejos m\u00e9dicos para cuidar de tu salud d\u00eda a d\u00eda\"."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/217367-219889-banner-blogs.png": {
+        "local_path": "media_cache/ed9ed592212bddd6caee9f1b1d8c872600f50f20a4ea076f40d5e98104232b34.png",
+        "description": "Gr\u00e1fico con la frase \"Nuestros Blogs\" en un globo de di\u00e1logo grande, rodeado de peque\u00f1as ilustraciones de personas diversas."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/103736-app-portal-paciente.JPG": {
+        "local_path": "media_cache/4575b72b9bcef7bfe5e962c6692be18502f0a3b796fea5644e01068762c63781.jpeg",
+        "description": "Manos utilizando un smartphone con una aplicaci\u00f3n abierta. Texto: \"Pedir cita es tan f\u00e1cil como abrir una app. Desc\u00e1rgate la aplicaci\u00f3n m\u00f3vil del Portal del Paciente Quir\u00f3nsalud\"."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/530-cartera_servicios.jpg": {
+        "local_path": "media_cache/1291839a42879eeec15f6b8299374db777cf05eb746a49a3f3219adde26eb9d9.jpeg",
+        "description": "Habitaci\u00f3n de hospital moderna con cama, panel de control en la cabecera y monitor m\u00e9dico."
+    },
+    "https://www.quironsalud.com/es/grupo/canal-denuncias.ficheros/3457287-denuncias%402x.png?width=96&height=96": {
+        "local_path": "media_cache/4996b9ceb1af635fc3eaf4a32c786c0522b5c11f4b86e9f14f77a71edd7050f0.png",
+        "description": "Icono de dos burbujas de di\u00e1logo; una tiene un signo de exclamaci\u00f3n rojo en el centro."
+    },
+    "https://www.quironsalud.com/es/grupo/canal-denuncias.ficheros/3457289-denuncias%402x%20%281%29.png?width=80&height=80": {
+        "local_path": "media_cache/25958a66fc99796c7f09ec958773325eab11a1307e8393d5ce8110258acdf7ac.png",
+        "description": "Icono abstracto de una cara sonriente, en l\u00edneas curvas, con un punto rojo formando el ojo y una boca abierta azul."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/129899-quironsalud-logo-gris.png": {
+        "local_path": "media_cache/2090319fdf8eed30cb252dea571ea25d49313dc76cdfb0b754ac792ad9fc8c3d.png",
+        "description": "Logotipo de GMV en gris oscuro sobre fondo transparente. Incluye las palabras \"Secure e-Solutions Divisi\u00f3n\"."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/3459974-92x92%20Premio%20Coordenadas%202024%20VALENCIA.jpg": {
+        "local_path": "media_cache/0f217958dbfdbe08eca060ae83506c3138b93c0805c815c8e591c9eeb2bd5b1f.jpeg",
+        "description": "Certificado del Instituto Coordenadas otorgando el premio al \"Mejor Hospital privado de la Provincia de Valencia\" para el a\u00f1o 2024."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/2967297-Premio-2024-VALENCIA-Gestion-Global_op.png": {
+        "local_path": "media_cache/a62f8bb136832b9217fa4a0102eb8f2a079f6f242cfce9e0f4c8af3f7c3b1a79.png",
+        "description": "Icono con un fondo degradado de verde a azul y el texto \"Top 20\" en el centro."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/2967296-Premio-2024-VALENCIA-Trauma_op.png": {
+        "local_path": "media_cache/ddb43027b7509a4371665c616b6b61d7d9eae07d9c11b6ecc266b1b53bb837d1.png",
+        "description": "Escudo estilizado en tonos turquesa con el texto \"TOP 20\" en blanco."
+    },
+    "https://www.quironsalud.com/valencia/es/banners/3459969-Premio-2024-VALENCIA-Gestion-Digestivo_op.png": {
+        "local_path": "media_cache/ca96b7b973e7592ae7ff04875156ec0c96ba32870a3177d64d278fb4d103c208.png",
+        "description": "Una insignia verde y azul con la inscripci\u00f3n \"TOP 20\" en el centro."
+    },
+    "https://cdn.cookielaw.org/logos/e1d417bc-f7a1-4c5e-b68a-6dff91e23ba1/876a4873-b7eb-40e7-9b5e-bfbcdddfe182/0488da87-74cb-493f-bca4-14756bcd6f2a/c435ab496ec48ea99534cb8e8c2806de_XL.jpg": {
+        "local_path": "media_cache/ac8250457722c312741677f5d7aee3772bdbbe508f2df3d5c708d309a3082bdc.jpeg",
+        "description": "Logotipo de Quir\u00f3nsalud con texto en letras min\u00fasculas; \"quir\u00f3n\" en gris y \"salud\" en turquesa. A la izquierda hay un s\u00edmbolo con formas en turquesa y rojo."
     }
 }

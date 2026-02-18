@@ -1,57 +1,59 @@
 """
-Módulo para análisis de accesibilidad web usando Axe Core.
+Accessibility analysis helpers using axe-core.
 
-Este módulo proporciona funciones para ejecutar análisis de accesibilidad
-en páginas web, incluyendo soporte para contenido dinámico y múltiples estados.
+This module centralises all interaction between Selenium and axe-core:
+loading the script into the page, handling SSL warnings, supporting basic
+dynamic content interactions and performing multi‑state scans.
 """
 
 import time
 from pathlib import Path
+from typing import Any, Dict, List
 
 import requests
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webdriver import WebDriver
 
 from config.constants import AXE_SCRIPT_URL
 from core.dynamic_handler import DynamicContentHandler
 
-# Constantes
+# Retry and timing configuration
 MAX_RETRIES = 3
 INITIAL_RETRY_DELAY = 5
 PAGE_LOAD_WAIT_TIME = 5
 SSL_WARNING_WAIT_TIME = 3
 
-def _handle_ssl_warning(driver, target):
+
+def _handle_ssl_warning(driver: WebDriver, target: str) -> None:
     """
-    Maneja advertencias SSL intentando continuar automáticamente.
-    
-    Args:
-        driver: WebDriver de Selenium
-        target: URL objetivo
+    Try to automatically bypass common SSL browser warning pages.
     """
     try:
         page_title = driver.title.lower()
         page_source = driver.page_source.lower()
         ssl_indicators = (
-            "privacidad" in page_title or
-            "privacy" in page_title or
-            "certificado" in page_source or
-            "certificate" in page_source or
-            "no es privada" in page_source or
-            "not private" in page_source
+            "privacidad" in page_title
+            or "privacy" in page_title
+            or "certificado" in page_source
+            or "certificate" in page_source
+            or "no es privada" in page_source
+            or "not private" in page_source
         )
-        
+
         if not ssl_indicators:
             return
-        
-        print("  ⚠️ Detectada página de advertencia SSL, intentando continuar...")
-        
+
+        print("  ⚠️ SSL warning page detected, attempting to continue...")
+
         strategies = [
             lambda: driver.find_element(By.ID, "proceed-link").click(),
             lambda: _click_advanced_then_proceed(driver),
             lambda: _click_proceed_link_by_text(driver),
-            lambda: driver.execute_script("window.location.href = arguments[0];", target),
+            lambda: driver.execute_script(
+                "window.location.href = arguments[0];", target
+            ),
         ]
-        
+
         for strategy in strategies:
             try:
                 strategy()
@@ -59,54 +61,57 @@ def _handle_ssl_warning(driver, target):
                 return
             except Exception:
                 continue
-                
-    except Exception as e:
-        print(f"  ⚠️ No se pudo manejar automáticamente la advertencia SSL: {e}")
+
+    except Exception as exc:
+        print(
+            "  ⚠️ Could not automatically handle SSL warning page: "
+            f"{exc}"
+        )
 
 
-def _click_advanced_then_proceed(driver):
-    """Hace clic en el botón Avanzado y luego en el enlace para continuar."""
+def _click_advanced_then_proceed(driver: WebDriver) -> None:
+    """Click the 'Advanced' button and then a 'proceed' link, if present."""
     advanced = driver.find_element(
         By.XPATH,
-        "//button[contains(text(), 'Avanzado') or contains(text(), 'Advanced')]"
+        "//button[contains(text(), 'Avanzado') or contains(text(), 'Advanced')]",
     )
     advanced.click()
     time.sleep(2)
     proceed = driver.find_element(
         By.XPATH,
-        "//a[contains(@id, 'proceed') or contains(@href, 'proceed')]"
+        "//a[contains(@id, 'proceed') or contains(@href, 'proceed')]",
     )
     proceed.click()
 
 
-def _click_proceed_link_by_text(driver):
-    """Busca y hace clic en un enlace que contenga 'continuar' o 'proceed'."""
+def _click_proceed_link_by_text(driver: WebDriver) -> None:
+    """Find and click a link that contains 'continuar' or 'proceed'."""
     proceed = driver.find_element(
         By.XPATH,
         "//a[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'continuar') or "
-        "contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'proceed')]"
+        "contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'proceed')]",
     )
     proceed.click()
 
 
-def _handle_navigation_ssl_warning(driver):
-    """Maneja advertencias SSL durante la navegación inicial."""
+def _handle_navigation_ssl_warning(driver: WebDriver) -> None:
+    """Handle SSL warnings that appear during initial navigation."""
     try:
         advanced_buttons = driver.find_elements(
             By.XPATH,
-            "//button[contains(text(), 'Avanzado') or contains(text(), 'Advanced')]"
+            "//button[contains(text(), 'Avanzado') or contains(text(), 'Advanced')]",
         )
         proceed_buttons = driver.find_elements(
             By.XPATH,
-            "//a[contains(text(), 'Continuar') or contains(text(), 'Proceed') or contains(text(), 'Ir a')]"
+            "//a[contains(text(), 'Continuar') or contains(text(), 'Proceed') or contains(text(), 'Ir a')]",
         )
-        
+
         if advanced_buttons:
             advanced_buttons[0].click()
             time.sleep(2)
             proceed_links = driver.find_elements(
                 By.XPATH,
-                "//a[contains(@id, 'proceed-link') or contains(@href, 'proceed')]"
+                "//a[contains(@id, 'proceed-link') or contains(@href, 'proceed')]",
             )
             if proceed_links:
                 proceed_links[0].click()
@@ -115,18 +120,16 @@ def _handle_navigation_ssl_warning(driver):
             proceed_buttons[0].click()
             time.sleep(2)
     except Exception:
+        # Failing to handle this automatically should not abort the analysis.
         pass
 
 
-def _execute_axe_analysis(driver):
+def _execute_axe_analysis(driver: WebDriver) -> Dict[str, Any]:
     """
-    Ejecuta el script de Axe y retorna los resultados.
-    
-    Args:
-        driver: WebDriver de Selenium
-        
+    Inject axe-core into the page and execute an accessibility scan.
+
     Returns:
-        Resultados del análisis de Axe
+        The raw results object produced by axe.run(...)
     """
     axe_script = requests.get(AXE_SCRIPT_URL).text
     driver.execute_script(axe_script)
@@ -139,36 +142,43 @@ def _execute_axe_analysis(driver):
     )
 
 
-def run_axe_analysis(driver, url, is_local_file=False, enable_dynamic_interactions=True, custom_interactions=None):
+def run_axe_analysis(
+    driver: WebDriver,
+    url: str,
+    is_local_file: bool = False,
+    enable_dynamic_interactions: bool = True,
+    custom_interactions: Any = None,
+) -> Dict[str, Any]:
     """
-    Ejecuta análisis de accesibilidad con soporte para contenido dinámico.
-    
+    Run an axe-core accessibility analysis, with optional dynamic interactions.
+
     Args:
-        driver: WebDriver de Selenium
-        url: URL a analizar
-        is_local_file: Si es un archivo local
-        enable_dynamic_interactions: Si habilitar interacciones automáticas (por defecto True)
-        custom_interactions: Lista de interacciones personalizadas
-        
+        driver: Selenium WebDriver.
+        url: URL to analyse.
+        is_local_file: Whether the target is a local file path.
+        enable_dynamic_interactions: If True, run basic dynamic interactions
+            before executing axe (cookies, modals, simple scroll).
+        custom_interactions: Optional list of caller‑defined interactions.
+
     Returns:
-        Resultados del análisis de Axe
-        
+        Raw axe-core results as a dict.
+
     Raises:
-        Exception: Si no se pudo completar el análisis después de múltiples intentos
+        Exception: If all retry attempts fail.
     """
     retry_delay = INITIAL_RETRY_DELAY
 
     for attempt in range(MAX_RETRIES):
         try:
             target = Path(url).resolve().as_uri() if is_local_file else url
-            print(f"Analizando con Axe: {target}")
-            
+            print(f"Running Axe analysis on: {target}")
+
             try:
                 driver.get(target)
             except Exception as nav_error:
-                print(f"  ⚠️ Advertencia de navegación (posible SSL): {nav_error}")
+                print(f"  ⚠️ Navigation warning (possible SSL issue): {nav_error}")
                 _handle_navigation_ssl_warning(driver)
-            
+
             time.sleep(PAGE_LOAD_WAIT_TIME)
             _handle_ssl_warning(driver, target)
 
@@ -177,102 +187,105 @@ def run_axe_analysis(driver, url, is_local_file=False, enable_dynamic_interactio
 
             _wait_for_page_load(driver)
             return _execute_axe_analysis(driver)
-        except Exception as e:
-            print(f"Intento {attempt + 1} fallido: {e}")
+        except Exception as exc:
+            print(f"Attempt {attempt + 1} failed: {exc}")
             if attempt < MAX_RETRIES - 1:
-                print(f"Reintentando en {retry_delay} segundos...")
+                print(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
                 retry_delay *= 2
             else:
                 raise Exception(
-                    f"No se pudo completar el análisis después de {MAX_RETRIES} intentos"
-                )
+                    f"Could not complete analysis after {MAX_RETRIES} attempts"
+                ) from exc
 
 
-def _handle_dynamic_interactions(driver, custom_interactions):
-    """Maneja interacciones dinámicas con el contenido de la página."""
+def _handle_dynamic_interactions(driver: WebDriver, custom_interactions: Any) -> None:
+    """Execute built‑in and optional custom dynamic interactions."""
     try:
         dynamic_handler = DynamicContentHandler(driver)
         dynamic_handler.handle_common_interactions()
-        
+
         if custom_interactions:
             custom_results = dynamic_handler.execute_custom_interactions(
                 custom_interactions
             )
             print(
-                f"Interacciones personalizadas: "
-                f"{len(custom_results['successful'])} exitosas, "
-                f"{len(custom_results['failed'])} fallidas"
+                "Custom interactions: "
+                f"{len(custom_results['successful'])} successful, "
+                f"{len(custom_results['failed'])} failed"
             )
-    except Exception as e:
-        print(f"Advertencia: Error en interacciones dinámicas: {e}")
+    except Exception as exc:
+        print(f"Warning: error during dynamic interactions: {exc}")
 
 
-def _wait_for_page_load(driver):
-    """Espera a que la página termine de cargar completamente."""
+def _wait_for_page_load(driver: WebDriver) -> None:
+    """Wait for the page readyState to become 'complete'."""
     ready_state = driver.execute_script("return document.readyState")
     if ready_state != "complete":
-        print("Esperando a que la página termine de cargar...")
+        print("Waiting for page to finish loading...")
         time.sleep(PAGE_LOAD_WAIT_TIME)
 
 
-def run_axe_analysis_multiple_states(driver, url, states_config):
+def run_axe_analysis_multiple_states(
+    driver: WebDriver,
+    url: str,
+    states_config: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
     """
-    Ejecuta análisis de accesibilidad en múltiples estados de la misma página.
-    
-    Args:
-        driver: WebDriver de Selenium
-        url: URL a analizar
-        states_config: Lista de configuraciones de estados
-        
-    Returns:
-        Lista de resultados del análisis para cada estado
+    Run axe-core analysis on multiple interaction states of the same page.
+
+    Each state can specify a name, description and a list of interactions
+    that are executed before the axe run.
     """
-    results = []
+    results: List[Dict[str, Any]] = []
     dynamic_handler = DynamicContentHandler(driver)
-    
-    print(f"🔄 Iniciando análisis multi-estado para: {url}")
-    
+
+    print(f"🔄 Starting multi‑state analysis for: {url}")
+
     driver.get(url)
     time.sleep(PAGE_LOAD_WAIT_TIME)
-    
-    for i, state_config in enumerate(states_config, 1):
-        state_name = state_config.get('name', f'Estado {i}')
-        print(f"\n--- Analizando Estado {i}: {state_name} ---")
-        
+
+    for index, state_config in enumerate(states_config, 1):
+        state_name = state_config.get("name", f"State {index}")
+        print(f"\n--- Analysing state {index}: {state_name} ---")
+
         try:
-            if state_config.get('interactions'):
+            if state_config.get("interactions"):
                 interaction_results = dynamic_handler.execute_custom_interactions(
-                    state_config['interactions']
+                    state_config["interactions"]
                 )
                 print(
-                    f"Interacciones ejecutadas: "
-                    f"{len(interaction_results['successful'])} exitosas"
+                    "Interactions executed: "
+                    f"{len(interaction_results['successful'])} successful"
                 )
 
             axe_results = run_axe_analysis(
-                driver, url, enable_dynamic_interactions=False
+                driver,
+                url,
+                enable_dynamic_interactions=False,
             )
-            
-            axe_results['state_info'] = {
-                'name': state_name,
-                'description': state_config.get('description', ''),
-                'interactions_applied': state_config.get('interactions', []),
-                'timestamp': time.time()
+
+            axe_results["state_info"] = {
+                "name": state_name,
+                "description": state_config.get("description", ""),
+                "interactions_applied": state_config.get("interactions", []),
+                "timestamp": time.time(),
             }
-            
+
             results.append(axe_results)
-            print(f"✅ Estado '{state_name}' analizado exitosamente")
-            
-        except Exception as e:
-            print(f"❌ Error analizando estado '{state_name}': {e}")
-            results.append({
-                'error': str(e),
-                'state_info': {
-                    'name': state_name,
-                    'description': state_config.get('description', ''),
-                    'timestamp': time.time()
+            print(f"✅ State '{state_name}' analysed successfully")
+
+        except Exception as exc:
+            print(f"❌ Error analysing state '{state_name}': {exc}")
+            results.append(
+                {
+                    "error": str(exc),
+                    "state_info": {
+                        "name": state_name,
+                        "description": state_config.get("description", ""),
+                        "timestamp": time.time(),
+                    },
                 }
-            })
-    
+            )
+
     return results
