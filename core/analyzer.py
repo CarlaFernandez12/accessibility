@@ -1,10 +1,3 @@
-"""
-Accessibility analysis helpers using axe-core.
-
-This module centralises all interaction between Selenium and axe-core:
-loading the script into the page, handling SSL warnings, supporting basic
-dynamic content interactions and performing multi‑state scans.
-"""
 
 import time
 from pathlib import Path

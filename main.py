@@ -25,6 +25,7 @@ from core.react_handler import (
     run_axe_on_react_app,
     map_axe_violations_to_react_components,
     fix_react_components_with_axe_violations,
+    start_react_dev_server,
 )
 
 from core.html_generator import generate_accessible_html_with_parser
@@ -221,44 +222,60 @@ def _process_react_project_flow(args, client, timestamp: str) -> None:
     clear_openai_logs()
 
     react_axe_enabled = args.react_axe or args.react_axe_only
+    dev_server_process = None
 
-    if react_axe_enabled:
-
-        detected_port = _detect_react_dev_server_port(project_path)
-
-        if detected_port:
-            react_url = f"http://localhost:{detected_port}/"
-        else:
-            react_url = args.react_url
-
-        print(f"[React + Axe] Executing analysis on: {react_url}")
-
-        try:
-            axe_results, screenshot_paths = run_axe_on_react_app(
-                react_url,
-                run_path,
-                suffix="_before",
-                take_screenshots_flag=True
-            )
-
-            issues_by_component = map_axe_violations_to_react_components(
-                axe_results,
-                Path(project_path)
-            )
-
-            if issues_by_component:
-                fixes = fix_react_components_with_axe_violations(
-                    issues_by_component,
-                    Path(project_path),
-                    client,
-                    screenshot_paths=screenshot_paths
-                )
-                print(f"[React + Axe] Components fixed: {len(fixes)}")    
+    try:
+        # --serve-app: launch the React dev server automatically
+        if args.serve_app:
+            print("[React + serve-app] Starting React dev server...")
+            dev_server_process = start_react_dev_server(Path(project_path))
+            if dev_server_process:
+                print("[React + serve-app] ✓ Dev server started.")
             else:
-                print("[React + Axe] No violations mapped to components.")
+                print("[React + serve-app] → Server may already be running or could not be started.")
 
-        except Exception as exc:
-            print(f"[React + Axe] Error: {exc}")
+        if react_axe_enabled:
+            detected_port = _detect_react_dev_server_port(project_path)
+
+            if detected_port:
+                react_url = f"http://localhost:{detected_port}/"
+            else:
+                react_url = args.react_url
+
+            print(f"[React + Axe] Executing analysis on: {react_url}")
+
+            try:
+                axe_results, screenshot_paths = run_axe_on_react_app(
+                    react_url,
+                    run_path,
+                    suffix="_before",
+                    take_screenshots_flag=True
+                )
+
+                issues_by_component = map_axe_violations_to_react_components(
+                    axe_results,
+                    Path(project_path)
+                )
+
+                if issues_by_component:
+                    fixes = fix_react_components_with_axe_violations(
+                        issues_by_component,
+                        Path(project_path),
+                        client,
+                        screenshot_paths=screenshot_paths
+                    )
+                    print(f"[React + Axe] Components fixed: {len(fixes)}")
+                else:
+                    print("[React + Axe] No violations mapped to components.")
+
+            except Exception as exc:
+                print(f"[React + Axe] Error: {exc}")
+
+    finally:
+        if dev_server_process is not None:
+            print("[React + serve-app] Stopping dev server...")
+            dev_server_process.terminate()
+            print("[React + serve-app] ✓ Dev server stopped.")
 
     save_openai_logs(run_path)
     print("React process completed.")

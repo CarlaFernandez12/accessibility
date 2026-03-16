@@ -1084,10 +1084,130 @@ def run_axe_on_react_app(base_url: str, run_path: str, suffix: str = "", take_sc
             driver.quit()
 
 
+def start_react_dev_server(project_root: Path) -> Optional["subprocess.Popen[str]"]:
+    """
+    Start the React development server in the background and wait until a port
+    responds to HTTP (using the same port-detection logic as ``ports.py``).
+
+    Strategy:
+        1. Inspect ``scripts`` in ``package.json`` and prefer ``start`` first,
+           then ``dev`` (typical for Vite/Next.js).
+        2. Launch the chosen script with ``npm run <script>`` as a background
+           subprocess.
+        3. Poll the common React/Vite ports (3000, 5173, 8080 …) until one
+           responds or the timeout is reached.
+
+    Returns:
+        The running ``subprocess.Popen`` object so the caller can terminate it
+        when finished; or ``None`` if the server could not be started.
+    """
+    import socket
+    import time
+    from urllib.request import urlopen, Request
+    from urllib.error import URLError
+
+    COMMON_PORTS = [3000, 5173, 8080, 3001, 5174, 8081, 5000, 4000, 3002]
+    MAX_WAIT_SECONDS = 120
+    POLL_INTERVAL = 3
+
+    def _npm_available() -> bool:
+        try:
+            subprocess.run(
+                ["npm", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            return True
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
+
+    def _port_responds(port: int) -> bool:
+        """Return True if localhost:<port> accepts HTTP connections."""
+        try:
+            req = Request(f"http://localhost:{port}/")
+            req.add_header("User-Agent", "Mozilla/5.0")
+            response = urlopen(req, timeout=3)
+            content_type = response.headers.get("Content-Type", "")
+            return 200 <= response.status < 300 or "text/html" in content_type.lower()
+        except Exception:
+            return False
+
+    def _detect_active_port() -> Optional[int]:
+        for port in COMMON_PORTS:
+            if _port_responds(port):
+                return port
+        return None
+
+    def _choose_start_script(package_json: Path) -> Optional[str]:
+        try:
+            with open(package_json, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            scripts = data.get("scripts", {})
+            # Prefer 'start'; fallback to 'dev' (Vite/Next.js default)
+            for candidate in ("start", "dev"):
+                if candidate in scripts:
+                    return candidate
+        except Exception:
+            pass
+        return None
+
+    if not _npm_available():
+        print("[React + serve-app] ⚠️ npm not found. Cannot start dev server automatically.")
+        return None
+
+    package_json = project_root / "package.json"
+    if not package_json.exists():
+        print("[React + serve-app] ⚠️ package.json not found. Cannot start dev server.")
+        return None
+
+    # Check if a dev server is already running on a known port
+    already_running = _detect_active_port()
+    if already_running:
+        print(f"[React + serve-app] → Dev server already running on port {already_running}. Skipping start.")
+        return None  # Nothing to kill later; caller should use detected URL directly
+
+    script = _choose_start_script(package_json)
+    if not script:
+        print("[React + serve-app] ⚠️ No 'start' or 'dev' script found in package.json.")
+        return None
+
+    print(f"[React + serve-app] → Starting dev server with 'npm run {script}'...")
+    try:
+        process = subprocess.Popen(
+            ["npm", "run", script],
+            cwd=str(project_root),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except Exception as exc:
+        print(f"[React + serve-app] ⚠️ Failed to start process: {exc}")
+        return None
+
+    # Wait until a port responds
+    print(f"[React + serve-app] → Waiting for dev server (max {MAX_WAIT_SECONDS}s)...")
+    waited = 0
+    while waited < MAX_WAIT_SECONDS:
+        time.sleep(POLL_INTERVAL)
+        waited += POLL_INTERVAL
+        active_port = _detect_active_port()
+        if active_port:
+            print(f"[React + serve-app] ✓ Dev server ready on port {active_port} ({waited}s elapsed)")
+            return process
+        print(f"[React + serve-app]   Waiting... ({waited}s)")
+
+    print(f"[React + serve-app] ⚠️ Dev server did not respond after {MAX_WAIT_SECONDS}s.")
+    process.terminate()
+    return None
+
+
 def process_react_project(project_path: str, client, run_path: str, serve_app: bool = False) -> List[str]:
     """
     Process a local React project (classic flow without Axe).
     NOTE: The Axe flow runs in main.py with --react-axe.
+          Use ``start_react_dev_server`` there when ``serve_app=True``.
     """
     # This classic flow does not use Axe, only static analysis if implemented
     # The Axe flow is in main.py (_process_react_project_flow)
