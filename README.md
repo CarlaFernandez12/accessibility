@@ -91,26 +91,6 @@ This applies the necessary fixes using the analysis JSON, generating the accessi
 
 ------------------------------------------------------------------------
 
-# Automatic Correction of Icon-Only Buttons
-
-The system automatically detects and fixes buttons that only contain icons (e.g., trash, add, close, search, etc.) and do not have visible text or an aria-label.
-
-For these cases, an appropriate `aria-label` attribute is added based on the detected icon. Example:
-
-```html
-<button class="btn btn-outline-dark"><i class="bi bi-trash3"></i></button>
-```
-
-Is automatically converted to:
-
-```html
-<button class="btn btn-outline-dark" aria-label="Delete"><i class="bi bi-trash3"></i></button>
-```
-
-This improves accessibility for screen readers and complies with WCAG requirements.
-
-------------------------------------------------------------------------
-
 # OpenAI API Key
 
 The tool requires an OpenAI API key.
