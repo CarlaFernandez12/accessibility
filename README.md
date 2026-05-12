@@ -67,6 +67,8 @@ From the current version, you can run the analysis and the fixing as two complet
 
 ```bash
 python main.py --project-path "/path/to/project" --analyze-only --react-url "http://localhost:3000"
+python main.py --project-path "/path/to/project" --analyze-only --angular-url "http://localhost:4200"
+
 # or for a public website
 python main.py --url "https://example.com" --analyze-only
 ```
@@ -77,6 +79,8 @@ This generates an `axe_results.json` file with all detected issues, without modi
 
 ```bash
 python main.py --project-path "/path/to/project" --fix-only --analysis-results "path/to/axe_results.json" --react-url "http://localhost:3000"
+python main.py --project-path "/path/to/project" --fix-only --analysis-results "path/to/axe_results.json" --angular-url "http://localhost:4200"
+
 # or for a public website
 python main.py --url "https://example.com" --fix-only --analysis-results "path/to/axe_results.json"
 ```
