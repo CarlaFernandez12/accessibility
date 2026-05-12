@@ -1,3 +1,19 @@
+import os
+# NUEVO: Reparar proyecto Angular a partir de resultados de análisis
+def fix_angular_project_from_axe_results(project_path: str, axe_results: dict, client, run_path: str) -> None:
+    """
+    Aplica las correcciones de accesibilidad a partir de los resultados de Axe (JSON).
+    """
+    print("[Angular] Reparando archivos fuente a partir de resultados de análisis...")
+    from pathlib import Path
+    from core.angular_handler import fix_templates_with_axe_violations, map_axe_violations_to_templates
+    project_root = Path(project_path)
+    issues_by_template = map_axe_violations_to_templates(axe_results, project_root)
+    if not issues_by_template:
+        print("[Angular] No se encontraron violaciones mapeadas a templates.")
+        return
+    fixes = fix_templates_with_axe_violations(issues_by_template, project_root, client)
+    print(f"[Angular] Reparación completada. Templates corregidos: {len(fixes)}")
 """
 Angular accessibility workflows and Axe‑driven corrections.
 

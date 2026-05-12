@@ -59,6 +59,54 @@ pip install -r requirements.txt
 
 ------------------------------------------------------------------------
 
+# Separate Analysis and Fix-Only Execution
+
+From the current version, you can run the analysis and the fixing as two completely independent steps:
+
+**1. Analysis only (does not modify anything, only generates the JSON with detected issues):**
+
+```bash
+python main.py --project-path "/path/to/project" --analyze-only --react-url "http://localhost:3000"
+# or for a public website
+python main.py --url "https://example.com" --analyze-only
+```
+
+This generates an `axe_results.json` file with all detected issues, without modifying any source files or HTML.
+
+**2. Fix only (uses the generated JSON, does not re-analyze):**
+
+```bash
+python main.py --project-path "/path/to/project" --fix-only --analysis-results "path/to/axe_results.json" --react-url "http://localhost:3000"
+# or for a public website
+python main.py --url "https://example.com" --fix-only --analysis-results "path/to/axe_results.json"
+```
+
+This applies the necessary fixes using the analysis JSON, generating the accessible version.
+
+**Important:** If you do not use either of these flags, the process will be combined (analysis + fixing, as before).
+
+------------------------------------------------------------------------
+
+# Automatic Correction of Icon-Only Buttons
+
+The system automatically detects and fixes buttons that only contain icons (e.g., trash, add, close, search, etc.) and do not have visible text or an aria-label.
+
+For these cases, an appropriate `aria-label` attribute is added based on the detected icon. Example:
+
+```html
+<button class="btn btn-outline-dark"><i class="bi bi-trash3"></i></button>
+```
+
+Is automatically converted to:
+
+```html
+<button class="btn btn-outline-dark" aria-label="Delete"><i class="bi bi-trash3"></i></button>
+```
+
+This improves accessibility for screen readers and complies with WCAG requirements.
+
+------------------------------------------------------------------------
+
 # OpenAI API Key
 
 The tool requires an OpenAI API key.

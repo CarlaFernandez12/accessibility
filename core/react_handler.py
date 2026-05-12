@@ -1,3 +1,68 @@
+def fallback_fix_button_name_violation(component_code, violation):
+    """
+    Fallback: Add aria-label and visible text to buttons without them.
+    - Adds aria-label if missing.
+    - Adds visible text if button is icon-only or empty.
+    """
+    import re
+    def fix_button(match):
+        tag = match.group(1)
+        props = match.group(2)
+        content = match.group(3)
+        # Add aria-label if missing
+        if 'aria-label' not in props:
+            props = props.rstrip() + ' aria-label="Accessible Button"'
+        # Remove HTML tags and check if any visible text remains
+        content_stripped = re.sub(r'<[^>]+>', '', content).strip()
+        if not re.search(r'[\w\u00C0-\u017F]+', content_stripped):
+            # Insert text before closing tag, preserving icons
+            if content.strip():
+                content = content + ' Accessible Button'
+            else:
+                content = 'Accessible Button'
+        return f'<{tag}{props}>{content}</{tag}>'
+    pattern = r'<(button|Button)([^>]*)>([\s\S]*?)</\\1>'
+    fixed_code = re.sub(pattern, fix_button, component_code, flags=re.IGNORECASE)
+    return fixed_code
+
+def fallback_fix_color_contrast_violation(component_code, violation):
+    """
+    Fallback: Change color style to black for better contrast.
+    - Replaces any color style or class with black (#000).
+    """
+    import re
+    # Regex for style={{ color: ... }} or style={{color:...}}
+    def fix_color(match):
+        before = match.group(1)
+        style = match.group(2)
+        after = match.group(3)
+        # Replace color value with #000 (black)
+        style_fixed = re.sub(r'color\s*:\s*([#\w\d\(\),\s]+)', 'color: "#000"', style)
+        return f'{before}style={{{style_fixed}}}{after}'
+    # Replace all style={{ ...color: ... }}
+    pattern = r'(.*)style=\{(.*?)\}(.*)'
+    fixed_code = re.sub(pattern, fix_color, component_code)
+    # Also handle inline style="color: ..."
+    fixed_code = re.sub(r'style="[^"]*color\s*:\s*[^;"}]+', 'style="color: #000', fixed_code)
+    # Also handle className or class with color utility classes (e.g., text-white)
+    fixed_code = re.sub(r'(class(Name)?=\"[^"]*)text-white', r'\1text-black', fixed_code)
+    return fixed_code
+import os
+# NUEVO: Reparar proyecto React a partir de resultados de análisis
+def fix_react_project_from_axe_results(project_path: str, axe_results: dict, client, run_path: str) -> None:
+    """
+    Aplica las correcciones de accesibilidad a partir de los resultados de Axe (JSON).
+    """
+    print("[React] Reparando archivos fuente a partir de resultados de análisis...")
+    from pathlib import Path
+    from core.react_handler import map_axe_violations_to_react_components, fix_react_components_with_axe_violations
+    project_root = Path(project_path)
+    issues_by_component = map_axe_violations_to_react_components(axe_results, project_root)
+    if not issues_by_component:
+        print("[React] No se encontraron violaciones mapeadas a componentes.")
+        return
+    fixes = fix_react_components_with_axe_violations(issues_by_component, project_root, client)
+    print(f"[React] Reparación completada. Componentes corregidos: {len(fixes)}")
 """
 React accessibility workflows and Axe‑driven component corrections.
 
@@ -338,41 +403,64 @@ def map_axe_violations_to_react_components(
         impact = violation.get("impact", "unknown")
         wcag_level = "WCAG A" if impact == "critical" else "WCAG AA" if impact == "serious" else "Otro"
         print(f"  → Violation [{wcag_level}]: {violation_id} - {violation_description} (impact: {impact})")
-        
+
         for node in violation.get("nodes", []):
             html_snippet = node.get("html") or ""
             if not html_snippet:
                 continue
-            
+
             normalized_snippet = _normalize_react_html(html_snippet)
             if not normalized_snippet.strip():
                 continue
-            
+
             targets = node.get("target", [])
             selector = targets[0] if targets and isinstance(targets[0], str) else ""
-            
+
             matched_component = None
             match_method = ""
-            
-            # 1) Search on normalised content
-            for rel_path, comp_data in components.items():
-                if normalized_snippet in comp_data["normalized"]:
-                    matched_component = rel_path
-                    match_method = "contenido normalizado"
-                    break
-            
-            # 2) Search by snippet's specific CSS classes (more precise)
+
+            # 1) Buscar por selector CSS del campo target (refuerzo)
+            if selector:
+                # Si es clase (empieza por .)
+                if selector.startswith('.'):
+                    class_name = selector[1:]
+                    for rel_path, comp_data in components.items():
+                        if class_name in comp_data["jsx"]:
+                            matched_component = rel_path
+                            match_method = f"target selector (class: {class_name})"
+                            break
+                # Si es atributo (ej: button[aria-label="..."])
+                elif '[' in selector and ']' in selector:
+                    attr = selector.split('[')[1].split(']')[0]
+                    for rel_path, comp_data in components.items():
+                        if attr in comp_data["jsx"]:
+                            matched_component = rel_path
+                            match_method = f"target selector (attr: {attr})"
+                            break
+                # Si es tag o id
+                else:
+                    for rel_path, comp_data in components.items():
+                        if selector in comp_data["jsx"]:
+                            matched_component = rel_path
+                            match_method = f"target selector (raw: {selector})"
+                            break
+
+            # 2) Search on normalised content
+            if not matched_component:
+                for rel_path, comp_data in components.items():
+                    if normalized_snippet in comp_data["normalized"]:
+                        matched_component = rel_path
+                        match_method = "contenido normalizado"
+                        break
+
+            # 3) Search by snippet's specific CSS classes (más preciso)
             if not matched_component and html_snippet:
-                # Extraer todas las clases del snippet HTML
                 classes_in_snippet = re.findall(r'class=["\']([^"\']+)["\']', html_snippet)
                 if classes_in_snippet:
                     all_classes = ' '.join(classes_in_snippet).split()
-                    # Buscar componentes que contengan TODAS las clases principales
                     for rel_path, comp_data in components.items():
-                        # Ensure at least some important classes are present
                         matching_classes = [cls for cls in all_classes if cls in comp_data["jsx"]]
-                        if len(matching_classes) >= min(2, len(all_classes)):  # Al menos 2 clases o todas si hay menos
-                            # Ensure main tag also exists
+                        if len(matching_classes) >= min(2, len(all_classes)):
                             snippet_tag = re.search(r'<(\w+)', html_snippet)
                             if snippet_tag:
                                 tag_name = snippet_tag.group(1)
@@ -380,12 +468,11 @@ def map_axe_violations_to_react_components(
                                     matched_component = rel_path
                                     match_method = f"clases CSS ({', '.join(matching_classes[:3])})"
                                     break
-            
-            # 3) Fallback: search raw JSX (only if not found via classes)
+
+            # 4) Fallback: search raw JSX (solo si no se encontró por clases)
             if not matched_component:
                 for rel_path, comp_data in components.items():
                     if _jsx_contains_html_elements(comp_data["jsx"], normalized_snippet):
-                        # Validar que el tag principal realmente existe en el componente
                         snippet_tag = re.search(r'<(\w+)', html_snippet)
                         if snippet_tag:
                             tag_name = snippet_tag.group(1)
@@ -393,49 +480,14 @@ def map_axe_violations_to_react_components(
                                 matched_component = rel_path
                                 match_method = "coincidencia de tags"
                                 break
-            
-            # 4) Usar selector CSS para encontrar componentes (mejorado)
-            if not matched_component and selector:
-                # Extraer nombre de clase sin el punto inicial
-                class_name = selector.lstrip('.').split()[0] if selector.startswith('.') else selector.split()[0]
-                # Variaciones del nombre de clase
-                class_variations = [
-                    class_name,
-                    class_name.lower(),
-                    class_name.capitalize(),
-                    class_name.replace('-', '_'),
-                    class_name.replace('_', '-'),
-                ]
-                
-                for rel_path, comp_data in components.items():
-                    # Buscar el selector completo
-                    if selector in comp_data["jsx"] or selector in comp_data["normalized"]:
-                        matched_component = rel_path
-                        match_method = "selector CSS"
-                        break
-                    
-                    # Buscar variaciones del nombre de clase
-                    for variation in class_variations:
-                        if variation and (variation in comp_data["jsx"] or variation in comp_data["normalized"]):
-                            matched_component = rel_path
-                            match_method = f"CSS selector (variation: {variation})"
-                            break
-                    if matched_component:
-                        break
-            
-            # 5) Search by visible text in HTML snippet (improved - more specific)
+
+            # 5) Search by visible text in HTML snippet (más específico)
             if not matched_component and html_snippet:
-                # Extraer texto visible del HTML (sin tags)
                 text_content = re.sub(r'<[^>]+>', '', html_snippet).strip()
-                # Collapse multiple spaces
                 text_content = re.sub(r'\s+', ' ', text_content)
-                # Look for significant text (more than 3 chars)
                 if len(text_content) > 3:
-                    # First try exact match of full text
                     for rel_path, comp_data in components.items():
-                        # Buscar el texto completo en el JSX
                         if text_content in comp_data["jsx"]:
-                            # Ensure the tag also exists
                             snippet_tag = re.search(r'<(\w+)', html_snippet)
                             if snippet_tag:
                                 tag_name = snippet_tag.group(1)
@@ -443,16 +495,12 @@ def map_axe_violations_to_react_components(
                                     matched_component = rel_path
                                     match_method = f"texto visible exacto: '{text_content[:30]}...'"
                                     break
-                    
-                    # If no exact text match, search for significant keywords
                     if not matched_component:
                         words = [w for w in text_content.split() if len(w) > 3]
                         if words:
-                            # Find components that contain multiple keywords
                             for rel_path, comp_data in components.items():
                                 matching_words = [w for w in words if w in comp_data["jsx"]]
-                                if len(matching_words) >= min(2, len(words)):  # Al menos 2 palabras o todas si hay menos
-                                    # Ensure the tag also exists
+                                if len(matching_words) >= min(2, len(words)):
                                     snippet_tag = re.search(r'<(\w+)', html_snippet)
                                     if snippet_tag:
                                         tag_name = snippet_tag.group(1)
@@ -985,21 +1033,44 @@ The screenshots show the application BEFORE the fixes. Your job is to make it ac
                 }
                 print(f"[React + Axe] ✓ Cambios aplicados en {rel_path}")
             else:
+                has_contrast = any(issue.get("violation", {}).get("id", "") == "color-contrast" for issue in issues)
+                has_button_name = any(issue.get("violation", {}).get("id", "") == "button-name" for issue in issues)
                 if not is_valid_response:
                     print(f"[React + Axe] ⚠️ LLM returned invalid code for {rel_path}")
                 else:
                     print(f"[React + Axe] ⚠️ LLM returned the same code for {rel_path}")
-                    # If contrast violations but no changes detected, show more info
-                    has_contrast = any(issue.get("violation", {}).get("id", "") == "color-contrast" for issue in issues)
-                    if has_contrast:
-                        print(f"[React + Axe] ⚠️ HAY VIOLACIONES DE CONTRASTE PERO NO SE DETECTARON CAMBIOS")
-                        print(f"[React + Axe] Colores en original: {sorted(orig_colors)}")
-                        print(f"[React + Axe] Colores en corregido: {sorted(corr_colors)}")
-                        print(f"[React + Axe] Estilos en original: {len(orig_styles)}")
-                        print(f"[React + Axe] Estilos en corregido: {len(corr_styles)}")
-                        print(f"[React + Axe] LLM probably did not apply the fixes")
-                        print("[React + Axe] 💡 Suggestion: Check that the LLM added style={{ color: '...' }} "
-                              "or modified the color=\"...\" prop)")
+                fallback_applied = False
+                fallback_content = original_content
+                if has_contrast:
+                    print(f"[React + Axe] ⚠️ HAY VIOLACIONES DE CONTRASTE PERO NO SE DETECTARON CAMBIOS")
+                    print(f"[React + Axe] Aplicando fallback manual de contraste (color negro, tolerante a saltos de línea y props)...")
+                    # Regex tolerante: busca <a ...> o <button ...> en varias líneas, sin style existente
+                    def add_style(match):
+                        tag = match.group(0)
+                        if 'style=' not in tag:
+                            # Insertar antes del cierre del tag
+                            return re.sub(r'(>)', ' style={{ color: "#000" }}\1', tag, count=1)
+                        return tag
+                    fallback_content = re.sub(r'<(a|button)([\s\S]*?)(?<!style=[^>]*)>', add_style, fallback_content)
+                    fallback_applied = True
+                if has_button_name:
+                    print(f"[React + Axe] ⚠️ HAY VIOLACIONES DE button-name PERO NO SE DETECTARON CAMBIOS")
+                    print(f"[React + Axe] Aplicando fallback manual de button-name (aria-label, tolerante a saltos de línea)...")
+                    # Añadir aria-label="Button" a <button> sin texto ni aria-label
+                    def add_aria_label(match):
+                        tag = match.group(0)
+                        if 'aria-label' not in tag:
+                            return tag.replace('>', ' aria-label="Button">')
+                        return tag
+                    fallback_content = re.sub(r'<button([\s\S]*?)>\s*</button>', add_aria_label, fallback_content)
+                    fallback_applied = True
+                if fallback_applied and fallback_content != original_content:
+                    comp_path.write_text(fallback_content, encoding="utf-8")
+                    fixes[rel_path] = {
+                        "original": original_content,
+                        "corrected": fallback_content,
+                    }
+                    print(f"[React + Axe] ✓ Fallback manual aplicado en {rel_path}")
 
         except Exception as e:
             print(f"[React + Axe] ⚠️ Error fixing {rel_path}: {e}")

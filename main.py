@@ -99,6 +99,24 @@ def _create_argument_parser() -> argparse.ArgumentParser:
         default="http://localhost:3000/"
     )
 
+    # NUEVO: Modos separados de análisis y reparación
+    parser.add_argument(
+        "--analyze-only",
+        action="store_true",
+        help="Solo ejecutar el análisis y guardar los resultados en JSON."
+    )
+    parser.add_argument(
+        "--fix-only",
+        action="store_true",
+        help="Solo ejecutar la reparación a partir de un archivo de resultados de análisis."
+    )
+    parser.add_argument(
+        "--analysis-results",
+        type=str,
+        default=None,
+        help="Ruta al archivo JSON con los resultados del análisis (para --fix-only)."
+    )
+
     return parser
 
 
@@ -175,12 +193,13 @@ def main() -> None:
     client = OpenAI(api_key=api_key)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    # Local project flow
+    # Si se solicita solo análisis o solo reparación, decidir el flujo según el modo
     if args.project_path:
+        # Permitir --analyze-only y --fix-only también para proyectos locales
         _handle_local_project(args, client, timestamp)
         return
 
-    # Web URL flow
+    # Web URL flow (incluye los nuevos modos)
     _process_web_url(args, client, timestamp)
 
 # Local Project Router
@@ -198,6 +217,84 @@ def _handle_local_project(args, client, timestamp: str) -> None:
 
     force_angular = args.angular_axe or args.angular_axe_only
 
+    # --- SOLO ANÁLISIS ---
+    if args.analyze_only:
+        # Para Angular y React, solo ejecutar análisis y guardar resultados
+        if force_angular or not is_react:
+            print(f"[Detection] Project treated as Angular: {project_path}")
+            # Ejecutar análisis Axe sobre la app Angular en dev server (requiere que esté corriendo)
+            # Aquí asumimos que el usuario debe tener el dev server corriendo en angular-url
+            from core.angular_handler import run_axe_on_angular_app
+            axe_results = run_axe_on_angular_app(args.angular_url, _create_run_path(os.path.basename(project_path), timestamp))
+            results_path = os.path.join(_create_run_path(os.path.basename(project_path), timestamp), "axe_results.json")
+            with open(results_path, "w", encoding="utf-8") as f:
+                json.dump(axe_results, f, ensure_ascii=False, indent=2)
+            print(f"Análisis completado. Resultados guardados en: {results_path}")
+        elif is_react:
+            print(f"[Detection] React project detected: {project_path}")
+            from core.react_handler import run_axe_on_react_app
+            react_url = args.react_url
+            axe_results, screenshot_paths = run_axe_on_react_app(react_url, _create_run_path(os.path.basename(project_path), timestamp), suffix="_before", take_screenshots_flag=True)
+            results_path = os.path.join(_create_run_path(os.path.basename(project_path), timestamp), "axe_results.json")
+            with open(results_path, "w", encoding="utf-8") as f:
+                json.dump(axe_results, f, ensure_ascii=False, indent=2)
+            print(f"Análisis completado. Resultados guardados en: {results_path}")
+        return
+
+    # --- SOLO REPARACIÓN ---
+    if args.fix_only:
+        if not args.analysis_results or not os.path.exists(args.analysis_results):
+            print("Debe proporcionar --analysis-results con la ruta al JSON de análisis.")
+            return
+        with open(args.analysis_results, "r", encoding="utf-8") as f:
+            axe_results = json.load(f)
+        run_path = _create_run_path(os.path.basename(project_path), timestamp)
+        os.makedirs(run_path, exist_ok=True)
+        # Reparar archivos fuente React si es un proyecto React
+        if is_react:
+            print("[fix-only] Reparando archivos fuente React...")
+            issues_by_component = map_axe_violations_to_react_components(
+                axe_results,
+                Path(project_path)
+            )
+            if issues_by_component:
+                fixes = fix_react_components_with_axe_violations(
+                    issues_by_component,
+                    Path(project_path),
+                    client
+                )
+                print(f"[React + Axe] Components fixed: {len(fixes)}")
+            else:
+                print("[React + Axe] No violations mapped to components.")
+            return
+        # (Solo para Angular o proyectos no React) Obtener HTML accesible
+        from core.webdriver_setup import setup_driver
+        from core.html_generator import generate_accessible_html_with_parser
+        driver = setup_driver()
+        try:
+            url = args.react_url if is_react else args.angular_url
+            driver.get(url)
+            original_html = driver.page_source
+            accessible_html = generate_accessible_html_with_parser(
+                original_html,
+                axe_results,
+                [],
+                client,
+                url,
+                driver,
+                []
+            )
+            accessible_page_path = os.path.join(run_path, "accessible_page.html")
+            with open(accessible_page_path, "w", encoding="utf-8") as file:
+                file.write(accessible_html)
+            print(f"Reparación completada. HTML accesible guardado en: {accessible_page_path}")
+        except Exception as exc:
+            print(f"[fix-only] Error generando HTML accesible: {exc}")
+        finally:
+            driver.quit()
+        return
+
+    # --- FLUJO ACTUAL (análisis + reparación) ---
     if force_angular:
         print(f"[Detection] Project treated as Angular: {project_path}")
         _process_angular_project(args, client, timestamp)
@@ -331,9 +428,51 @@ def _process_web_url(args, client, timestamp: str) -> None:
     driver = None
     accessible_page_path = None
 
+
     try:
         driver = setup_driver()
 
+        # --- SOLO ANÁLISIS ---
+        if args.analyze_only:
+            initial_results = run_axe_analysis(
+                driver,
+                args.url,
+                enable_dynamic_interactions=not args.disable_dynamic
+            )
+            results_path = os.path.join(run_path, "axe_results.json")
+            with open(results_path, "w", encoding="utf-8") as f:
+                json.dump(initial_results, f, ensure_ascii=False, indent=2)
+            print(f"Análisis completado. Resultados guardados en: {results_path}")
+            return
+
+        # --- SOLO REPARACIÓN ---
+        if args.fix_only:
+            if not args.analysis_results or not os.path.exists(args.analysis_results):
+                print("Debe proporcionar --analysis-results con la ruta al JSON de análisis.")
+                return
+            with open(args.analysis_results, "r", encoding="utf-8") as f:
+                initial_results = json.load(f)
+            if not initial_results or not initial_results.get("violations"):
+                print("No violations found in analysis results.")
+                return
+            driver.get(args.url)
+            original_html = driver.page_source
+            accessible_html = generate_accessible_html_with_parser(
+                original_html,
+                initial_results,
+                [],
+                client,
+                args.url,
+                driver,
+                []
+            )
+            accessible_page_path = os.path.join(run_path, "accessible_page.html")
+            with open(accessible_page_path, "w", encoding="utf-8") as file:
+                file.write(accessible_html)
+            print(f"Reparación completada. HTML accesible guardado en: {accessible_page_path}")
+            return
+
+        # --- FLUJO ACTUAL (análisis + reparación) ---
         initial_results = run_axe_analysis(
             driver,
             args.url,
