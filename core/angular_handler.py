@@ -27,8 +27,10 @@ Business behaviour must remain stable; refactors focus on structure,
 type hints and documentation only.
 """
 
+
 import json
 import subprocess
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -135,8 +137,30 @@ def map_axe_violations_to_templates(
     if source_roots is None:
         angular_config = project_root / ANGULAR_CONFIG_FILE
         if angular_config.exists():
-            config_data = _load_angular_config(angular_config)
-            source_roots = _resolve_source_roots(project_root, config_data)
+            import json
+            try:
+                with open(angular_config, "r", encoding="utf-8") as f:
+                    angular_json = json.load(f)
+                projects = angular_json.get("projects", {})
+                if projects:
+                    first_project = next(iter(projects.values()))
+                    source_root = first_project.get("sourceRoot")
+                    if source_root:
+                        abs_source_root = project_root / source_root
+                        if abs_source_root.exists():
+                            source_roots = [abs_source_root]
+                        else:
+                            print(f"[Angular + Axe] sourceRoot '{source_root}' not found, using project root.")
+                            source_roots = [project_root]
+                    else:
+                        print(f"[Angular + Axe] sourceRoot not defined in angular.json, using project root.")
+                        source_roots = [project_root]
+                else:
+                    print(f"[Angular + Axe] No projects found in angular.json, using project root.")
+                    source_roots = [project_root]
+            except Exception as e:
+                print(f"[Angular + Axe] Error reading angular.json: {e}. Using project root.")
+                source_roots = [project_root]
         else:
             # Fallback: look in common locations
             possible_roots = [

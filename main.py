@@ -220,13 +220,14 @@ def _handle_local_project(args, client, timestamp: str) -> None:
     # --- SOLO ANÁLISIS ---
     if args.analyze_only:
         # Para Angular y React, solo ejecutar análisis y guardar resultados
+        run_path = _create_run_path(os.path.basename(project_path), timestamp)
+        from utils.io_utils import setup_directories
+        setup_directories(run_path)
         if force_angular or not is_react:
             print(f"[Detection] Project treated as Angular: {project_path}")
-            # Ejecutar análisis Axe sobre la app Angular en dev server (requiere que esté corriendo)
-            # Aquí asumimos que el usuario debe tener el dev server corriendo en angular-url
             from core.angular_handler import run_axe_on_angular_app
-            axe_results = run_axe_on_angular_app(args.angular_url, _create_run_path(os.path.basename(project_path), timestamp))
-            results_path = os.path.join(_create_run_path(os.path.basename(project_path), timestamp), "axe_results.json")
+            axe_results = run_axe_on_angular_app(args.angular_url, run_path)
+            results_path = os.path.join(run_path, "axe_results.json")
             with open(results_path, "w", encoding="utf-8") as f:
                 json.dump(axe_results, f, ensure_ascii=False, indent=2)
             print(f"Análisis completado. Resultados guardados en: {results_path}")
@@ -234,8 +235,8 @@ def _handle_local_project(args, client, timestamp: str) -> None:
             print(f"[Detection] React project detected: {project_path}")
             from core.react_handler import run_axe_on_react_app
             react_url = args.react_url
-            axe_results, screenshot_paths = run_axe_on_react_app(react_url, _create_run_path(os.path.basename(project_path), timestamp), suffix="_before", take_screenshots_flag=True)
-            results_path = os.path.join(_create_run_path(os.path.basename(project_path), timestamp), "axe_results.json")
+            axe_results, screenshot_paths = run_axe_on_react_app(react_url, run_path, suffix="_before", take_screenshots_flag=True)
+            results_path = os.path.join(run_path, "axe_results.json")
             with open(results_path, "w", encoding="utf-8") as f:
                 json.dump(axe_results, f, ensure_ascii=False, indent=2)
             print(f"Análisis completado. Resultados guardados en: {results_path}")
@@ -250,7 +251,7 @@ def _handle_local_project(args, client, timestamp: str) -> None:
             axe_results = json.load(f)
         run_path = _create_run_path(os.path.basename(project_path), timestamp)
         os.makedirs(run_path, exist_ok=True)
-        # Reparar archivos fuente React si es un proyecto React
+        # Reparar archivos fuente React o Angular según el tipo de proyecto
         if is_react:
             print("[fix-only] Reparando archivos fuente React...")
             issues_by_component = map_axe_violations_to_react_components(
@@ -267,32 +268,11 @@ def _handle_local_project(args, client, timestamp: str) -> None:
             else:
                 print("[React + Axe] No violations mapped to components.")
             return
-        # (Solo para Angular o proyectos no React) Obtener HTML accesible
-        from core.webdriver_setup import setup_driver
-        from core.html_generator import generate_accessible_html_with_parser
-        driver = setup_driver()
-        try:
-            url = args.react_url if is_react else args.angular_url
-            driver.get(url)
-            original_html = driver.page_source
-            accessible_html = generate_accessible_html_with_parser(
-                original_html,
-                axe_results,
-                [],
-                client,
-                url,
-                driver,
-                []
-            )
-            accessible_page_path = os.path.join(run_path, "accessible_page.html")
-            with open(accessible_page_path, "w", encoding="utf-8") as file:
-                file.write(accessible_html)
-            print(f"Reparación completada. HTML accesible guardado en: {accessible_page_path}")
-        except Exception as exc:
-            print(f"[fix-only] Error generando HTML accesible: {exc}")
-        finally:
-            driver.quit()
-        return
+        else:
+            print("[fix-only] Reparando archivos fuente Angular...")
+            from core.angular_handler import fix_angular_project_from_axe_results
+            fix_angular_project_from_axe_results(project_path, axe_results, client, run_path)
+            return
 
     # --- FLUJO ACTUAL (análisis + reparación) ---
     if force_angular:
