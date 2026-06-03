@@ -22,50 +22,6 @@ _IMPACT_PRIORITY: Dict[str, int] = {
     'minor': 4
 }
 
-
-def group_and_simplify_violations(violations: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-    """
-    Group violations by type and improve information for consistent processing.
-
-    Args:
-        violations: List of Axe violations
-
-    Returns:
-        Dictionary with violations grouped by ID
-    """
-    grouped_violations: Dict[str, Dict[str, Any]] = {}
-    if not violations:
-        return grouped_violations
-        
-    for violation in violations:
-        violation_id = violation.get('id', _DEFAULT_VIOLATION_ID)
-        description = violation.get('help', _DEFAULT_DESCRIPTION)
-        impact = violation.get('impact', _DEFAULT_IMPACT)
-        
-        if violation_id not in grouped_violations:
-            grouped_violations[violation_id] = {
-                "description": description,
-                "impact": impact,
-                "nodes": [],
-                "total_count": 0
-            }
-
-        for node in violation.get('nodes', []):
-            selector = node.get('target', [_DEFAULT_SELECTOR])[0]
-            html_snippet = node.get('html', _DEFAULT_HTML_SNIPPET)
-            failure_summary = node.get('failureSummary', '')
-            
-            node_info = {
-                "selector": selector,
-                "html": html_snippet,
-                "failure_summary": failure_summary,
-                "element_info": f"Element: <{selector}>, Code: `{html_snippet}`"
-            }
-            grouped_violations[violation_id]["nodes"].append(node_info)
-            grouped_violations[violation_id]["total_count"] += 1
-            
-    return grouped_violations
-
 def flatten_violations(violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Convert grouped violations into a flat list with improved information.

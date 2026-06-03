@@ -1,52 +1,16 @@
 import argparse
-import http.server
-import json
 import os
-import socketserver
-import webbrowser
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
-from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 from config.constants import BASE_RESULTS_DIR
-
-from core.analyzer import (
-    run_axe_analysis,
-    run_axe_analysis_multiple_states,
-)
-
-from core.angular_handler import process_angular_project
-from core.react_handler import (
-    detect_react_project,
-    run_axe_on_react_app,
-    map_axe_violations_to_react_components,
-    fix_react_components_with_axe_violations,
-    start_react_dev_server,
-)
-
-from core.html_generator import generate_accessible_html_with_parser
-from core.image_processing import process_media_elements
-
-from core.report import generate_comparison_report
-from core.screenshot_handler import take_screenshots
-
-from core.webdriver_setup import setup_driver
-from core.ports import detect_react_dev_server_port as _detect_react_dev_server_port
-
-from utils.io_utils import clear_openai_logs, save_openai_logs, setup_directories
+from core.project_flow import execute_local_project_flow
+from core.web_flow import execute_web_url_flow
 
 load_dotenv()
 
-
-# Constants
-DEFAULT_SERVER_PORT = 8000
-MAX_SERVER_PORT = 8050
-
-PREVIEW_PROMPT = "\nDo you want to preview the corrected page in your browser? (y/n): "
 
 # Argument parsing
 def _create_argument_parser() -> argparse.ArgumentParser:
@@ -99,22 +63,21 @@ def _create_argument_parser() -> argparse.ArgumentParser:
         default="http://localhost:3000/"
     )
 
-    # NUEVO: Modos separados de análisis y reparación
     parser.add_argument(
         "--analyze-only",
         action="store_true",
-        help="Solo ejecutar el análisis y guardar los resultados en JSON."
+        help="Run analysis only and save the results as JSON."
     )
     parser.add_argument(
         "--fix-only",
         action="store_true",
-        help="Solo ejecutar la reparación a partir de un archivo de resultados de análisis."
+        help="Run fixes only from a saved analysis results file."
     )
     parser.add_argument(
         "--analysis-results",
         type=str,
         default=None,
-        help="Ruta al archivo JSON con los resultados del análisis (para --fix-only)."
+        help="Path to the analysis results JSON file used by --fix-only."
     )
 
     return parser
@@ -158,23 +121,6 @@ def _create_run_path(base_name: str, timestamp: str) -> str:
     return os.path.join(BASE_RESULTS_DIR, sanitized_name, timestamp)
 
 
-def _load_json_file(file_path: Optional[str], error_prefix: str):
-    """
-    Load a JSON file safely.
-
-    Returns:
-        dict | None
-    """
-    if not file_path:
-        return None
-
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except Exception as exc:
-        print(f"{error_prefix}: {exc}")
-        return None
-
 # Main Function
 def main() -> None:
     """
@@ -193,365 +139,22 @@ def main() -> None:
     client = OpenAI(api_key=api_key)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    # Si se solicita solo análisis o solo reparación, decidir el flujo según el modo
     if args.project_path:
-        # Permitir --analyze-only y --fix-only también para proyectos locales
         _handle_local_project(args, client, timestamp)
         return
 
-    # Web URL flow (incluye los nuevos modos)
     _process_web_url(args, client, timestamp)
 
 # Local Project Router
 def _handle_local_project(args, client, timestamp: str) -> None:
-    """
-    Decide whether to execute Angular or React flow for a local project.
-    """
-    project_path = os.path.abspath(args.project_path)
-
-    is_react = (
-        detect_react_project(project_path)
-        or args.react_axe
-        or args.react_axe_only
-    )
-
-    force_angular = args.angular_axe or args.angular_axe_only
-
-    # --- SOLO ANÁLISIS ---
-    if args.analyze_only:
-        # Para Angular y React, solo ejecutar análisis y guardar resultados
-        run_path = _create_run_path(os.path.basename(project_path), timestamp)
-        from utils.io_utils import setup_directories
-        setup_directories(run_path)
-        if force_angular or not is_react:
-            print(f"[Detection] Project treated as Angular: {project_path}")
-            from core.angular_handler import run_axe_on_angular_app
-            axe_results = run_axe_on_angular_app(args.angular_url, run_path)
-            results_path = os.path.join(run_path, "axe_results.json")
-            with open(results_path, "w", encoding="utf-8") as f:
-                json.dump(axe_results, f, ensure_ascii=False, indent=2)
-            print(f"Análisis completado. Resultados guardados en: {results_path}")
-        elif is_react:
-            print(f"[Detection] React project detected: {project_path}")
-            from core.react_handler import run_axe_on_react_app
-            react_url = args.react_url
-            axe_results, screenshot_paths = run_axe_on_react_app(react_url, run_path, suffix="_before", take_screenshots_flag=True)
-            results_path = os.path.join(run_path, "axe_results.json")
-            with open(results_path, "w", encoding="utf-8") as f:
-                json.dump(axe_results, f, ensure_ascii=False, indent=2)
-            print(f"Análisis completado. Resultados guardados en: {results_path}")
-        return
-
-    # --- SOLO REPARACIÓN ---
-    if args.fix_only:
-        if not args.analysis_results or not os.path.exists(args.analysis_results):
-            print("Debe proporcionar --analysis-results con la ruta al JSON de análisis.")
-            return
-        with open(args.analysis_results, "r", encoding="utf-8") as f:
-            axe_results = json.load(f)
-        run_path = _create_run_path(os.path.basename(project_path), timestamp)
-        os.makedirs(run_path, exist_ok=True)
-        # Reparar archivos fuente React o Angular según el tipo de proyecto
-        if is_react:
-            print("[fix-only] Reparando archivos fuente React...")
-            issues_by_component = map_axe_violations_to_react_components(
-                axe_results,
-                Path(project_path)
-            )
-            if issues_by_component:
-                fixes = fix_react_components_with_axe_violations(
-                    issues_by_component,
-                    Path(project_path),
-                    client
-                )
-                print(f"[React + Axe] Components fixed: {len(fixes)}")
-            else:
-                print("[React + Axe] No violations mapped to components.")
-            return
-        else:
-            print("[fix-only] Reparando archivos fuente Angular...")
-            from core.angular_handler import fix_angular_project_from_axe_results
-            fix_angular_project_from_axe_results(project_path, axe_results, client, run_path)
-            return
-
-    # --- FLUJO ACTUAL (análisis + reparación) ---
-    if force_angular:
-        print(f"[Detection] Project treated as Angular: {project_path}")
-        _process_angular_project(args, client, timestamp)
-    elif is_react:
-        print(f"[Detection] React project detected: {project_path}")
-        _process_react_project_flow(args, client, timestamp)
-    else:
-        _process_angular_project(args, client, timestamp)
-
-
-# React Flow
-def _process_react_project_flow(args, client, timestamp: str) -> None:
-    """
-    Execute advanced React + Axe flow.
-    """
-    project_path = os.path.abspath(args.project_path)
-    project_name = os.path.basename(project_path.rstrip(os.sep)) or "react_project"
-
-    run_path = _create_run_path(project_name, timestamp)
-
-    setup_directories(run_path)
-    clear_openai_logs()
-
-    react_axe_enabled = args.react_axe or args.react_axe_only
-    dev_server_process = None
-
-    try:
-        # --serve-app: launch the React dev server automatically
-        if args.serve_app:
-            print("[React + serve-app] Starting React dev server...")
-            dev_server_process = start_react_dev_server(Path(project_path))
-            if dev_server_process:
-                print("[React + serve-app] ✓ Dev server started.")
-            else:
-                print("[React + serve-app] → Server may already be running or could not be started.")
-
-        if react_axe_enabled:
-            detected_port = _detect_react_dev_server_port(project_path)
-
-            if detected_port:
-                react_url = f"http://localhost:{detected_port}/"
-            else:
-                react_url = args.react_url
-
-            print(f"[React + Axe] Executing analysis on: {react_url}")
-
-            try:
-                axe_results, screenshot_paths = run_axe_on_react_app(
-                    react_url,
-                    run_path,
-                    suffix="_before",
-                    take_screenshots_flag=True
-                )
-
-                issues_by_component = map_axe_violations_to_react_components(
-                    axe_results,
-                    Path(project_path)
-                )
-
-                if issues_by_component:
-                    fixes = fix_react_components_with_axe_violations(
-                        issues_by_component,
-                        Path(project_path),
-                        client,
-                        screenshot_paths=screenshot_paths
-                    )
-                    print(f"[React + Axe] Components fixed: {len(fixes)}")
-                else:
-                    print("[React + Axe] No violations mapped to components.")
-
-            except Exception as exc:
-                print(f"[React + Axe] Error: {exc}")
-
-    finally:
-        if dev_server_process is not None:
-            print("[React + serve-app] Stopping dev server...")
-            dev_server_process.terminate()
-            print("[React + serve-app] ✓ Dev server stopped.")
-
-    save_openai_logs(run_path)
-    print("React process completed.")
-
-
-# Angular Flow
-def _process_angular_project(args, client, timestamp: str) -> None:
-    """
-    Process Angular project (classic + advanced Axe flow).
-    """
-    project_path = os.path.abspath(args.project_path)
-    project_name = os.path.basename(project_path.rstrip(os.sep)) or "angular_project"
-
-    run_path = _create_run_path(project_name, timestamp)
-    start_time = datetime.now()
-
-    setup_directories(run_path)
-    clear_openai_logs()
-
-    try:
-        summary = process_angular_project(
-            project_path,
-            client,
-            run_path,
-            serve_app=args.serve_app
-        )
-        if summary:
-            print("\n--- Angular summary ---")
-            for line in summary:
-                print(line)
-    except Exception as exc:
-        print(f"Error processing Angular project: {exc}")
-
-    save_openai_logs(run_path)
-
-    elapsed = int((datetime.now() - start_time).total_seconds())
-    print(f"Total execution time Angular: {elapsed}s")
+    """Delegate the local project workflow to the dedicated project flow module."""
+    execute_local_project_flow(args, client, timestamp, _create_run_path)
 
 
 # Web URL Flow
 def _process_web_url(args, client, timestamp: str) -> None:
-    """
-    Execute full web page accessibility correction workflow.
-    """
-    start_time = datetime.now()
-
-    sanitized_url = _sanitize_name(urlparse(args.url).netloc)
-    run_path = _create_run_path(sanitized_url, timestamp)
-
-    setup_directories(run_path)
-    clear_openai_logs()
-
-    driver = None
-    accessible_page_path = None
-
-
-    try:
-        driver = setup_driver()
-
-        # --- SOLO ANÁLISIS ---
-        if args.analyze_only:
-            initial_results = run_axe_analysis(
-                driver,
-                args.url,
-                enable_dynamic_interactions=not args.disable_dynamic
-            )
-            results_path = os.path.join(run_path, "axe_results.json")
-            with open(results_path, "w", encoding="utf-8") as f:
-                json.dump(initial_results, f, ensure_ascii=False, indent=2)
-            print(f"Análisis completado. Resultados guardados en: {results_path}")
-            return
-
-        # --- SOLO REPARACIÓN ---
-        if args.fix_only:
-            if not args.analysis_results or not os.path.exists(args.analysis_results):
-                print("Debe proporcionar --analysis-results con la ruta al JSON de análisis.")
-                return
-            with open(args.analysis_results, "r", encoding="utf-8") as f:
-                initial_results = json.load(f)
-            if not initial_results or not initial_results.get("violations"):
-                print("No violations found in analysis results.")
-                return
-            driver.get(args.url)
-            original_html = driver.page_source
-            accessible_html = generate_accessible_html_with_parser(
-                original_html,
-                initial_results,
-                [],
-                client,
-                args.url,
-                driver,
-                []
-            )
-            accessible_page_path = os.path.join(run_path, "accessible_page.html")
-            with open(accessible_page_path, "w", encoding="utf-8") as file:
-                file.write(accessible_html)
-            print(f"Reparación completada. HTML accesible guardado en: {accessible_page_path}")
-            return
-
-        # --- FLUJO ACTUAL (análisis + reparación) ---
-        initial_results = run_axe_analysis(
-            driver,
-            args.url,
-            enable_dynamic_interactions=not args.disable_dynamic
-        )
-
-        if not initial_results or not initial_results.get("violations"):
-            print("No violations found.")
-            return
-
-        original_html = driver.page_source
-
-        accessible_html = generate_accessible_html_with_parser(
-            original_html,
-            initial_results,
-            [],
-            client,
-            args.url,
-            driver,
-            []
-        )
-
-        accessible_page_path = os.path.join(run_path, "accessible_page.html")
-
-        with open(accessible_page_path, "w", encoding="utf-8") as file:
-            file.write(accessible_html)
-
-        final_results = run_axe_analysis(
-            driver,
-            accessible_page_path,
-            is_local_file=True
-        )
-
-        report_path = os.path.join(run_path, "comparison_report.html")
-
-        elapsed_seconds = (datetime.now() - start_time).total_seconds()
-
-        generate_comparison_report(
-            initial_results,
-            final_results,
-            report_path,
-            elapsed_seconds
-        )
-
-        save_openai_logs(run_path)
-
-    except Exception as exc:
-        print(f"Unexpected error: {exc}")
-
-    finally:
-        if driver:
-            driver.quit()
-
-    if accessible_page_path and os.path.exists(accessible_page_path):
-        _serve_preview_if_requested(accessible_page_path)
-
-# Preview Server
-def _find_available_port():
-    """Find available port within configured range."""
-    Handler = http.server.SimpleHTTPRequestHandler
-
-    for port in range(DEFAULT_SERVER_PORT, MAX_SERVER_PORT):
-        try:
-            return socketserver.TCPServer(("", port), Handler)
-        except OSError:
-            continue
-
-    return None
-
-def _serve_preview_if_requested(accessible_page_path: str) -> None:
-    """
-    Optionally launch local preview server.
-    """
-    if input(PREVIEW_PROMPT).lower() != "y":
-        return
-
-    abs_path = os.path.abspath(accessible_page_path)
-    base_dir = os.path.dirname(abs_path)
-    file_name = os.path.basename(abs_path)
-
-    os.chdir(base_dir)
-
-    httpd = _find_available_port()
-
-    if not httpd:
-        print("Could not start server.")
-        return
-
-    url_to_open = f"http://localhost:{httpd.server_address[1]}/{file_name}"
-
-    print(f"Server started at: {url_to_open}")
-    webbrowser.open_new_tab(url_to_open)
-
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        httpd.server_close()
+    """Delegate the public URL workflow to the dedicated web flow module."""
+    execute_web_url_flow(args, client, timestamp, _create_run_path)
 
 
 

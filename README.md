@@ -1,304 +1,122 @@
 # Accessibility Analyzer
 
-This project automates the process of detecting and fixing common
-accessibility issues in web applications. It combines automated testing
-(axe-core + Selenium) with LLM-assisted remediation to generate improved
-versions of existing pages.
+This project analyzes and remediates accessibility issues in public websites, Angular applications, and React applications. It combines Selenium, axe-core, and LLM-assisted fixes while preserving the existing UI and workflow behavior.
 
-The tool can analyse **static websites** as well as applications built
-with **Angular** and **React**.
+## Requirements
 
-------------------------------------------------------------------------
+- Python 3.10 or newer
+- Google Chrome
+- Node.js and npm for Angular or React projects
+- An OpenAI API key
 
-# Repository Setup
+## Installation
 
-Clone the repository before running the tool:
-
-``` bash
-git clone https://github.com/CarlaFernandez12/accessibility
-cd accessibility
-```
-
-------------------------------------------------------------------------
-
-# Prerequisites
-
-Make sure the following software is installed on your system:
-
--   **Python 3.10 or newer**
--   **Google Chrome** (required for Selenium)
--   **Node.js and npm** (required when analysing Angular or React
-    projects)
--   A valid **OpenAI API key**
-
-------------------------------------------------------------------------
-
-# Installation
-
-Create and activate a virtual environment.
-
-### Linux / macOS
-
-``` bash
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
-```
-
-### Windows (PowerShell)
-
-``` powershell
-python -m venv .venv
-.venv\Scripts\activate
-```
-
-Install the Python dependencies:
-
-``` bash
 pip install -r requirements.txt
 ```
 
-------------------------------------------------------------------------
-
-# Separate Analysis and Fix-Only Execution
-
-From the current version, you can run the analysis and the fixing as two completely independent steps:
-
-**1. Analysis only (does not modify anything, only generates the JSON with detected issues):**
+Set the API key before running the tool:
 
 ```bash
-python main.py --project-path "/path/to/project" --analyze-only --react-url "http://localhost:3000"
-python main.py --project-path "/path/to/project" --analyze-only --angular-url "http://localhost:4200"
-
-# or for a public website
-python main.py --url "https://example.com" --analyze-only
-```
-
-This generates an `axe_results.json` file with all detected issues, without modifying any source files or HTML.
-
-**2. Fix only (uses the generated JSON, does not re-analyze):**
-
-```bash
-python main.py --project-path "/path/to/project" --fix-only --analysis-results "path/to/axe_results.json" --react-url "http://localhost:3000"
-python main.py --project-path "/path/to/project" --fix-only --analysis-results "path/to/axe_results.json" --angular-url "http://localhost:4200"
-
-# or for a public website
-python main.py --url "https://example.com" --fix-only --analysis-results "path/to/axe_results.json"
-```
-
-This applies the necessary fixes using the analysis JSON, generating the accessible version.
-
-**Important:** If you do not use either of these flags, the process will be combined (analysis + fixing, as before).
-
-------------------------------------------------------------------------
-
-# OpenAI API Key
-
-The tool requires an OpenAI API key.
-
-### Linux / macOS
-
-``` bash
 export OPENAI_API_KEY="your_api_key"
 ```
 
-### Windows (PowerShell)
+## Main workflows
 
-``` powershell
-$env:OPENAI_API_KEY="your_api_key"
-```
+The CLI supports three modes:
 
-### Windows (Command Prompt)
+1. Public URL analysis and HTML remediation.
+2. Angular project remediation, with optional live Axe validation against a local dev server.
+3. React project remediation, with violation mapping back to JSX and TSX source files.
 
-``` cmd
-set OPENAI_API_KEY=your_api_key
-```
+Each run creates a timestamped directory under `results/`.
 
-------------------------------------------------------------------------
+## CLI usage
 
-# Overview
+Analyze a public page and generate a corrected version:
 
-The tool supports three main workflows:
-
-1.  **Public web pages** -- analyse a URL and generate a corrected HTML
-    version with improved accessibility.
-2.  **Angular applications** -- inspect Angular templates and optionally
-    validate fixes against a running development server.
-3.  **React applications** -- analyse a running React application and
-    map accessibility issues back to JSX/TSX components.
-
-Each execution generates a dedicated output directory containing the
-accessibility reports and corrected files.
-
-------------------------------------------------------------------------
-
-# Static Website Analysis
-
-Use this mode to analyse any public web page.
-
-``` bash
+```bash
 python main.py --url "https://example.com"
 ```
 
-Optional flag to disable interactions with dynamic elements:
+Analyze only and save `axe_results.json` without applying fixes:
 
-``` bash
+```bash
+python main.py --url "https://example.com" --analyze-only
+python main.py --project-path "/path/to/project" --analyze-only --react-url "http://localhost:3000"
+python main.py --project-path "/path/to/project" --analyze-only --angular-url "http://localhost:4200"
+```
+
+Apply fixes from an existing analysis file without re-running Axe:
+
+```bash
+python main.py --url "https://example.com" --fix-only --analysis-results "path/to/axe_results.json"
+python main.py --project-path "/path/to/project" --fix-only --analysis-results "path/to/axe_results.json" --react-url "http://localhost:3000"
+python main.py --project-path "/path/to/project" --fix-only --analysis-results "path/to/axe_results.json" --angular-url "http://localhost:4200"
+```
+
+Disable automatic dynamic interactions for public URLs:
+
+```bash
 python main.py --url "https://example.com" --disable-dynamic
 ```
 
-During execution the tool will:
+## Angular projects
 
--   Load the page using Selenium and headless Chrome
--   Run **axe-core** to detect accessibility violations
--   Use an LLM to propose HTML improvements
--   Generate an accessible version of the page
--   Produce a comparison report
+Typical Angular run:
 
-Once the process finishes, the CLI will ask whether to start a **local
-preview server** to open the corrected page.
-
-------------------------------------------------------------------------
-
-# Angular Project Analysis
-
-### 1. Clone and prepare the Angular project
-
-``` bash
-git clone <angular-project-repository>
-cd <angular-project>
-```
-
-Install dependencies:
-
-``` bash
-npm install
-```
-
-Start the development server:
-
-``` bash
-npm start
-```
-
-or
-
-``` bash
-ng serve
-```
-
-### 2. Run the analyzer
-
-Open another terminal and move to the **accessibility tool repository**:
-
-``` bash
-cd accessibility
-```
-
-Run the analysis:
-
-``` bash
+```bash
 python main.py --project-path "/path/to/angular-project"
 ```
 
-Optional flags:
+Useful flags:
 
-``` bash
+```bash
 python main.py --project-path "/path/to/angular-project" --angular-axe
-```
-
-``` bash
 python main.py --project-path "/path/to/angular-project" --angular-url "http://localhost:4300"
-```
-
-``` bash
 python main.py --project-path "/path/to/angular-project" --serve-app
 ```
 
-------------------------------------------------------------------------
+## React projects
 
-# React Project Analysis
+Typical React run:
 
-### 1. Clone and prepare the React project
-
-``` bash
-git clone <react-project-repository>
-cd <react-project>
-```
-
-Install dependencies:
-
-``` bash
-npm install
-```
-
-Start the development server:
-
-``` bash
-npm start
-```
-
-or
-
-``` bash
-npm run dev
-```
-
-### 2. Run the analyzer
-
-From the **accessibility tool repository**:
-
-``` bash
-cd accessibility
-```
-
-Run the analysis:
-
-``` bash
+```bash
 python main.py --project-path "/path/to/react-project" --react-axe
 ```
 
-If the application runs on a different port:
+If the dev server is not on the default port:
 
-``` bash
+```bash
 python main.py --project-path "/path/to/react-project" --react-axe --react-url "http://localhost:4300"
 ```
 
-------------------------------------------------------------------------
+## Output structure
 
-# Generated Results
+Common output files include:
 
-Each execution creates a new directory inside `results/` containing the
-analysis output.
+- `axe_results.json`: raw accessibility analysis output.
+- `accessible_page.html`: remediated HTML for public URL flows.
+- `comparison_report.html`: before/after comparison report when a full web flow completes.
+- `openai_logs.json`: prompts and responses captured for the run.
+- `color_catalog.json`: extracted project color catalog when available.
 
-Example structure:
+## Repository structure
 
-    results/
-     ├─ example_com/
-     │   └─ 2026_03_16_14_20/
-     │       ├─ original_page.html
-     │       ├─ accessible_page.html
-     │       ├─ initial_report.json
-     │       ├─ final_report.json
-     │       ├─ comparison_report.html
-     │       └─ screenshots/
+- `main.py`: CLI entrypoint.
+- `core/project_flow.py`: local Angular and React orchestration.
+- `core/web_flow.py`: public URL orchestration.
+- `core/analyzer.py`: Selenium and axe-core execution.
+- `core/html_generator.py`: public HTML remediation flow.
+- `core/angular_handler.py`: Angular remediation orchestration.
+- `core/react_handler.py`: React violation mapping and remediation.
+- `utils/`: shared filesystem, HTML, color-catalog, and report helpers.
 
-Main files:
+## Notes
 
--   **original_page.html** -- HTML captured from the original page
--   **accessible_page.html** -- version with applied accessibility
-    improvements
--   **initial_report.json** -- raw axe-core report before fixes
--   **final_report.json** -- axe-core report after corrections
--   **comparison_report.html** -- summary comparing before and after
-    results
-
-------------------------------------------------------------------------
-
-# Notes
-
--   The tool relies on **Google Chrome** to run automated accessibility
-    checks.
--   Angular and React projects normally need to be running locally
-    before analysis unless the `--serve-app` flag is used.
--   Each run is stored separately to make it easier to compare results
-    across executions.
+- Runs are isolated by timestamp to keep outputs comparable.
+- Angular and React projects usually need dependencies installed before running the tool.
+- `--serve-app` can start the local app automatically when the project supports it.
 

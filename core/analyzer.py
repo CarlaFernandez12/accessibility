@@ -9,6 +9,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 from config.constants import AXE_SCRIPT_URL
 from core.dynamic_handler import DynamicContentHandler
+from core.webdriver_setup import setup_driver
 
 # Retry and timing configuration
 MAX_RETRIES = 3
@@ -56,10 +57,7 @@ def _handle_ssl_warning(driver: WebDriver, target: str) -> None:
                 continue
 
     except Exception as exc:
-        print(
-            "  ⚠️ Could not automatically handle SSL warning page: "
-            f"{exc}"
-        )
+        print(f"  Warning: could not automatically handle the SSL warning page: {exc}")
 
 
 def _click_advanced_then_proceed(driver: WebDriver) -> None:
@@ -117,6 +115,12 @@ def _handle_navigation_ssl_warning(driver: WebDriver) -> None:
         pass
 
 
+def _is_invalid_session_error(exc: Exception) -> bool:
+    """Return True when the exception indicates a dead Selenium session."""
+    error_text = str(exc).lower()
+    return "invalid session id" in error_text or "session deleted" in error_text
+
+
 def _execute_axe_analysis(driver: WebDriver) -> Dict[str, Any]:
     """
     Inject axe-core into the page and execute an accessibility scan.
@@ -159,7 +163,26 @@ def run_axe_analysis(
     Raises:
         Exception: If all retry attempts fail.
     """
+    axe_results, _ = run_axe_analysis_with_driver(
+        driver,
+        url,
+        is_local_file=is_local_file,
+        enable_dynamic_interactions=enable_dynamic_interactions,
+        custom_interactions=custom_interactions,
+    )
+    return axe_results
+
+
+def run_axe_analysis_with_driver(
+    driver: WebDriver,
+    url: str,
+    is_local_file: bool = False,
+    enable_dynamic_interactions: bool = True,
+    custom_interactions: Any = None,
+) -> tuple[Dict[str, Any], WebDriver]:
+    """Run axe-core analysis and return the driver instance that remained usable."""
     retry_delay = INITIAL_RETRY_DELAY
+    current_driver = driver
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -167,22 +190,25 @@ def run_axe_analysis(
             print(f"Running Axe analysis on: {target}")
 
             try:
-                driver.get(target)
+                current_driver.get(target)
             except Exception as nav_error:
+                if _is_invalid_session_error(nav_error):
+                    raise
                 print(f"  ⚠️ Navigation warning (possible SSL issue): {nav_error}")
-                _handle_navigation_ssl_warning(driver)
+                _handle_navigation_ssl_warning(current_driver)
 
             time.sleep(PAGE_LOAD_WAIT_TIME)
-            _handle_ssl_warning(driver, target)
+            _handle_ssl_warning(current_driver, target)
 
             if enable_dynamic_interactions and not is_local_file:
-                _handle_dynamic_interactions(driver, custom_interactions)
+                _handle_dynamic_interactions(current_driver, custom_interactions)
 
-            _wait_for_page_load(driver)
-            return _execute_axe_analysis(driver)
+            _wait_for_page_load(current_driver)
+            return _execute_axe_analysis(current_driver), current_driver
         except Exception as exc:
             print(f"Attempt {attempt + 1} failed: {exc}")
             if attempt < MAX_RETRIES - 1:
+                current_driver = _recover_driver_for_retry(current_driver, exc)
                 print(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
                 retry_delay *= 2
@@ -190,6 +216,20 @@ def run_axe_analysis(
                 raise Exception(
                     f"Could not complete analysis after {MAX_RETRIES} attempts"
                 ) from exc
+
+
+def _recover_driver_for_retry(driver: WebDriver, exc: Exception) -> WebDriver:
+    """Recreate the WebDriver when the current session is no longer usable."""
+    if not _is_invalid_session_error(exc):
+        return driver
+
+    try:
+        driver.quit()
+    except Exception:
+        pass
+
+    print("  WebDriver session became invalid; creating a fresh driver for retry...")
+    return setup_driver()
 
 
 def _handle_dynamic_interactions(driver: WebDriver, custom_interactions: Any) -> None:
@@ -219,66 +259,3 @@ def _wait_for_page_load(driver: WebDriver) -> None:
         time.sleep(PAGE_LOAD_WAIT_TIME)
 
 
-def run_axe_analysis_multiple_states(
-    driver: WebDriver,
-    url: str,
-    states_config: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """
-    Run axe-core analysis on multiple interaction states of the same page.
-
-    Each state can specify a name, description and a list of interactions
-    that are executed before the axe run.
-    """
-    results: List[Dict[str, Any]] = []
-    dynamic_handler = DynamicContentHandler(driver)
-
-    print(f"🔄 Starting multi‑state analysis for: {url}")
-
-    driver.get(url)
-    time.sleep(PAGE_LOAD_WAIT_TIME)
-
-    for index, state_config in enumerate(states_config, 1):
-        state_name = state_config.get("name", f"State {index}")
-        print(f"\n--- Analysing state {index}: {state_name} ---")
-
-        try:
-            if state_config.get("interactions"):
-                interaction_results = dynamic_handler.execute_custom_interactions(
-                    state_config["interactions"]
-                )
-                print(
-                    "Interactions executed: "
-                    f"{len(interaction_results['successful'])} successful"
-                )
-
-            axe_results = run_axe_analysis(
-                driver,
-                url,
-                enable_dynamic_interactions=False,
-            )
-
-            axe_results["state_info"] = {
-                "name": state_name,
-                "description": state_config.get("description", ""),
-                "interactions_applied": state_config.get("interactions", []),
-                "timestamp": time.time(),
-            }
-
-            results.append(axe_results)
-            print(f"✅ State '{state_name}' analysed successfully")
-
-        except Exception as exc:
-            print(f"❌ Error analysing state '{state_name}': {exc}")
-            results.append(
-                {
-                    "error": str(exc),
-                    "state_info": {
-                        "name": state_name,
-                        "description": state_config.get("description", ""),
-                        "timestamp": time.time(),
-                    },
-                }
-            )
-
-    return results
