@@ -58,8 +58,7 @@ def execute_web_url_flow(args, client, timestamp: str, create_run_path: Callable
 
         if args.fix_only:
             if not args.analysis_results or not os.path.exists(args.analysis_results):
-                print("You must provide --analysis-results with the path to the analysis JSON file.")
-                return
+                raise ValueError("You must provide --analysis-results with the path to the analysis JSON file.")
             with open(args.analysis_results, "r", encoding="utf-8") as file:
                 initial_results = json.load(file)
             if not initial_results or not initial_results.get("violations"):
@@ -125,6 +124,7 @@ def execute_web_url_flow(args, client, timestamp: str, create_run_path: Callable
         save_openai_logs(run_path)
     except Exception as exc:
         print(f"Unexpected error: {exc}")
+        raise
     finally:
         if driver:
             driver.quit()

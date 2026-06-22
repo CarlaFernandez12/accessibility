@@ -399,13 +399,12 @@ The screenshots show the application BEFORE the fixes. Your job is to make it ac
         messages.append({"role": "user", "content": user_prompt})
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5",
         messages=messages,
-        temperature=0.0,
     )
 
     response_text = response.choices[0].message.content or ""
-    log_openai_call(prompt=user_prompt, response=response_text, model="gpt-4o", call_type="angular_component_fix")
+    log_openai_call(prompt=user_prompt, response=response_text, model="gpt-5", call_type="angular_component_fix")
 
     print(f"  → LLM responded with {len(response_text)} characters")
 

@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -122,7 +123,7 @@ def _create_run_path(base_name: str, timestamp: str) -> str:
 
 
 # Main Function
-def main() -> None:
+def main() -> int:
     """
     Main entry point of the application.
     """
@@ -133,17 +134,22 @@ def main() -> None:
     try:
         api_key = _get_api_key(args)
     except ValueError as exc:
-        print(f"Error: {exc}")
-        return
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
     client = OpenAI(api_key=api_key)
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    if args.project_path:
-        _handle_local_project(args, client, timestamp)
-        return
+    try:
+        if args.project_path:
+            _handle_local_project(args, client, timestamp)
+            return 0
 
-    _process_web_url(args, client, timestamp)
+        _process_web_url(args, client, timestamp)
+        return 0
+    except Exception as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
 # Local Project Router
 def _handle_local_project(args, client, timestamp: str) -> None:
@@ -159,4 +165,4 @@ def _process_web_url(args, client, timestamp: str) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

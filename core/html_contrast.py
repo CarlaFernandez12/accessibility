@@ -62,24 +62,26 @@ def calculate_contrast_ratio(color1_hex: str, color2_hex: str) -> float:
     lum2 = get_luminance(hex_to_rgb(color2_hex))
     lighter, darker = max(lum1, lum2), min(lum1, lum2)
 
-    if darker == 0:
-        return CONTRAST_RATIO_MAX
-
     return (lighter + CONTRAST_ADJUSTMENT) / (darker + CONTRAST_ADJUSTMENT)
 
 
 def find_contrasting_color(bg_color_hex: str, required_ratio: float) -> str:
     """Find a foreground colour that satisfies the required contrast ratio."""
     try:
-        bg_luminance = get_luminance(hex_to_rgb(bg_color_hex))
-        is_light_bg = bg_luminance > LUMINANCE_THRESHOLD
-        candidates = DARK_COLOR_CANDIDATES if is_light_bg else LIGHT_COLOR_CANDIDATES
+        candidates = DARK_COLOR_CANDIDATES + LIGHT_COLOR_CANDIDATES
+        best_candidate = None
+        best_ratio = 0.0
 
         for candidate in candidates:
-            if calculate_contrast_ratio(candidate, bg_color_hex) >= required_ratio:
+            ratio = calculate_contrast_ratio(candidate, bg_color_hex)
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_candidate = candidate
+
+            if ratio >= required_ratio:
                 return candidate
 
-        return '#000000' if is_light_bg else '#FFFFFF'
+        return best_candidate or '#000000'
     except Exception:
         return '#000000'
 

@@ -20,7 +20,7 @@ def setup_directories(run_path: str) -> None:
 def log_openai_call(
     prompt: Any,
     response: Any,
-    model: str = "gpt-4o",
+    model: str = "gpt-5",
     call_type: str = "text",
 ) -> None:
     """
@@ -29,7 +29,7 @@ def log_openai_call(
     Args:
         prompt: The prompt sent to OpenAI
         response: The response received from OpenAI
-        model: The model used (default 'gpt-4o')
+        model: The model used (default 'gpt-5')
         call_type: Call type ('text', 'vision', etc.)
     """
     log_entry: Dict[str, Any] = {

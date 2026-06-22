@@ -300,6 +300,7 @@ def fix_templates_with_axe_violations(
     """Apply Axe-guided fixes to mapped Angular templates through the component processor."""
     fixes: Dict[str, Dict[str, str]] = {}
     changes_map: List[Dict] = []
+    failures: List[str] = []
 
     if not issues_by_template:
         print("[Angular + Axe] No violations mapped to templates.")
@@ -309,12 +310,14 @@ def fix_templates_with_axe_violations(
         template_path = project_root / rel_path
         if not template_path.exists():
             print(f"[Angular + Axe] ⚠️ Template not found: {rel_path}")
+            failures.append(f"Template not found: {rel_path}")
             continue
 
         try:
             original_content = template_path.read_text(encoding="utf-8")
         except Exception as exc:
             print(f"[Angular + Axe] Warning: failed to read {rel_path}: {exc}")
+            failures.append(f"Failed to read {rel_path}: {exc}")
             continue
 
         result, changes = process_single_component_sandbox(
@@ -342,6 +345,12 @@ def fix_templates_with_axe_violations(
     if changes_map:
         applied_count = apply_changes_map(changes_map)
         print(f"[Angular + Axe] Applied changes to {applied_count} file(s).")
+
+    if failures:
+        raise RuntimeError(
+            "Angular fix flow could not complete successfully for all templates: "
+            + "; ".join(failures)
+        )
 
     return fixes
 

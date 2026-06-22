@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Tuple
 from core.contrast_engine import (
     apply_source_catalog_contrast_repair,
     build_node_contrast_issue,
+    extract_contrast_payload,
     load_color_catalog,
     split_contrast_violations,
 )
@@ -152,12 +153,33 @@ def _match_component_by_css_classes(
         return None, ""
 
     tag_name = snippet_tag.group(1)
+    best_match: Optional[str] = None
+    best_score = 0
     for rel_path, comp_data in components.items():
-        matching_classes = [css_class for css_class in all_classes if css_class in comp_data["jsx"]]
+        matching_classes = [
+            css_class
+            for css_class in all_classes
+            if re.search(rf'(?<![\w-]){re.escape(css_class)}(?![\w-])', comp_data["jsx"])
+        ]
         if len(matching_classes) < min(2, len(all_classes)):
             continue
         if f'<{tag_name}' in comp_data["jsx"] or f'<{tag_name} ' in comp_data["jsx"]:
-            return rel_path, f"CSS classes ({', '.join(matching_classes[:3])})"
+            score = len(matching_classes)
+            if any(css_class.startswith("bi-") for css_class in matching_classes):
+                score += 2
+            if any(css_class.startswith("btn-outline-") for css_class in matching_classes):
+                score += 1
+            if score > best_score:
+                best_match = rel_path
+                best_score = score
+
+    if best_match:
+        matching_classes = [
+            css_class
+            for css_class in all_classes
+            if re.search(rf'(?<![\w-]){re.escape(css_class)}(?![\w-])', components[best_match]["jsx"])
+        ]
+        return best_match, f"CSS classes ({', '.join(matching_classes[:3])})"
 
     return None, ""
 
@@ -787,6 +809,52 @@ def _apply_react_manual_fallbacks(
     issues: List[Dict],
 ) -> Tuple[str, bool]:
     """Apply conservative manual fallbacks when the LLM response is invalid or unchanged."""
+
+    def _find_opening_tag_ranges(markup: str, tag_names: Tuple[str, ...]) -> List[Tuple[int, int]]:
+        ranges: List[Tuple[int, int]] = []
+        index = 0
+        while index < len(markup):
+            if markup[index] != "<":
+                index += 1
+                continue
+
+            matched_tag = None
+            for tag_name in tag_names:
+                if markup.startswith(f"<{tag_name}", index):
+                    matched_tag = tag_name
+                    break
+
+            if not matched_tag:
+                index += 1
+                continue
+
+            in_single_quote = False
+            in_double_quote = False
+            brace_depth = 0
+            cursor = index + len(matched_tag) + 1
+            while cursor < len(markup):
+                char = markup[cursor]
+                prev_char = markup[cursor - 1] if cursor > index else ""
+
+                if char == "'" and not in_double_quote and prev_char != "\\":
+                    in_single_quote = not in_single_quote
+                elif char == '"' and not in_single_quote and prev_char != "\\":
+                    in_double_quote = not in_double_quote
+                elif not in_single_quote and not in_double_quote:
+                    if char == "{":
+                        brace_depth += 1
+                    elif char == "}" and brace_depth > 0:
+                        brace_depth -= 1
+                    elif char == ">" and brace_depth == 0:
+                        ranges.append((index, cursor + 1))
+                        index = cursor + 1
+                        break
+
+                cursor += 1
+            else:
+                break
+
+        return ranges
     has_contrast = any(issue.get("violation", {}).get("id", "") == "color-contrast" for issue in issues)
     has_button_name = any(issue.get("violation", {}).get("id", "") == "button-name" for issue in issues)
 
@@ -796,13 +864,60 @@ def _apply_react_manual_fallbacks(
     if has_contrast:
         print("[React + Axe] Warning: contrast violations remain unchanged; applying a manual contrast fallback.")
 
+        preferred_color = "\"#000\""
+        for issue in issues:
+            if issue.get("violation", {}).get("id", "") != "color-contrast":
+                continue
+            suggested_color = extract_contrast_payload(issue).get("suggestedColor") or "#000000"
+            preferred_color = f'"{suggested_color}"'
+            break
+
+        def _tag_has_disabled_class(tag: str) -> bool:
+            quoted_class_match = re.search(r'class(Name)?\s*=\s*["\']([^"\']+)["\']', tag)
+            if quoted_class_match and "disabled" in quoted_class_match.group(2).split():
+                return True
+
+            expression_class_match = re.search(r'className\s*=\s*\{([^}]*)\}', tag)
+            if expression_class_match and "disabled" in expression_class_match.group(1):
+                return True
+
+            return False
+
+        def _upsert_react_style_props(tag: str, style_updates: Dict[str, str]) -> str:
+            style_match = re.search(r'style\s*=\s*\{\{([\s\S]*?)\}\}', tag)
+            if not style_match:
+                declarations = ", ".join(f"{name}: {value}" for name, value in style_updates.items())
+                return tag[:-1] + f' style={{{{ {declarations} }}}}>'
+
+            style_body = style_match.group(1).strip()
+            for name, value in style_updates.items():
+                pattern = rf'\b{re.escape(name)}\s*:\s*([^,}}]+)'
+                if re.search(pattern, style_body):
+                    style_body = re.sub(pattern, f'{name}: {value}', style_body, count=1)
+                else:
+                    if style_body and not style_body.rstrip().endswith(','):
+                        style_body = style_body.rstrip() + ','
+                    style_body = f'{style_body} {name}: {value}'.strip()
+
+            return tag[:style_match.start(1)] + style_body + tag[style_match.end(1):]
+
         def add_style(match):
             tag = match.group(0)
-            if "style=" not in tag:
-                return tag[:-1] + ' style={{ color: "#000" }}>'
-            return tag
+            style_updates = {"color": preferred_color}
+            if _tag_has_disabled_class(tag):
+                # Bootstrap's `.disabled` lowers opacity, which can keep computed contrast below 4.5:1.
+                style_updates["opacity"] = "1"
+            return _upsert_react_style_props(tag, style_updates)
 
-        fallback_content = re.sub(r'<(a|button)\b[^>]*>', add_style, fallback_content)
+        updated_parts: List[str] = []
+        last_index = 0
+        for start, end in _find_opening_tag_ranges(fallback_content, ("a", "button")):
+            updated_parts.append(fallback_content[last_index:start])
+            updated_parts.append(add_style(re.match(r'[\s\S]*', fallback_content[start:end])))
+            last_index = end
+        if updated_parts:
+            updated_parts.append(fallback_content[last_index:])
+            fallback_content = "".join(updated_parts)
         fallback_applied = True
 
     if has_button_name:
@@ -843,9 +958,11 @@ def _request_react_component_fix(
         "🚨 For colour contrast, ONLY adjust text colour, do NOT change layout or backgrounds. "
         "🚨 If you return the same code unchanged, the fix FAILS completely. "
         "⚠️ IMPORTANT: If contrast errors are listed, you MUST change the colours. "
+        "⚠️ If a Bootstrap-style disabled state or reduced opacity is causing the contrast failure, you MUST override the element opacity so the computed contrast passes while preserving the disabled semantics. "
         "⚠️ If the code already has a colour but Axe reports an error, it means: "
         "   a) The colour is not being applied correctly (add !important or use inline style), OR "
-        "   b) You are changing the wrong element. "
+        "   b) A disabled/opacity style is altering the final rendered contrast, OR "
+        "   c) You are changing the wrong element. "
         "⚠️ Find the EXACT element using the 'Affected HTML fragment' and make sure you change the correct colour. "
         "⚠️ Do NOT return the code unchanged if contrast violations are reported."
     )
@@ -864,16 +981,15 @@ def _request_react_component_fix(
     )
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5",
         messages=messages,
-        temperature=0.0,
     )
 
     corrected = response.choices[0].message.content or ""
     log_openai_call(
         prompt=prompt,
         response=corrected,
-        model="gpt-4o",
+        model="gpt-5",
         call_type="react_axe_component_fix",
     )
 
@@ -897,6 +1013,7 @@ def fix_react_components_with_axe_violations(
     This function is identical to Angular's fix_templates_with_axe_violations but for React.
     """
     fixes: Dict[str, Dict[str, str]] = {}
+    failures: List[str] = []
     
     if not issues_by_component:
         print("[React + Axe] No violations were mapped to components.")
@@ -910,6 +1027,7 @@ def fix_react_components_with_axe_violations(
         try:
             comp_path = project_root / rel_path
             if not comp_path.exists():
+                failures.append(f"Component not found: {rel_path}")
                 continue
             
             original_content = comp_path.read_text(encoding="utf-8")
@@ -968,6 +1086,13 @@ def fix_react_components_with_axe_violations(
                 client,
             )
 
+            if contrast_issues:
+                corrected, _ = _apply_react_manual_fallbacks(
+                    rel_path,
+                    corrected,
+                    contrast_issues,
+                )
+
             # CRITICAL VALIDATION: ensure LLM returned valid code (SAME AS ANGULAR)
             is_valid_response = _validate_react_llm_response(
                 rel_path,
@@ -1000,15 +1125,23 @@ def fix_react_components_with_axe_violations(
                     working_content,
                     llm_issues,
                 )
-                if fallback_applied:
-                    comp_path.write_text(fallback_content, encoding="utf-8")
+                final_content = fallback_content if fallback_applied else working_content
+                if final_content != original_content:
+                    comp_path.write_text(final_content, encoding="utf-8")
                     fixes[rel_path] = {
                         "original": original_content,
-                        "corrected": fallback_content,
+                        "corrected": final_content,
                     }
 
         except Exception as e:
             print(f"[React + Axe] ⚠️ Error fixing {rel_path}: {e}")
+            failures.append(f"{rel_path}: {e}")
+
+    if failures:
+        raise RuntimeError(
+            "React fix flow could not complete successfully for all components: "
+            + "; ".join(failures)
+        )
     
     return fixes
 

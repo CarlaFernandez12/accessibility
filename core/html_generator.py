@@ -81,9 +81,8 @@ def _call_llm_for_fix(client, prompt, system_message, screenshot_paths=None):
         messages.append({"role": "user", "content": prompt})
     
     response = client.chat.completions.create(
-                model="gpt-4o", 
-                messages=messages, 
-                temperature=0.0
+                model="gpt-5", 
+                messages=messages
             )
     return extract_clean_html(response.choices[0].message.content)
 
@@ -198,9 +197,8 @@ def _restore_responsive_design(original_html: str, soup, client, screenshot_path
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-5",
             messages=messages,
-            temperature=0.0,
             max_completion_tokens=200000
         )
 
@@ -301,7 +299,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
             system_message = "You are a web accessibility expert. Your PRIORITY is to fix ALL mentioned accessibility errors while KEEPING the responsive design shown in the screenshots. Fixes should be visually 'invisible' (use aria-label, roles, alt text). Do NOT add HTML comments or attributes that show they were fixes. The HTML should look like original code, not corrected."
             
             corrected_fragment_str = _call_llm_for_fix(client, prompt, system_message, screenshot_paths)
-            log_openai_call(prompt=prompt, response=corrected_fragment_str, model="gpt-4o", call_type="html_fix")
+            log_openai_call(prompt=prompt, response=corrected_fragment_str, model="gpt-5", call_type="html_fix")
             
             if corrected_fragment_str:
                 cleaned_response, new_node = _parse_llm_html_fragment(corrected_fragment_str)

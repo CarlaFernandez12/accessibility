@@ -357,19 +357,18 @@ Return the full corrected code.
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5",
         messages=[
             {"role": "system", "content": system_message},
             {"role": "user", "content": prompt},
         ],
-        temperature=0.0,
     )
 
     corrected_content = response.choices[0].message.content.strip()
     log_openai_call(
         prompt=prompt,
         response=corrected_content,
-        model="gpt-4o",
+        model="gpt-5",
         call_type="angular_compilation_fix",
     )
 

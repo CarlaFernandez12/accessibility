@@ -106,8 +106,7 @@ def execute_local_project_flow(args, client, timestamp: str, create_run_path: Ca
 
     if args.fix_only:
         if not args.analysis_results or not os.path.exists(args.analysis_results):
-            print("You must provide --analysis-results with the path to the analysis JSON file.")
-            return
+            raise ValueError("You must provide --analysis-results with the path to the analysis JSON file.")
         with open(args.analysis_results, "r", encoding="utf-8") as file:
             axe_results = json.load(file)
         run_path = create_run_path(os.path.basename(project_path), timestamp)
@@ -206,6 +205,7 @@ def _process_react_project_flow(args, client, timestamp: str, create_run_path: C
                     print("[React + Axe] No violations mapped to components.")
             except Exception as exc:
                 print(f"[React + Axe] Error: {exc}")
+                raise
     finally:
         if dev_server_process is not None:
             print("[React + serve-app] Stopping dev server...")
@@ -242,6 +242,7 @@ def _process_angular_project(args, client, timestamp: str, create_run_path: Call
                 print(line)
     except Exception as exc:
         print(f"Error processing Angular project: {exc}")
+        raise
 
     save_openai_logs(run_path)
     elapsed = int((datetime.now() - start_time).total_seconds())
