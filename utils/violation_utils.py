@@ -22,6 +22,18 @@ _IMPACT_PRIORITY: Dict[str, int] = {
     'minor': 4
 }
 
+
+def _normalize_text_value(value: Any, default: str = '') -> str:
+    """Convert Axe-provided values into a safe string for downstream matching."""
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        parts = [str(item).strip() for item in value if str(item).strip()]
+        return ' '.join(parts) if parts else default
+    return str(value)
+
 def flatten_violations(violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Convert grouped violations into a flat list with improved information.
@@ -42,7 +54,11 @@ def flatten_violations(violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]
         impact = violation.get('impact', _DEFAULT_IMPACT)
         
         for node in violation.get('nodes', []):
-            selector = node.get('target', [None])[0]
+            raw_target = node.get('target', [None])
+            if isinstance(raw_target, list) and raw_target:
+                selector = _normalize_text_value(raw_target[0], _DEFAULT_SELECTOR)
+            else:
+                selector = _normalize_text_value(raw_target, _DEFAULT_SELECTOR)
             if not selector:
                 continue
                 
@@ -51,8 +67,8 @@ def flatten_violations(violations: List[Dict[str, Any]]) -> List[Dict[str, Any]]
                 "selector": selector,
                 "violation_id": violation_id,
                 "impact": impact,
-                "html_snippet": node.get('html', ''),
-                "failure_summary": node.get('failureSummary', '')
+                "html_snippet": _normalize_text_value(node.get('html', ''), _DEFAULT_HTML_SNIPPET),
+                "failure_summary": _normalize_text_value(node.get('failureSummary', ''), ''),
             }
             
             if violation_id == 'color-contrast':

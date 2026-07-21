@@ -23,7 +23,7 @@ def is_contrast_violation(violation: Dict[str, Any]) -> bool:
         or ""
     )
     normalized_id = str(violation_id).lower()
-    return normalized_id in {"color-contrast", "contrast"}
+    return normalized_id in {"color-contrast", "contrast"} or "contrast" in normalized_id
 
 
 def split_contrast_violations(

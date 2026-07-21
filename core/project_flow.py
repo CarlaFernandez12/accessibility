@@ -60,6 +60,35 @@ def _detect_react_project_safe(project_path: str) -> bool:
     return react_dependencies["detect_react_project"](project_path)
 
 
+def _detect_angular_project_safe(project_path: str) -> bool:
+    """Heuristic Angular detection used to disambiguate mixed Angular/React signals."""
+    try:
+        project_root = Path(project_path)
+        if (project_root / "angular.json").exists():
+            return True
+
+        package_json = project_root / "package.json"
+        if package_json.exists():
+            with open(package_json, "r", encoding="utf-8") as file:
+                data = json.load(file)
+            deps = {
+                **(data.get("dependencies", {}) or {}),
+                **(data.get("devDependencies", {}) or {}),
+            }
+            if any(name.startswith("@angular/") for name in deps.keys()):
+                return True
+
+        # Fallback to common Angular file patterns.
+        if any(project_root.glob("**/*.component.ts")):
+            return True
+        if any(project_root.glob("**/*.component.html")):
+            return True
+    except Exception:
+        return False
+
+    return False
+
+
 
 def execute_local_project_flow(args, client, timestamp: str, create_run_path: Callable[[str, str], str]) -> None:
     """Dispatch the local project flow for Angular or React projects."""
@@ -70,9 +99,17 @@ def execute_local_project_flow(args, client, timestamp: str, create_run_path: Ca
         or args.react_axe
         or args.react_axe_only
     )
+    is_angular = _detect_angular_project_safe(project_path)
+    force_react = args.react_axe or args.react_axe_only
     force_angular = args.angular_axe or args.angular_axe_only
 
+    # If both frameworks are detected, prefer Angular unless React mode is explicitly forced.
+    if is_angular and is_react and not force_react and not force_angular:
+        print("[Detection] Mixed Angular/React signals detected; defaulting to Angular flow.")
+        is_react = False
+
     if args.analyze_only:
+        print("[Mode] analyze-only enabled: this run only collects Axe results and color catalog, it does not apply fixes.")
         run_path = create_run_path(os.path.basename(project_path), timestamp)
         setup_directories(run_path)
         if force_angular or not is_react:
@@ -86,7 +123,21 @@ def execute_local_project_flow(args, client, timestamp: str, create_run_path: Ca
         elif is_react:
             print(f"[Detection] React project detected: {project_path}")
             react_dependencies = _load_react_dependencies()
-            react_url = args.react_url
+            detected_port = detect_react_dev_server_port(project_path)
+            default_react_url = "http://localhost:3000/"
+            default_angular_url = "http://localhost:4200/"
+
+            if args.react_url and args.react_url != default_react_url:
+                react_url = args.react_url
+            elif args.angular_url and args.angular_url != default_angular_url:
+                # Backward-compatible fallback for users passing --angular-url on React projects.
+                react_url = args.angular_url
+            elif detected_port:
+                react_url = f"http://localhost:{detected_port}/"
+            else:
+                react_url = args.react_url
+
+            print(f"[React + Axe] analyze-only URL: {react_url}")
             axe_results, _ = react_dependencies["run_axe_on_react_app"](
                 react_url,
                 run_path,
@@ -111,7 +162,7 @@ def execute_local_project_flow(args, client, timestamp: str, create_run_path: Ca
             axe_results = json.load(file)
         run_path = create_run_path(os.path.basename(project_path), timestamp)
         os.makedirs(run_path, exist_ok=True)
-        if is_react:
+        if is_react and not (is_angular and not force_react and not force_angular):
             print("[fix-only] Fixing React source files...")
             react_dependencies = _load_react_dependencies()
             issues_by_component = react_dependencies["map_axe_violations_to_react_components"](

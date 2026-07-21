@@ -27,6 +27,14 @@ from utils.io_utils import log_openai_call
 
 ENABLE_AUTOMATIC_CONTRAST_FIXES = False
 
+FORM_LABEL_RULE_IDS = {
+    "label",
+    "select-name",
+    "aria-input-field-name",
+    "aria-toggle-field-name",
+    "input-button-name",
+}
+
 
 def _find_inline_template_match(ts_content: str) -> Optional[Dict[str, object]]:
     for pattern in INLINE_TEMPLATE_PATTERNS:
@@ -89,6 +97,104 @@ def _build_template_change(
         "original": template_path.read_text(encoding="utf-8"),
         "corrected": corrected_template,
     }
+
+
+def _humanize_identifier(raw_value: str) -> str:
+    text = (raw_value or "").strip()
+    if not text:
+        return ""
+    text = re.sub(r"[_-]+", " ", text)
+    text = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:1].upper() + text[1:] if text else ""
+
+
+def _extract_label_from_form_field_block(field_block: str) -> str:
+    placeholder_match = re.search(r'\bplaceholder\s*=\s*"([^"]+)"', field_block)
+    if placeholder_match and placeholder_match.group(1).strip():
+        return placeholder_match.group(1).strip()
+
+    form_control_match = re.search(r'\bformControlName\s*=\s*"([^"]+)"', field_block)
+    if form_control_match and form_control_match.group(1).strip():
+        return _humanize_identifier(form_control_match.group(1).strip())
+
+    return ""
+
+
+def _ensure_aria_label_on_control(field_block: str, label_text: str) -> str:
+    if not label_text:
+        return field_block
+
+    controls = ("input", "textarea", "mat-select")
+    updated_block = field_block
+    for control in controls:
+        control_match = re.search(rf"<{control}\\b[^>]*>", updated_block)
+        if not control_match:
+            continue
+
+        opening_tag = control_match.group(0)
+        if re.search(r"\baria-label\s*=", opening_tag):
+            return updated_block
+
+        # Add aria-label to the first form control inside the mat-form-field.
+        safe_label = label_text.replace('"', '&quot;')
+        patched_tag = opening_tag[:-1] + f' aria-label="{safe_label}">'
+        return updated_block.replace(opening_tag, patched_tag, 1)
+
+    return updated_block
+
+
+def apply_manual_form_label_repairs(
+    template_content: str,
+    axe_errors: List[Dict],
+) -> Tuple[str, List[Dict]]:
+    """Apply deterministic mat-form-field label repairs for common Axe form-name violations."""
+    if not template_content:
+        return template_content, []
+
+    should_repair_forms = False
+    for axe_error in axe_errors or []:
+        violation = axe_error.get("violation", {}) or {}
+        violation_id = axe_error.get("violation_id", violation.get("id", "unknown"))
+        if str(violation_id).strip().lower() in FORM_LABEL_RULE_IDS:
+            should_repair_forms = True
+            break
+
+    if not should_repair_forms:
+        return template_content, []
+
+    repaired_entries: List[Dict] = []
+
+    def replace_form_field(match: re.Match) -> str:
+        field_block = match.group(0)
+        if re.search(r"<mat-label\\b", field_block):
+            return field_block
+
+        label_text = _extract_label_from_form_field_block(field_block)
+        if not label_text:
+            return field_block
+
+        opening_tag_match = re.search(r"<mat-form-field\\b[^>]*>", field_block)
+        if not opening_tag_match:
+            return field_block
+
+        opening_tag = opening_tag_match.group(0)
+        repaired_block = field_block.replace(opening_tag, opening_tag + f"\n        <mat-label>{label_text}</mat-label>", 1)
+        repaired_block = _ensure_aria_label_on_control(repaired_block, label_text)
+
+        if repaired_block != field_block:
+            repaired_entries.append({"type": "form-label", "label": label_text})
+
+        return repaired_block
+
+    updated_template = re.sub(
+        r"<mat-form-field\\b[^>]*>.*?</mat-form-field>",
+        replace_form_field,
+        template_content,
+        flags=re.DOTALL,
+    )
+
+    return updated_template, repaired_entries
 
 
 def _load_component_sources(
@@ -254,9 +360,10 @@ def process_single_component_sandbox(
     original_template_content = template_content
 
     contrast_repairs: List[Dict] = []
-    non_contrast_axe_errors = axe_errors or []
+    llm_axe_errors = axe_errors or []
     if axe_errors:
         contrast_axe_errors, non_contrast_axe_errors = split_contrast_violations(axe_errors)
+        llm_axe_errors = list(non_contrast_axe_errors)
         if contrast_axe_errors:
             template_content, contrast_repairs = apply_manual_markup_contrast_repairs(
                 template_content,
@@ -265,10 +372,13 @@ def process_single_component_sandbox(
             if contrast_repairs:
                 print(f"  → Deterministically repaired {len(contrast_repairs)} contrast issue(s) before the LLM phase")
 
+            # Keep contrast violations in the LLM pass to catch unresolved cases.
+            llm_axe_errors.extend(contrast_axe_errors)
+
     detected_errors = _analyze_template_for_accessibility_errors(template_content, style_content)
-    if non_contrast_axe_errors:
-        print(f"  → {len(non_contrast_axe_errors)} non-contrast Axe error(s) detected for this component")
-        for axe_error in non_contrast_axe_errors:
+    if llm_axe_errors:
+        print(f"  → {len(llm_axe_errors)} Axe error(s) detected for this component")
+        for axe_error in llm_axe_errors:
             detected_errors.append(_format_axe_error_message(axe_error))
 
     if detected_errors:
@@ -278,7 +388,7 @@ def process_single_component_sandbox(
     else:
         print(f"  → No obvious errors detected in {base_component_name} (LLM should look deeper)")
 
-    if contrast_repairs and not non_contrast_axe_errors and not detected_errors:
+    if contrast_repairs and not llm_axe_errors and not detected_errors:
         template_change = _build_template_change(
             template_path,
             ts_path,

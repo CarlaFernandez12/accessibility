@@ -99,6 +99,16 @@ def _match_component_by_selector(selector: str, components: Dict[str, Dict[str, 
     if not selector:
         return None, ""
 
+    # Remove Angular runtime attributes that never exist in source templates.
+    selector = re.sub(r'\[_ngcontent-[^\]]+\]', '', selector)
+    selector = re.sub(r'\[_nghost-[^\]]+\]', '', selector)
+    selector = re.sub(r'\[_ngcontent-[^=\]]+="[^"]*"\]', '', selector)
+    selector = re.sub(r'\[_nghost-[^=\]]+="[^"]*"\]', '', selector)
+    selector = re.sub(r'\s+', ' ', selector).strip()
+
+    if not selector:
+        return None, ""
+
     if selector.startswith('.'):
         class_name = selector[1:]
         for rel_path, comp_data in components.items():
@@ -148,7 +158,7 @@ def _match_component_by_css_classes(
         return None, ""
 
     all_classes = " ".join(classes_in_snippet).split()
-    snippet_tag = re.search(r'<(\w+)', html_snippet)
+    snippet_tag = re.search(r'<([a-zA-Z][a-zA-Z0-9_-]*)', html_snippet)
     if not snippet_tag:
         return None, ""
 
@@ -197,7 +207,7 @@ def _match_component_by_visible_text(
     if len(text_content) <= 3:
         return None, ""
 
-    snippet_tag = re.search(r'<(\w+)', html_snippet)
+    snippet_tag = re.search(r'<([a-zA-Z][a-zA-Z0-9_-]*)', html_snippet)
     if not snippet_tag:
         return None, ""
 
@@ -228,7 +238,7 @@ def _match_component_by_raw_tags(
     components: Dict[str, Dict[str, str]],
 ) -> Tuple[Optional[str], str]:
     """Match a React component by raw JSX/tag presence as a fallback strategy."""
-    snippet_tag = re.search(r'<(\w+)', html_snippet)
+    snippet_tag = re.search(r'<([a-zA-Z][a-zA-Z0-9_-]*)', html_snippet)
     if not snippet_tag:
         return None, ""
 
@@ -316,9 +326,28 @@ def map_axe_violations_to_react_components(
         try:
             rel_path = comp_path.relative_to(project_root)
             jsx_content = comp_path.read_text(encoding="utf-8")
-            normalized = normalize_react_html(jsx_content)
+            searchable_content = jsx_content
+
+            # Angular-style projects can be misdetected as React. If this TS component points to
+            # an external HTML template, include it for matching selectors/snippets.
+            if comp_path.suffix == ".ts":
+                template_match = re.search(r'templateUrl\s*:\s*["\']([^"\']+)["\']', jsx_content)
+                if template_match:
+                    template_rel = template_match.group(1)
+                    template_path = (comp_path.parent / template_rel).resolve()
+                else:
+                    template_path = comp_path.with_suffix(".html")
+
+                if template_path.exists():
+                    try:
+                        template_html = template_path.read_text(encoding="utf-8")
+                        searchable_content = f"{jsx_content}\n\n{template_html}"
+                    except Exception:
+                        pass
+
+            normalized = normalize_react_html(searchable_content)
             components[str(rel_path)] = {
-                "jsx": jsx_content,
+                "jsx": searchable_content,
                 "normalized": normalized,
             }
         except Exception as e:
@@ -716,13 +745,22 @@ def _normalize_react_llm_response(corrected: str) -> str:
     )
 
 
-def _validate_react_llm_response(rel_path: str, original_content: str, corrected: str) -> bool:
+def _validate_react_llm_response(
+    rel_path: str,
+    original_content: str,
+    corrected: str,
+    allow_html_fragment: bool = False,
+) -> bool:
     """Validate that the LLM returned plausible React/JSX code without risky new elements."""
     if corrected.strip().startswith("//") or corrected.strip().startswith("/*"):
         print(f"[React + Axe] ⚠️ LLM returned a comment instead of code for {rel_path}")
         return False
 
-    if not re.search(r'<\w+|import\s+|export\s+|function\s+|const\s+|class\s+', corrected):
+    if allow_html_fragment:
+        if not re.search(r'<[a-zA-Z][a-zA-Z0-9_-]*', corrected):
+            print(f"[React + Axe] ⚠️ LLM did not return valid HTML-like code for {rel_path}")
+            return False
+    elif not re.search(r'<\w+|import\s+|export\s+|function\s+|const\s+|class\s+', corrected):
         print(f"[React + Axe] ⚠️ LLM did not return valid React/JSX code for {rel_path}")
         return False
 
@@ -733,11 +771,15 @@ def _validate_react_llm_response(rel_path: str, original_content: str, corrected
         )
         return False
 
-    orig_tags = set(re.findall(r'<(\w+)', original_content))
-    corr_tags = set(re.findall(r'<(\w+)', corrected)) if corrected else set()
+    orig_tags = set(re.findall(r'<([a-zA-Z][a-zA-Z0-9_-]*)', original_content))
+    corr_tags = set(re.findall(r'<([a-zA-Z][a-zA-Z0-9_-]*)', corrected)) if corrected else set()
     new_tags = corr_tags - orig_tags
+
+    # Ignore TypeScript generic identifiers (typically UpperCamelCase, e.g. HTMLInputElement)
+    # and focus the safety check on lowercase DOM/HTML-like tags.
+    new_dom_like_tags = {tag for tag in new_tags if tag and tag[:1].islower()}
     allowed_new_tags = {"label"}
-    problematic_new_tags = new_tags - allowed_new_tags
+    problematic_new_tags = new_dom_like_tags - allowed_new_tags
     if problematic_new_tags:
         print(f"[React + Axe] ⚠️ LLM added disallowed new elements: {problematic_new_tags}")
         print(f"[React + Axe] ⚠️ Changes will NOT be applied to avoid introducing errors")
@@ -1029,14 +1071,24 @@ def fix_react_components_with_axe_violations(
             if not comp_path.exists():
                 failures.append(f"Component not found: {rel_path}")
                 continue
-            
-            original_content = comp_path.read_text(encoding="utf-8")
+
+            target_path = comp_path
+            comp_source = comp_path.read_text(encoding="utf-8")
+            if comp_path.suffix == ".ts":
+                template_match = re.search(r'templateUrl\s*:\s*["\']([^"\']+)["\']', comp_source)
+                if template_match:
+                    candidate = (comp_path.parent / template_match.group(1)).resolve()
+                    if candidate.exists() and candidate.suffix == ".html":
+                        target_path = candidate
+
+            original_content = target_path.read_text(encoding="utf-8")
             resolved_project_root = str(project_root.resolve())
             
             if not original_content.strip():
                 continue
 
             contrast_issues, llm_issues = split_contrast_violations(issues)
+            llm_issues_for_model = list(llm_issues)
             working_content = original_content
             source_repaired = 0
             if contrast_issues and color_catalog:
@@ -1062,26 +1114,30 @@ def fix_react_components_with_axe_violations(
                 if fallback_applied:
                     print(f"[React + Axe] Deterministically repaired {len(contrast_issues)} contrast issue(s) before the LLM phase")
 
-            if not llm_issues:
+                # Keep unresolved contrast issues in the LLM pass to maximize remediation coverage.
+                llm_issues_for_model.extend(contrast_issues)
+
+            if not llm_issues_for_model:
                 if working_content != original_content or source_repaired:
-                    comp_path.write_text(working_content, encoding="utf-8")
+                    target_path.write_text(working_content, encoding="utf-8")
                     fixes[rel_path] = {
                         "original": original_content,
                         "corrected": working_content,
                     }
                 continue
             
-            prompt = _build_axe_based_prompt_for_react_component(rel_path, working_content, llm_issues)
+            prompt_file = str(target_path.relative_to(project_root)) if project_root in target_path.parents else str(target_path)
+            prompt = _build_axe_based_prompt_for_react_component(prompt_file, working_content, llm_issues_for_model)
             
             print(f"[React + Axe] Fixing component based on Axe: {rel_path}")
-            print(f"[React + Axe] Violations to fix through LLM: {len(llm_issues)}")
-            for i, issue in enumerate(llm_issues, 1):
+            print(f"[React + Axe] Violations to fix through LLM: {len(llm_issues_for_model)}")
+            for i, issue in enumerate(llm_issues_for_model, 1):
                 violation_id = issue.get("violation", {}).get("id", "unknown")
                 print(f"  {i}. {violation_id}")
 
             corrected = _request_react_component_fix(
                 prompt,
-                llm_issues,
+                llm_issues_for_model,
                 screenshot_paths,
                 client,
             )
@@ -1098,6 +1154,7 @@ def fix_react_components_with_axe_violations(
                 rel_path,
                 working_content,
                 corrected,
+                allow_html_fragment=(target_path.suffix == ".html"),
             )
             diff_info = _detect_react_accessibility_changes(working_content, corrected)
             has_changes = diff_info["has_changes"]
@@ -1109,12 +1166,12 @@ def fix_react_components_with_axe_violations(
                     print(f"[React + Axe] 🎨 Diferencia en ARIA detectada: {len(diff_info['orig_aria'])} -> {len(diff_info['corr_aria'])} atributos")
                 if diff_info["has_alt_diff"]:
                     print(f"[React + Axe] 🎨 Diferencia en alt detectada: {len(diff_info['orig_alt'])} -> {len(diff_info['corr_alt'])} atributos")
-                comp_path.write_text(corrected, encoding="utf-8")
+                target_path.write_text(corrected, encoding="utf-8")
                 fixes[rel_path] = {
                     "original": original_content,
                     "corrected": corrected,
                 }
-                print(f"[React + Axe] ✓ Cambios aplicados en {rel_path}")
+                print(f"[React + Axe] ✓ Cambios aplicados en {prompt_file}")
             else:
                 if not is_valid_response:
                     print(f"[React + Axe] ⚠️ LLM returned invalid code for {rel_path}")
@@ -1127,7 +1184,7 @@ def fix_react_components_with_axe_violations(
                 )
                 final_content = fallback_content if fallback_applied else working_content
                 if final_content != original_content:
-                    comp_path.write_text(final_content, encoding="utf-8")
+                    target_path.write_text(final_content, encoding="utf-8")
                     fixes[rel_path] = {
                         "original": original_content,
                         "corrected": final_content,

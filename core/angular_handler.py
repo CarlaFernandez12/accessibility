@@ -122,12 +122,50 @@ def _discover_project_templates(project_root: Path) -> List[Path]:
         except Exception as exc:
             print(f"[Angular] Warning: failed to load angular.json: {exc}")
 
+    # Nx single-project apps often expose sourceRoot in project.json instead of angular.json.
+    if not source_roots:
+        project_json = project_root / "project.json"
+        if project_json.exists():
+            try:
+                project_config = load_angular_config(project_json)
+                source_root = (project_config.get("sourceRoot") or "").strip()
+                if source_root:
+                    source_path = Path(source_root)
+                    if not source_path.is_absolute():
+                        source_path = (project_root / source_path).resolve()
+                    if source_path.exists():
+                        source_roots.append(source_path)
+            except Exception as exc:
+                print(f"[Angular] Warning: failed to load project.json: {exc}")
+
+    if not source_roots:
+        src_fallback = project_root / "src"
+        if src_fallback.exists():
+            source_roots.append(src_fallback)
+
     templates = discover_component_templates(source_roots)
     if templates:
         return templates
 
     fallback_templates = sorted(project_root.glob("**/*.component.html"))
-    return [path for path in fallback_templates if "node_modules" not in str(path)]
+    fallback_templates = [path for path in fallback_templates if "node_modules" not in str(path)]
+
+    if fallback_templates:
+        return fallback_templates
+
+    # Last resort: include inline template components in TS files.
+    inline_component_ts: List[Path] = []
+    for component_ts in sorted(project_root.glob("**/*.component.ts")):
+        if "node_modules" in str(component_ts):
+            continue
+        try:
+            ts_content = component_ts.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if extract_inline_template(ts_content):
+            inline_component_ts.append(component_ts)
+
+    return inline_component_ts
 
 
 def map_axe_violations_to_templates(
@@ -160,6 +198,47 @@ def map_axe_violations_to_templates(
             continue
 
     issues_by_template: Dict[str, List[Dict]] = {}
+
+    def _normalize_runtime_selector(raw_selector: str) -> str:
+        selector = (raw_selector or "").strip()
+        selector = re.sub(r'\[_ngcontent-[^\]]+\]', '', selector)
+        selector = re.sub(r'\[_nghost-[^\]]+\]', '', selector)
+        selector = re.sub(r'\[_ngcontent-[^=\]]+="[^"]*"\]', '', selector)
+        selector = re.sub(r'\[_nghost-[^=\]]+="[^"]*"\]', '', selector)
+        selector = re.sub(r'\s+', ' ', selector).strip()
+        return selector
+
+    def _best_template_by_snippet_features(html_snippet: str) -> Optional[str]:
+        tag_match = re.search(r'<([a-zA-Z][a-zA-Z0-9_-]*)', html_snippet)
+        if not tag_match:
+            return None
+
+        tag_name = tag_match.group(1).lower()
+        class_match = re.search(r'class\s*=\s*["\']([^"\']+)["\']', html_snippet, re.IGNORECASE)
+        class_tokens = [token.strip().lower() for token in (class_match.group(1).split() if class_match else []) if token.strip()]
+        icon_match = re.search(r'icon\s*=\s*["\']([^"\']+)["\']', html_snippet, re.IGNORECASE)
+        type_match = re.search(r'type\s*=\s*["\']([^"\']+)["\']', html_snippet, re.IGNORECASE)
+
+        best_rel_path: Optional[str] = None
+        best_score = 0
+        for rel_path, normalized_template in template_cache.items():
+            template_lower = normalized_template.lower()
+            if f"<{tag_name}" not in template_lower:
+                continue
+
+            score = 1
+            if class_tokens and any(token in template_lower for token in class_tokens):
+                score += 2
+            if icon_match and icon_match.group(1).strip().lower() in template_lower:
+                score += 2
+            if type_match and type_match.group(1).strip().lower() in template_lower:
+                score += 1
+
+            if score > best_score:
+                best_rel_path = rel_path
+                best_score = score
+
+        return best_rel_path if best_score >= 2 else None
 
     for violation in violations:
         violation_id = violation.get("id", "unknown")
@@ -195,9 +274,70 @@ def map_axe_violations_to_templates(
 
             if matched_rel_path is None and target_selectors:
                 for selector in target_selectors:
-                    selector = (selector or "").strip()
+                    selector = _normalize_runtime_selector(selector)
                     if not selector.startswith("."):
                         selector_lower = selector.lower()
+
+                        # Tag selector fallback (supports custom tags like j-input and runtime selectors such as button[_ngcontent-*]).
+                        tag_match = re.match(r'^([a-zA-Z][a-zA-Z0-9_-]*)', selector_lower)
+                        if tag_match:
+                            selector_tag = tag_match.group(1)
+                            preferred_match = _best_template_by_snippet_features(html_snippet)
+                            if preferred_match is not None:
+                                matched_rel_path = preferred_match
+                                break
+                            for rel_path, normalized_template in template_cache.items():
+                                if f"<{selector_tag}" in normalized_template.lower():
+                                    matched_rel_path = rel_path
+                                    break
+                            if matched_rel_path is not None:
+                                break
+
+                        # Heuristic for form controls rendered by Angular Material overlays/components.
+                        # These selectors are often attribute-driven and do not start with a class.
+                        form_control_match = re.search(r'formcontrolname\\s*=\\s*["\']([^"\']+)["\']', selector, re.IGNORECASE)
+                        if form_control_match:
+                            control_name = form_control_match.group(1)
+                            needle = f'formcontrolname="{control_name.lower()}"'
+                            for rel_path, normalized_template in template_cache.items():
+                                if needle in normalized_template.lower():
+                                    matched_rel_path = rel_path
+                                    break
+                            if matched_rel_path is not None:
+                                break
+
+                        # Fallback from runtime HTML snippet when selector has no class hints.
+                        if html_snippet:
+                            snippet_form_control = re.search(
+                                r'formcontrolname\\s*=\\s*["\']([^"\']+)["\']',
+                                html_snippet,
+                                re.IGNORECASE,
+                            )
+                            if snippet_form_control:
+                                control_name = snippet_form_control.group(1)
+                                needle = f'formcontrolname="{control_name.lower()}"'
+                                for rel_path, normalized_template in template_cache.items():
+                                    if needle in normalized_template.lower():
+                                        matched_rel_path = rel_path
+                                        break
+                                if matched_rel_path is not None:
+                                    break
+
+                            placeholder_match = re.search(
+                                r'placeholder\\s*=\\s*["\']([^"\']+)["\']',
+                                html_snippet,
+                                re.IGNORECASE,
+                            )
+                            if placeholder_match:
+                                placeholder_value = placeholder_match.group(1).strip().lower()
+                                if placeholder_value:
+                                    for rel_path, normalized_template in template_cache.items():
+                                        if placeholder_value in normalized_template.lower():
+                                            matched_rel_path = rel_path
+                                            break
+                                    if matched_rel_path is not None:
+                                        break
+
                         if "> img" in selector_lower:
                             for rel_path, normalized_template in template_cache.items():
                                 if (
@@ -226,6 +366,11 @@ def map_axe_violations_to_templates(
                             break
                     if matched_rel_path is not None:
                         break
+
+            if matched_rel_path is None:
+                preferred_match = _best_template_by_snippet_features(html_snippet)
+                if preferred_match is not None:
+                    matched_rel_path = preferred_match
 
             if matched_rel_path is None:
                 visible_text = re.sub(r"<[^>]+>", " ", html_snippet)
@@ -278,10 +423,12 @@ def _build_axe_based_prompt_for_template(
         if html_snippet:
             violation_lines.append(f"  HTML: {html_snippet.splitlines()[0].strip()[:200]}...")
 
+    violations_text = "\n".join(violation_lines)
+
     return (
         f"Fix ALL {len(issues)} WCAG A/AA violations in this Angular template.\n\n"
         f"TEMPLATE: {template_path}\n\n"
-        f"VIOLATIONS:\n{'\n'.join(violation_lines)}\n\n"
+        f"VIOLATIONS:\n{violations_text}\n\n"
         "INSTRUCTIONS:\n"
         "- Fix only the listed elements.\n"
         "- Keep Angular bindings intact.\n"
