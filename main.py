@@ -6,11 +6,11 @@ from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
 
+load_dotenv()
+
 from config.constants import BASE_RESULTS_DIR
 from core.project_flow import execute_local_project_flow
 from core.web_flow import execute_web_url_flow
-
-load_dotenv()
 
 
 # Argument parsing
@@ -30,7 +30,17 @@ def _create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--project-path",
         type=str,
-        help="Path to a local project (Angular or React)."
+        help="Path to a local project (Angular, React, or HTML)."
+    )
+    parser.add_argument(
+        "--project-type",
+        type=str,
+        choices=["auto", "angular", "react", "html"],
+        default="auto",
+        help=(
+            "Force project flow type. For --project-path: auto/angular/react/html. "
+            "For --url: use auto or html."
+        ),
     )
 
     # OpenAI configuration
@@ -93,6 +103,9 @@ def _validate_arguments(args, parser: argparse.ArgumentParser) -> None:
 
     if args.url and args.project_path:
         parser.error("You must provide only one of the following modes: --url or --project-path.")
+
+    if args.url and args.project_type in {"angular", "react"}:
+        parser.error("When using --url, --project-type can only be 'auto' or 'html'.")
 
 # API Key Handling
 def _get_api_key(args) -> str:

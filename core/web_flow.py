@@ -51,9 +51,9 @@ def execute_web_url_flow(args, client, timestamp: str, create_run_path: Callable
                 json.dump(initial_results, file, ensure_ascii=False, indent=2)
             print(f"Analysis completed. Results saved to: {results_path}")
 
-            from utils.color_catalog_utils import extract_color_catalog
+            from utils.color_catalog_utils import extract_color_catalog_from_web_page
 
-            extract_color_catalog(run_path, run_path)
+            extract_color_catalog_from_web_page(driver, driver.page_source, args.url, run_path)
             return
 
         if args.fix_only:
@@ -80,6 +80,9 @@ def execute_web_url_flow(args, client, timestamp: str, create_run_path: Callable
             with open(accessible_page_path, "w", encoding="utf-8") as file:
                 file.write(accessible_html)
             print(f"Fix completed. Accessible HTML saved to: {accessible_page_path}")
+            if driver:
+                driver.quit()
+            _serve_preview_if_requested(accessible_page_path)
             return
 
         initial_results, driver = run_axe_analysis_with_driver(

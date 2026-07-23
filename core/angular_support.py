@@ -8,7 +8,7 @@ used by the Angular accessibility flow without changing existing behaviour.
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from core.analyzer import run_axe_analysis_with_driver
 from core.webdriver_setup import setup_driver
@@ -19,6 +19,16 @@ INLINE_TEMPLATE_PATTERNS = (
     re.compile(r"template\s*:\s*`(?P<content>.*?)`", re.DOTALL),
     re.compile(r'template\s*:\s*"(?P<content>(?:\\.|[^"\\])*)"', re.DOTALL),
     re.compile(r"template\s*:\s*'(?P<content>(?:\\.|[^'\\])*)'", re.DOTALL),
+)
+
+ANGULAR_CORE_IMPORT_REGEX = re.compile(r"from\s*['\"]@angular/core['\"]")
+COMPONENT_IMPORT_REGEX = re.compile(
+    r"import\s*{(?P<names>[^}]*)}\s*from\s*['\"]@angular/core['\"]",
+    re.DOTALL,
+)
+NAMESPACE_IMPORT_REGEX = re.compile(
+    r"import\s*\*\s*as\s*(?P<alias>[A-Za-z_$][\w$]*)\s*from\s*['\"]@angular/core['\"]",
+    re.DOTALL,
 )
 
 
@@ -52,6 +62,122 @@ def extract_inline_template(ts_content: str) -> Optional[str]:
         match = pattern.search(ts_content)
         if match:
             return match.group("content")
+
+    return None
+
+
+def _decorator_names_for_component(ts_content: str) -> List[str]:
+    """Return possible decorator identifiers that map to Angular Component."""
+    decorator_names: List[str] = []
+
+    for import_match in COMPONENT_IMPORT_REGEX.finditer(ts_content):
+        names_chunk = import_match.group("names") or ""
+        for part in names_chunk.split(","):
+            normalized = part.strip()
+            if not normalized:
+                continue
+
+            # Supports both `Component` and `Component as Alias` forms.
+            alias_match = re.match(
+                r"^(?P<base>Component)(?:\s+as\s+(?P<alias>[A-Za-z_$][\w$]*))?$",
+                normalized,
+            )
+            if alias_match:
+                alias = alias_match.group("alias")
+                decorator_names.append(alias or "Component")
+
+    for namespace_match in NAMESPACE_IMPORT_REGEX.finditer(ts_content):
+        decorator_names.append(f"{namespace_match.group('alias')}.Component")
+
+    return sorted(set(decorator_names))
+
+
+def _extract_component_decorator_blocks(ts_content: str, decorator_names: List[str]) -> List[str]:
+    """Extract object-literal blocks from @Component(...) decorators."""
+    blocks: List[str] = []
+    if not decorator_names:
+        return blocks
+
+    pattern = re.compile(
+        r"@(" + "|".join(re.escape(name) for name in decorator_names) + r")\s*\(",
+        re.DOTALL,
+    )
+
+    for match in pattern.finditer(ts_content):
+        open_paren = ts_content.find("(", match.start())
+        if open_paren == -1:
+            continue
+
+        object_start = ts_content.find("{", open_paren)
+        if object_start == -1:
+            continue
+
+        depth = 0
+        object_end = -1
+        for index in range(object_start, len(ts_content)):
+            char = ts_content[index]
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    object_end = index
+                    break
+
+        if object_end == -1:
+            continue
+
+        blocks.append(ts_content[object_start : object_end + 1])
+
+    return blocks
+
+
+def _looks_like_angular_component_source(ts_content: str) -> bool:
+    """Return True when a TypeScript file appears to declare an Angular component."""
+    if not ts_content:
+        return False
+    if not ANGULAR_CORE_IMPORT_REGEX.search(ts_content):
+        return False
+
+    decorator_names = _decorator_names_for_component(ts_content)
+    if not decorator_names:
+        return False
+
+    return bool(_extract_component_decorator_blocks(ts_content, decorator_names))
+
+
+def _extract_component_template_reference(ts_content: str) -> Tuple[Optional[str], Optional[str]]:
+    """Return an external template reference or inline template content when present."""
+    decorator_names = _decorator_names_for_component(ts_content)
+    for block in _extract_component_decorator_blocks(ts_content, decorator_names):
+        template_url_match = re.search(r'templateUrl\s*:\s*["\']([^"\']+)["\']', block)
+        if template_url_match:
+            return template_url_match.group(1), None
+
+        inline_template = extract_inline_template(block)
+        if inline_template:
+            return None, inline_template
+
+    return None, None
+
+
+def _resolve_source_root_path(project_root: Path, source_root: str) -> Optional[Path]:
+    """Resolve sourceRoot values for classic Angular and nested Nx projects."""
+    if not source_root:
+        return None
+
+    candidate = Path(source_root)
+    if candidate.is_absolute() and candidate.exists():
+        return candidate
+
+    direct = (project_root / source_root).resolve()
+    if direct.exists():
+        return direct
+
+    for ancestor in [project_root, *project_root.parents]:
+        ancestor_candidate = (ancestor / source_root).resolve()
+        if ancestor_candidate.exists():
+            return ancestor_candidate
 
     return None
 
@@ -144,8 +270,8 @@ def resolve_source_roots(project_root: Path, config: Dict) -> List[Path]:
         source_root = project_config.get("sourceRoot") or project_config.get("root")
         if not source_root:
             continue
-        source_path = project_root / source_root
-        if source_path.exists():
+        source_path = _resolve_source_root_path(project_root, source_root)
+        if source_path and source_path.exists():
             source_roots.append(source_path)
 
     fallback_src = project_root / "src"
@@ -160,15 +286,23 @@ def discover_component_templates(source_roots: List[Path]) -> List[Path]:
     templates: List[Path] = []
     for root in source_roots:
         templates.extend(root.glob("**/*.component.html"))
-        for component_ts in root.glob("**/*.component.ts"):
+        for component_ts in root.glob("**/*.ts"):
             try:
                 ts_content = component_ts.read_text(encoding="utf-8")
             except Exception:
                 continue
 
-            if "templateUrl" in ts_content:
+            if not _looks_like_angular_component_source(ts_content):
                 continue
 
-            if extract_inline_template(ts_content):
+            template_url, inline_template = _extract_component_template_reference(ts_content)
+            if template_url:
+                template_path = (component_ts.parent / template_url).resolve()
+                if template_path.exists():
+                    templates.append(template_path)
+                continue
+
+            if inline_template:
                 templates.append(component_ts)
-    return sorted(templates)
+
+    return sorted({path.resolve() for path in templates if path.exists()})

@@ -8,7 +8,7 @@ runtime/build/accessibility details to the extracted support modules.
 import re
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
 
 from core.angular_build import (
@@ -28,6 +28,7 @@ from core.contrast_engine import (
 )
 from core.angular_support import (
     ANGULAR_CONFIG_FILE,
+    _resolve_source_root_path,
     discover_component_templates,
     extract_inline_template,
     load_angular_config,
@@ -114,6 +115,7 @@ def fix_angular_project_from_axe_results(
 def _discover_project_templates(project_root: Path) -> List[Path]:
     angular_config = project_root / ANGULAR_CONFIG_FILE
     source_roots: List[Path] = []
+    discovered_templates: List[Path] = []
 
     if angular_config.exists():
         try:
@@ -130,10 +132,8 @@ def _discover_project_templates(project_root: Path) -> List[Path]:
                 project_config = load_angular_config(project_json)
                 source_root = (project_config.get("sourceRoot") or "").strip()
                 if source_root:
-                    source_path = Path(source_root)
-                    if not source_path.is_absolute():
-                        source_path = (project_root / source_path).resolve()
-                    if source_path.exists():
+                    source_path = _resolve_source_root_path(project_root, source_root)
+                    if source_path and source_path.exists():
                         source_roots.append(source_path)
             except Exception as exc:
                 print(f"[Angular] Warning: failed to load project.json: {exc}")
@@ -143,18 +143,14 @@ def _discover_project_templates(project_root: Path) -> List[Path]:
         if src_fallback.exists():
             source_roots.append(src_fallback)
 
-    templates = discover_component_templates(source_roots)
-    if templates:
-        return templates
+    if source_roots:
+        discovered_templates.extend(discover_component_templates(source_roots))
 
     fallback_templates = sorted(project_root.glob("**/*.component.html"))
     fallback_templates = [path for path in fallback_templates if "node_modules" not in str(path)]
-
-    if fallback_templates:
-        return fallback_templates
+    discovered_templates.extend(fallback_templates)
 
     # Last resort: include inline template components in TS files.
-    inline_component_ts: List[Path] = []
     for component_ts in sorted(project_root.glob("**/*.component.ts")):
         if "node_modules" in str(component_ts):
             continue
@@ -163,9 +159,10 @@ def _discover_project_templates(project_root: Path) -> List[Path]:
         except Exception:
             continue
         if extract_inline_template(ts_content):
-            inline_component_ts.append(component_ts)
+            discovered_templates.append(component_ts)
 
-    return inline_component_ts
+    # Preserve all detected templates while removing duplicates and missing paths.
+    return sorted({path.resolve() for path in discovered_templates if path.exists()})
 
 
 def map_axe_violations_to_templates(

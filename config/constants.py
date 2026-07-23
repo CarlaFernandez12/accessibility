@@ -1,6 +1,7 @@
 import os
 
 AXE_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.8.4/axe.min.js"
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
 
 IMAGE_DOMAIN_BLACKLIST = [
     "openstreetmap.org",

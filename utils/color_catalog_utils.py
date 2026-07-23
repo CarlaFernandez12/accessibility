@@ -169,6 +169,120 @@ def resolve_css_variables(colors: List[Dict[str, Any]]) -> None:
             c["resolved"] = var_map.get(c["variable"], None)
 
 
+def _save_color_catalog(catalog: List[CatalogEntry], run_path: str) -> None:
+    out_path = os.path.join(run_path, "color_catalog.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(catalog, f, ensure_ascii=False, indent=2)
+    print(f"[Color Catalog] Saved {len(catalog)} color entries to {out_path}")
+
+
+def _extract_computed_colors_from_driver(driver, page_url: str) -> List[CatalogEntry]:
+    """Extract unique rendered color values from the live DOM via getComputedStyle."""
+    script = """
+const props = [
+  'color',
+  'background-color',
+  'border-top-color',
+  'border-right-color',
+  'border-bottom-color',
+  'border-left-color',
+  'fill',
+  'stroke'
+];
+const out = [];
+const seen = new Set();
+const elements = Array.from(document.querySelectorAll('*'));
+for (const el of elements) {
+  const cs = window.getComputedStyle(el);
+  for (const prop of props) {
+    const value = (cs.getPropertyValue(prop) || '').trim();
+    if (!value || value === 'transparent' || value === 'rgba(0, 0, 0, 0)') {
+      continue;
+    }
+    const key = `${prop}|${value}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    out.push({
+      type: prop,
+      value,
+      variable: null,
+      resolved: value,
+      context: 'computed-style',
+      file: window.location.href || '',
+      line: 0,
+      column: 0
+    });
+  }
+}
+return out;
+"""
+    try:
+        extracted = driver.execute_script(script)
+    except Exception:
+        return []
+
+    if not isinstance(extracted, list):
+        return []
+
+    catalog: List[CatalogEntry] = []
+    for item in extracted:
+        if not isinstance(item, dict):
+            continue
+        value = str(item.get("value", "")).strip()
+        if not value:
+            continue
+        catalog.append(
+            {
+                "type": str(item.get("type", "computed-color")),
+                "value": value,
+                "variable": None,
+                "resolved": value,
+                "context": "computed-style",
+                "file": str(item.get("file", page_url)),
+                "line": 0,
+                "column": 0,
+            }
+        )
+    return catalog
+
+
+def extract_color_catalog_from_web_page(driver, html_text: str, page_url: str, run_path: str) -> None:
+    """Extract a color catalog for a public URL flow using HTML and rendered styles."""
+    catalog: List[CatalogEntry] = []
+
+    # Inline style attributes from page source.
+    catalog.extend(extract_colors_from_html(html_text, page_url))
+
+    # Embedded <style> blocks from page source.
+    for style_match in re.finditer(r"<style[^>]*>(.*?)</style>", html_text, flags=re.IGNORECASE | re.DOTALL):
+        catalog.extend(extract_colors_from_css(style_match.group(1), page_url))
+
+    # Rendered/computed styles capture external stylesheets as applied in browser.
+    catalog.extend(_extract_computed_colors_from_driver(driver, page_url))
+
+    resolve_css_variables(catalog)
+
+    # Deduplicate repeated entries while keeping first occurrence.
+    unique_catalog: List[CatalogEntry] = []
+    seen = set()
+    for entry in catalog:
+        key = (
+            entry.get("type"),
+            entry.get("value"),
+            entry.get("resolved"),
+            entry.get("context"),
+            entry.get("file"),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_catalog.append(entry)
+
+    _save_color_catalog(unique_catalog, run_path)
+
+
 def extract_color_catalog(project_root: str, run_path: str) -> None:
     """
     Extract all colors from HTML, CSS, SCSS in the project and save as color_catalog.json.
@@ -187,7 +301,4 @@ def extract_color_catalog(project_root: str, run_path: str) -> None:
     )
 
     resolve_css_variables(catalog)
-    out_path = os.path.join(run_path, "color_catalog.json")
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(catalog, f, ensure_ascii=False, indent=2)
-    print(f"[Color Catalog] Saved {len(catalog)} color entries to {out_path}")
+    _save_color_catalog(catalog, run_path)

@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from config.constants import OPENAI_MODEL
 from core.angular_support import get_default_project_name
 from utils.io_utils import log_openai_call
 
@@ -357,7 +358,7 @@ Return the full corrected code.
 """
 
     response = client.chat.completions.create(
-        model="gpt-5",
+        model=OPENAI_MODEL,
         messages=[
             {"role": "system", "content": system_message},
             {"role": "user", "content": prompt},
@@ -368,7 +369,7 @@ Return the full corrected code.
     log_openai_call(
         prompt=prompt,
         response=corrected_content,
-        model="gpt-5",
+        model=OPENAI_MODEL,
         call_type="angular_compilation_fix",
     )
 

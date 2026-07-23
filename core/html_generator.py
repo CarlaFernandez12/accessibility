@@ -20,6 +20,7 @@ from typing import Any, Dict, List
 
 from bs4 import BeautifulSoup
 
+from config.constants import OPENAI_MODEL
 from core.contrast_engine import apply_manual_contrast_fix, split_contrast_violations
 from core.html_dom import (
     _apply_corrected_node_with_fallbacks,
@@ -226,7 +227,7 @@ def _call_llm_for_fix(client, prompt, system_message, screenshot_paths=None):
         messages.append({"role": "user", "content": prompt})
     
     response = client.chat.completions.create(
-                model="gpt-5", 
+                model=OPENAI_MODEL,
                 messages=messages
             )
     return extract_clean_html(response.choices[0].message.content)
@@ -342,7 +343,7 @@ def _restore_responsive_design(original_html: str, soup, client, screenshot_path
         ]
 
         response = client.chat.completions.create(
-            model="gpt-5",
+            model=OPENAI_MODEL,
             messages=messages,
             max_completion_tokens=200000
         )
@@ -379,7 +380,16 @@ def _harden_post_merge_accessibility_fixes(soup, contrast_violations):
 
     return soup
 
-def generate_accessible_html_with_parser(original_html, axe_results, media_descriptions, client, base_url, driver, screenshot_paths=None):
+def generate_accessible_html_with_parser(
+    original_html,
+    axe_results,
+    media_descriptions,
+    client,
+    base_url,
+    driver,
+    screenshot_paths=None,
+    convert_relative_paths: bool = True,
+):
     color_catalog = _load_color_catalog()
 
     print("\n--- Starting LLM-only correction process ---")
@@ -479,7 +489,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
                 log_openai_call(
                     prompt=retry_prompt,
                     response=corrected_fragment_str,
-                    model="gpt-5",
+                    model=OPENAI_MODEL,
                     call_type=f"html_fix_attempt_{attempt}",
                 )
 
@@ -589,7 +599,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
             log_openai_call(
                 prompt=prompt,
                 response=corrected_fragment_str,
-                model="gpt-5",
+                model=OPENAI_MODEL,
                 call_type=f"html_post_merge_fix_attempt_{attempt}",
             )
             if not corrected_fragment_str:
@@ -623,6 +633,7 @@ def generate_accessible_html_with_parser(original_html, axe_results, media_descr
     if safety_net_applied:
         print(f"  Final accessibility safety-net fixes applied: {safety_net_applied}")
     
-    soup = convert_paths_to_absolute(soup, base_url)
+    if convert_relative_paths:
+        soup = convert_paths_to_absolute(soup, base_url)
     print("\n--- Correction process finished ---")
     return str(soup)

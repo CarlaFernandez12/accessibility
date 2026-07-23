@@ -16,6 +16,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from config.constants import OPENAI_MODEL
 from core.contrast_engine import (
     apply_source_catalog_contrast_repair,
     build_node_contrast_issue,
@@ -1023,7 +1024,7 @@ def _request_react_component_fix(
     )
 
     response = client.chat.completions.create(
-        model="gpt-5",
+        model=OPENAI_MODEL,
         messages=messages,
     )
 
@@ -1031,7 +1032,7 @@ def _request_react_component_fix(
     log_openai_call(
         prompt=prompt,
         response=corrected,
-        model="gpt-5",
+        model=OPENAI_MODEL,
         call_type="react_axe_component_fix",
     )
 

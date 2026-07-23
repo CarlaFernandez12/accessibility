@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from config.constants import CACHE_DIR
+from config.constants import CACHE_DIR, OPENAI_MODEL
 
 # Global variable to store OpenAI logs
 _openai_logs: List[Dict[str, Any]] = []
@@ -20,7 +20,7 @@ def setup_directories(run_path: str) -> None:
 def log_openai_call(
     prompt: Any,
     response: Any,
-    model: str = "gpt-5",
+    model: str = OPENAI_MODEL,
     call_type: str = "text",
 ) -> None:
     """
@@ -29,7 +29,7 @@ def log_openai_call(
     Args:
         prompt: The prompt sent to OpenAI
         response: The response received from OpenAI
-        model: The model used (default 'gpt-5')
+        model: The model used (default from OPENAI_MODEL)
         call_type: Call type ('text', 'vision', etc.)
     """
     log_entry: Dict[str, Any] = {

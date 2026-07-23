@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from config.constants import OPENAI_MODEL
 from core.angular_analysis import _analyze_template_for_accessibility_errors
 from core.angular_prompts import _build_component_prompt
 from core.angular_support import INLINE_TEMPLATE_PATTERNS, extract_inline_template
@@ -509,12 +510,12 @@ The screenshots show the application BEFORE the fixes. Your job is to make it ac
         messages.append({"role": "user", "content": user_prompt})
 
     response = client.chat.completions.create(
-        model="gpt-5",
+        model=OPENAI_MODEL,
         messages=messages,
     )
 
     response_text = response.choices[0].message.content or ""
-    log_openai_call(prompt=user_prompt, response=response_text, model="gpt-5", call_type="angular_component_fix")
+    log_openai_call(prompt=user_prompt, response=response_text, model=OPENAI_MODEL, call_type="angular_component_fix")
 
     print(f"  → LLM responded with {len(response_text)} characters")
 
