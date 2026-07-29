@@ -7,13 +7,15 @@ fix-only, and full remediation modes, while keeping main.py as a thin entrypoint
 
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict
 
+from bs4 import BeautifulSoup
+
 from core.html_generator import generate_accessible_html_with_parser
 from core.ports import detect_react_dev_server_port
-from utils.violation_utils import flatten_violations
 from utils.io_utils import clear_openai_logs, save_openai_logs, setup_directories
 
 
@@ -113,10 +115,53 @@ def _fix_local_html_project_from_axe_results(project_path: str, axe_results: Dic
         print("[HTML] No HTML files found in the project.")
         return 0
 
-    flat_violations = flatten_violations(axe_results.get("violations", []))
-    if not flat_violations:
+    grouped_violations = axe_results.get("violations", []) or []
+    if not grouped_violations:
         print("[HTML] No actionable violations found in the analysis results.")
         return 0
+
+    def _normalize_html_for_match(value: str) -> str:
+        return " ".join((value or "").split()).strip().lower()
+
+    def _selector_has_fallback_match(selector: str, html_text: str) -> bool:
+        selector = (selector or "").strip()
+        if not selector or selector.lower() in {"no selector", "html", "body"}:
+            return False
+
+        # id selector fallback: #save => id="save"
+        if selector.startswith("#") and len(selector) > 1:
+            element_id = selector[1:]
+            id_patterns = [
+                f'id="{element_id}"',
+                f"id='{element_id}'",
+            ]
+            return any(pattern in html_text for pattern in id_patterns)
+
+        # class selector fallback: .btn-primary => class contains token
+        if selector.startswith(".") and len(selector) > 1:
+            class_name = selector[1:]
+            class_pattern = re.compile(r'class\s*=\s*["\'][^"\']*(?:^|\s)' + re.escape(class_name) + r'(?:\s|$)[^"\']*["\']', re.IGNORECASE)
+            return bool(class_pattern.search(html_text))
+
+        # Attribute selector fallback: [aria-label] or [name="x"]
+        if selector.startswith("[") and selector.endswith("]"):
+            attr_expr = selector[1:-1].strip()
+            if "=" in attr_expr:
+                attr_name, attr_value = attr_expr.split("=", 1)
+                attr_name = attr_name.strip()
+                attr_value = attr_value.strip().strip('"\'')
+                patterns = [
+                    f'{attr_name}="{attr_value}"',
+                    f"{attr_name}='{attr_value}'",
+                ]
+                return any(pattern in html_text for pattern in patterns)
+            return f"{attr_expr}=" in html_text
+
+        # Basic tag selector fallback
+        if re.fullmatch(r"[a-zA-Z][\w-]*", selector):
+            return f"<{selector.lower()}" in html_text
+
+        return False
 
     fixed_files = 0
     for html_file in html_files:
@@ -126,16 +171,43 @@ def _fix_local_html_project_from_axe_results(project_path: str, axe_results: Dic
             print(f"[HTML] Warning: failed to read {html_file}: {exc}")
             continue
 
-        normalized_html = original_html.lower()
+        normalized_html = _normalize_html_for_match(original_html)
+        soup = BeautifulSoup(original_html, "html.parser")
         matching_violations = []
-        for violation in flat_violations:
-            snippet = (violation.get("html_snippet") or "").strip().lower()
-            selector = (violation.get("selector") or "").strip().lower()
-            if snippet and snippet[:120] in normalized_html:
-                matching_violations.append(violation)
-                continue
-            if selector and selector not in {"no selector", "html", "body"} and selector in normalized_html:
-                matching_violations.append(violation)
+
+        for violation in grouped_violations:
+            nodes = violation.get("nodes", []) or []
+            matching_nodes = []
+
+            for node in nodes:
+                html_snippet = (node.get("html") or "").strip()
+                node_target = node.get("target", [])
+                selector = ""
+                if isinstance(node_target, list) and node_target:
+                    selector = str(node_target[0] or "").strip()
+                elif node_target:
+                    selector = str(node_target).strip()
+
+                snippet_match = False
+                if html_snippet:
+                    normalized_snippet = _normalize_html_for_match(html_snippet)
+                    if normalized_snippet:
+                        snippet_match = normalized_snippet[:240] in normalized_html
+
+                selector_match = False
+                if selector and selector.lower() not in {"no selector", "html", "body"}:
+                    try:
+                        selector_match = soup.select_one(selector) is not None
+                    except Exception:
+                        selector_match = _selector_has_fallback_match(selector.lower(), normalized_html)
+
+                if snippet_match or selector_match:
+                    matching_nodes.append(node)
+
+            if matching_nodes:
+                filtered_violation = dict(violation)
+                filtered_violation["nodes"] = matching_nodes
+                matching_violations.append(filtered_violation)
 
         if not matching_violations:
             continue
